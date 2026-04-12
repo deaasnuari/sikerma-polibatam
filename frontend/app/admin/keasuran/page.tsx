@@ -73,7 +73,6 @@ const securityData: SecurityLog[] = [
 export default function KeasuranPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('semua');
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -113,7 +112,7 @@ export default function KeasuranPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+          {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

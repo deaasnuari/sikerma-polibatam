@@ -10,10 +10,24 @@ import {
   BarChart3,
   Zap,
 } from 'lucide-react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 export default function AdminDashboard() {
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div>
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -110,44 +124,92 @@ export default function AdminDashboard() {
         <h2 className="text-center text-xl md:text-2xl font-bold text-gray-900 mb-8">STATISTIK KERJASAMA</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Chart 1 Placeholder */}
+          {/* Pie Chart 1 - Distribusi Berdasarkan Wilayah */}
           <div className="flex flex-col items-center justify-center">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-full mb-4"></div>
-            <p className="text-sm text-gray-600">Distribusi Kerjasama Berdasarkan Wilayah</p>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Dalam Negeri', value: 8, fill: '#3B82F6' },
+                    { name: 'Luar Negeri', value: 2, fill: '#A78BFA' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill="#3B82F6" />
+                  <Cell fill="#A78BFA" />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <p className="text-sm text-gray-600 mt-4">Distribusi Kerjasama Berdasarkan Wilayah</p>
           </div>
 
-          {/* Chart 2 Placeholder */}
+          {/* Pie Chart 2 - Distribusi Jenis Dokumen */}
           <div className="flex flex-col items-center justify-center">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-full mb-4"></div>
-            <p className="text-sm text-gray-600">Distribusi Nilai Dokumen</p>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'MoU', value: 4, fill: '#10B981' },
+                    { name: 'MoA', value: 5, fill: '#F59E0B' },
+                    { name: 'IA', value: 1, fill: '#EF4444' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill="#10B981" />
+                  <Cell fill="#F59E0B" />
+                  <Cell fill="#EF4444" />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <p className="text-sm text-gray-600 mt-4">Distribusi Jenis Dokumen</p>
           </div>
         </div>
       </div>
 
-      {/* Top 5 Sikerma Kerjasama */}
+      {/* Top 5 Skema Kerjasama */}
       <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Top 5 Sikerma Kerjasama</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Top 5 Skema Kerjasama Terpopuler</h2>
         
-        <div className="space-y-4">
-          {[
-            { name: 'Integrator Indonesia', value: 95 },
-            { name: 'PT Mitra Digital Nusantara', value: 85 },
-            { name: 'PT Teknologi Indonesia', value: 78 },
-            { name: 'Solusi Bisnis Modern', value: 72 },
-            { name: 'PT Inovasi Solusi Bisnis Indonesia', value: 68 },
-          ].map((item, idx) => (
-            <div key={idx} className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-900 min-w-fit">{idx + 1}. {item.name}</span>
-              <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-blue-900 h-full rounded-full" 
-                  style={{ width: `${item.value}%` }}
-                ></div>
-              </div>
-              <span className="text-sm font-medium text-gray-700 min-w-fit">{item.value}%</span>
-            </div>
-          ))}
-        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart
+            data={[
+              { name: 'Pelatihan', value: 3 },
+              { name: 'Maggang', value: 3 },
+              { name: 'Penelitian', value: 2 },
+              { name: 'Pertukaran Mahasiswa', value: 2 },
+              { name: 'Sertifikasi', value: 2 },
+            ]}
+            margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+            <XAxis 
+              dataKey="name" 
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tick={{ fontSize: 12 }}
+            />
+            <YAxis />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
+            />
+            <Bar dataKey="value" fill="#1E3A8A" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
