@@ -38,15 +38,15 @@ export default function AdminFooter() {
               <h4 className="text-xs font-bold mb-1.5">Kontak</h4>
               <ul className="space-y-1">
                 <li className="flex items-start gap-1 text-xs justify-end">
-                  <span className="text-blue-100">Jl. Ahmad Yani, Sekupat, Batam</span>
+                  <span className="text-blue-100">Jl. Ahmad Yani, Batam Kota, Kota Batam, Kepulauan Riau, Indonesia</span>
                   <MapPin size={10} className="text-blue-400 mt-0.5 flex-shrink-0" />
                 </li>
                 <li className="flex items-center gap-1 text-xs justify-end">
-                  <a href="tel:+62-778-469829" className="text-blue-100 hover:text-white transition-colors">+62-778-469829</a>
+                  <a href="tel:+62-778-469829" className="text-blue-100 hover:text-white transition-colors">+62-778-469858 Ext.1017</a>
                   <Phone size={10} className="text-blue-400 flex-shrink-0" />
                 </li>
                 <li className="flex items-center gap-1 text-xs justify-end">
-                  <a href="mailto:info@polibatam.ac.id" className="text-blue-100 hover:text-white transition-colors">info@polibatam.ac.id</a>
+                  <a href="mailto:info@polibatam.ac.id" className="text-blue-100 hover:text-white transition-colors"> info@polibatam.ac.id atau humas@polibatam.ac.id</a>
                   <Mail size={10} className="text-blue-400 flex-shrink-0" />
                 </li>
               </ul>
@@ -58,7 +58,7 @@ export default function AdminFooter() {
 
           {/* Bottom */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-1 text-xs text-blue-200">
-            <p>\u00a9 2025 SIKERMA Polibatam</p>
+            <p>2026 SIKERMA Polibatam</p>
             <div className="flex gap-2">
               <a href="#" className="hover:text-white transition-colors">Privasi</a>
               <a href="#" className="hover:text-white transition-colors">Syarat</a>
