@@ -14,6 +14,7 @@ const ruangLingkupOptions = [
   'Workshop',
   'Sertifikasi',
   'Joint Program',
+  
   'Lainnya',
 ];
 
