@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronDown, Lock, User } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
   const router = useRouter();
   const { login } = useAuth();
 
@@ -21,104 +24,147 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Login gagal. Coba lagi.');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Login gagal. Silakan coba lagi.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#091222] text-white flex flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-2xl">
+        {/* Header Brand */}
+        <div className="text-center mb-8">
+          <div className="mx-auto mb-3 w-20 h-20 rounded-full bg-cyan-300/90 flex items-center justify-center">
+            <div className="w-12 h-6 rounded-full border-4 border-white/80 border-l-transparent border-b-transparent rotate-[-20deg]" />
+          </div>
+          <p className="text-3xl font-extrabold tracking-wide">SIKERMA POLIBATAM</p>
+          <p className="text-sm md:text-base text-blue-100 mt-2 leading-relaxed">
+            Sistem Informasi Kerjasama
+            <br />
+            Politeknik Negeri Batam
+          </p>
+        </div>
+
         {/* Card */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg mb-4">
-              <Lock className="text-white" size={24} />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
-            <p className="text-gray-600 text-sm mt-1">Masuk ke sistem manajemen</p>
+        <div className="bg-[#F4F6FA] text-slate-800 rounded-2xl shadow-2xl px-8 py-8 md:px-10">
+          <div className="text-center mb-7">
+            <h1 className="text-4xl font-extrabold text-[#173B82]">SELAMAT DATANG</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Silakan Login Menggunakan Akun LDPI Anda
+            </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
+            <div className="mb-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" />
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
+            {/* Username / Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-semibold text-[#173B82] mb-2">
+                Username / Email
+              </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                <User className="absolute left-3 top-3 text-slate-400" size={18} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Masukkan Username dan Email"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-[#173B82]/40"
                   required
                 />
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-semibold text-[#173B82] mb-2">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Masukkan Password"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-[#173B82]/40"
                   required
                 />
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="remember"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            {/* Role */}
+            <div className="relative">
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="appearance-none w-full h-11 px-4 rounded-xl border border-slate-300 bg-white text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#173B82]/40"
+                required
+              >
+                <option value="" disabled>
+                  Pilih Role
+                </option>
+                <option value="admin-humas">Admin/Humas</option>
+                <option value="pimpinan">Pimpinan</option>
+                <option value="internal">Internal</option>
+                <option value="external">External</option>
+              </select>
+              <ChevronDown
+                size={18}
+                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
               />
-              <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
-                Ingat saya
-              </label>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              className="w-full h-11 rounded-xl bg-[#173B82] text-white font-semibold hover:bg-[#12306C] disabled:opacity-60 disabled:cursor-not-allowed transition"
             >
-              {isLoading ? 'Sedang masuk...' : 'Masuk'}
+              {isLoading ? 'Memproses...' : 'Login →'}
             </button>
+
+            {/* Bottom Form Actions */}
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label className="inline-flex items-center gap-2 text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
+                />
+                Ingat Saya
+              </label>
+              <button
+                type="button"
+                className="text-slate-500 hover:text-[#173B82] transition"
+              >
+                Lupa Password?
+              </button>
+            </div>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-600 text-center mb-3">Demo Credentials:</p>
-            <div className="bg-gray-50 p-3 rounded text-xs text-gray-700 space-y-1">
-              <p>Email: <span className="font-mono">admin@example.com</span></p>
-              <p>Password: <span className="font-mono">admin123</span></p>
-            </div>
+          <div className="mt-6 border-t border-slate-200 pt-4 text-center text-sm text-slate-600">
+            Belum Punya Akses?{' '}
+            <button type="button" className="font-semibold text-[#173B82] hover:underline">
+              Hubungi Administrator
+            </button>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-300 text-sm mt-6">
-          © 2026 SIKERMA. All rights reserved.
+        <p className="text-center text-blue-100/90 text-sm mt-8">
+          © 2026 Politeknik Negeri Batam - Sistem Informasi Kerjasama
         </p>
       </div>
     </div>
