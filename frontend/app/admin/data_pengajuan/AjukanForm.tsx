@@ -227,10 +227,10 @@ export default function AjukanForm() {
   }
 
   return (
-    <div className="mx-auto max-w-[1100px] bg-white rounded-lg border border-gray-200">
-      <div className="px-7 py-6 flex items-start justify-between gap-4">
+    <div className="card mx-auto max-w-[1100px]">
+      <div className="px-7 py-6 flex items-start justify-between gap-4 border-b border-slate-200">
         <div>
-          <h1 className="text-4xl leading-none font-extrabold text-[#1E376C]">Form Pengajuan Kerjasama Baru</h1>
+          <h1 className="page-title">Form Pengajuan Kerjasama Baru</h1>
         </div>
         <Link
           href="/admin/data_pengajuan"
@@ -243,7 +243,7 @@ export default function AjukanForm() {
 
       <form className="px-7 pb-7 space-y-6" onSubmit={handleSubmit}>
         <section className="space-y-5">
-          <h2 className="text-3xl leading-none font-bold text-gray-900">Informasi Dasar</h2>
+          <h2 className="text-2xl leading-none font-bold text-gray-900">Informasi Dasar</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-5">
@@ -253,7 +253,7 @@ export default function AjukanForm() {
                   type="text"
                   value={formData.judulPengajuan}
                   onChange={(e) => handleInputChange('judulPengajuan', e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 h-11 text-base text-gray-700 outline-none focus:border-[#1E376C]"
+                  className="input-field w-full px-4 h-11 text-base text-gray-700"
                 />
                 {errors.judulPengajuan && <p className="text-xs text-red-600 mt-1.5">{errors.judulPengajuan}</p>}
               </div>
@@ -264,7 +264,7 @@ export default function AjukanForm() {
                   type="text"
                   value={formData.namaPengusul}
                   onChange={(e) => handleInputChange('namaPengusul', e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 h-11 text-base text-gray-700 outline-none focus:border-[#1E376C]"
+                  className="input-field w-full px-4 h-11 text-base text-gray-700"
                 />
                 {errors.namaPengusul && <p className="text-xs text-red-600 mt-1.5">{errors.namaPengusul}</p>}
               </div>
@@ -275,7 +275,7 @@ export default function AjukanForm() {
                   type="text"
                   value={formData.namaMitraTujuan}
                   onChange={(e) => handleInputChange('namaMitraTujuan', e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 h-11 text-base text-gray-700 outline-none focus:border-[#1E376C]"
+                  className="input-field w-full px-4 h-11 text-base text-gray-700"
                 />
                 {errors.namaMitraTujuan && <p className="text-xs text-red-600 mt-1.5">{errors.namaMitraTujuan}</p>}
               </div>
@@ -317,7 +317,7 @@ export default function AjukanForm() {
                 <select
                   value={formData.asalUnit}
                   onChange={(e) => handleInputChange('asalUnit', e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 h-11 text-base text-gray-500 outline-none focus:border-[#1E376C] bg-white"
+                  className="input-field w-full px-4 h-11 text-base text-gray-700 bg-white"
                 >
                   <option value="">-- Pilih {asal} --</option>
                   <option value="Teknik Informatika">Teknik Informatika</option>
@@ -333,7 +333,7 @@ export default function AjukanForm() {
                 <select
                   value={formData.jenisDokumen}
                   onChange={(e) => handleJenisDokumenChange(e.target.value)}
-                  className={`w-full border rounded-xl px-4 h-11 text-base outline-none bg-white focus:border-[#1E376C] ${formData.jenisDokumen ? 'border-[#BFCBE3] text-gray-700' : 'border-gray-300 text-gray-500'}`}
+                  className={`input-field w-full px-4 h-11 text-base bg-white ${formData.jenisDokumen ? 'text-gray-700' : 'text-gray-500'}`}
                 >
                   <option value="">-- Pilih Jenis --</option>
                   <option value="MoU">MoU</option>
@@ -346,7 +346,7 @@ export default function AjukanForm() {
           </div>
 
           {formData.jenisDokumen && defaultTemplateDokumenMap[formData.jenisDokumen] && (
-            <div className="rounded-3xl border border-[#D7E0F0] bg-[#F7FAFF] p-4 sm:p-5 space-y-4">
+            <div className="card bg-slate-50 p-4 sm:p-5 space-y-4">
               <h3 className="text-xl font-bold text-gray-900">Template Dokumen</h3>
 
               {false && (
@@ -357,7 +357,7 @@ export default function AjukanForm() {
                       type="text"
                       value={defaultTemplateDokumenMap[formData.jenisDokumen].title}
                       onChange={(e) => updateTemplateField('title', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 h-10 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                      className="input-field w-full px-3 h-10 text-sm text-gray-700"
                     />
                   </div>
                   <div>
@@ -366,7 +366,7 @@ export default function AjukanForm() {
                       type="text"
                       value={defaultTemplateDokumenMap[formData.jenisDokumen].subtitle}
                       onChange={(e) => updateTemplateField('subtitle', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 h-10 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                      className="input-field w-full px-3 h-10 text-sm text-gray-700"
                     />
                   </div>
                   <div>
@@ -390,24 +390,24 @@ export default function AjukanForm() {
                 </div>
               )}
 
-              <div className="rounded-2xl border border-[#D7E0F0] bg-white p-4">
+              <div className="card p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-2xl font-bold text-[#1E376C]">{defaultTemplateDokumenMap[formData.jenisDokumen].title}</p>
+                    <p className="text-2xl font-bold text-[#173B82]">{defaultTemplateDokumenMap[formData.jenisDokumen].title}</p>
                     <p className="text-sm text-gray-600">{defaultTemplateDokumenMap[formData.jenisDokumen].subtitle}</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleDownloadTemplate}
-                    className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F] transition-colors shadow-sm"
+                    className="btn-primary inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-semibold shadow-sm"
                   >
                     <Download size={16} />
                     Download
                   </button>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-[#D7E0F0] bg-[#F3F7FF] p-3">
-                  <p className="text-sm font-semibold text-[#1E376C] mb-1">Struktur Dokumen:</p>
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-sm font-semibold text-[#173B82] mb-1">Struktur Dokumen:</p>
                   <ol className="list-decimal list-inside text-sm text-gray-700 space-y-0.5">
                     {defaultTemplateDokumenMap[formData.jenisDokumen].struktur.map((item) => (
                       <li key={item}>{item}</li>
@@ -415,7 +415,7 @@ export default function AjukanForm() {
                   </ol>
                 </div>
 
-                <p className="mt-3 text-xs text-[#1E376C] bg-[#EEF3FF] border border-[#D7E0F0] rounded-lg px-3 py-2">
+                <p className="mt-3 text-xs text-[#173B82] bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                   Catatan: {defaultTemplateDokumenMap[formData.jenisDokumen].note}
                 </p>
               </div>
@@ -525,14 +525,14 @@ export default function AjukanForm() {
         <div className="pt-1 flex items-center gap-3">
           <button
             type="submit"
-            className="bg-[#1E376C] hover:bg-[#2A4A8F] text-white h-11 w-[190px] rounded-xl text-lg leading-none font-semibold transition-colors"
+            className="btn-primary h-11 w-[190px] text-lg leading-none font-semibold"
           >
             Submit Pengajuan
           </button>
           <button
             type="button"
             onClick={handleCancel}
-            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 h-11 w-[100px] rounded-xl text-lg leading-none font-semibold transition-colors inline-flex items-center justify-center"
+            className="btn-secondary h-11 w-[100px] text-lg leading-none font-semibold inline-flex items-center justify-center"
           >
             Batal
           </button>

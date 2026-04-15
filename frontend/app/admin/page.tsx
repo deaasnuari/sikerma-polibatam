@@ -61,7 +61,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Notifikasi Section */}
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 md:p-6">
+      <div className="card p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             {/* Bell Icon */}
@@ -70,17 +70,17 @@ export default function AdminDashboard() {
             </svg>
             Notifikasi Terbaru
           </h2>
-          <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua</a>
+          <a href="#" className="text-sm text-[#173B82] hover:text-[#091222] font-medium">Lihat Semua</a>
         </div>
 
         <div className="space-y-3">
           {notifications.map((notification, index) => (
             <div
               key={notification.id}
-              className={`bg-white border-l-4 ${index === 0 ? 'border-green-500' : 'border-blue-500'} rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer`}
+              className={`bg-white border-l-4 ${index === 0 ? 'border-green-500' : 'border-[#173B82]'} rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer`}
             >
-              <div className={`w-6 h-6 ${index === 0 ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                <svg className={`w-4 h-4 ${index === 0 ? 'text-green-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className={`w-6 h-6 ${index === 0 ? 'bg-green-100' : 'bg-slate-100'} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                <svg className={`w-4 h-4 ${index === 0 ? 'text-green-600' : 'text-[#173B82]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {index === 0 ? (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   ) : (
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistik Kerjasama Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
+      <div className="card p-6 md:p-8">
         <h2 className="text-center text-xl md:text-2xl font-bold text-gray-900 mb-8">STATISTIK KERJASAMA</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Top 5 Skema Kerjasama */}
-      <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
+      <div className="card p-6 md:p-8">
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Top 5 Skema Kerjasama Terpopuler</h2>
         
         <ResponsiveContainer width="100%" height={300}>
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
             <Tooltip 
               contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
             />
-            <Bar dataKey="value" fill="#1E3A8A" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="value" fill="#173B82" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

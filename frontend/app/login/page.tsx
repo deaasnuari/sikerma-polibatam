@@ -79,7 +79,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Masukkan Username dan Email"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-[#173B82]/40"
+                  className="input-field w-full h-11 pl-10 pr-4 text-sm"
                   required
                 />
               </div>
@@ -97,7 +97,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan Password"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-[#173B82]/40"
+                  className="input-field w-full h-11 pl-10 pr-4 text-sm"
                   required
                 />
               </div>
@@ -108,7 +108,7 @@ export default function LoginPage() {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="appearance-none w-full h-11 px-4 rounded-xl border border-slate-300 bg-white text-sm text-slate-600 outline-none focus:ring-2 focus:ring-[#173B82]/40"
+                className="input-field appearance-none w-full h-11 px-4 text-sm text-slate-600"
                 required
               >
                 <option value="" disabled>
@@ -129,7 +129,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 rounded-xl bg-[#173B82] text-white font-semibold hover:bg-[#12306C] disabled:opacity-60 disabled:cursor-not-allowed transition"
+              className="btn-primary w-full h-11 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Memproses...' : 'Login →'}
             </button>

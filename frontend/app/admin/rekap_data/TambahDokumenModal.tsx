@@ -194,13 +194,13 @@ export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: Tambah
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-gray-300 px-8 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              className="btn-secondary inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#1E376C] px-8 text-sm font-semibold text-white transition-colors hover:bg-[#294887]"
+              className="btn-primary inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
             >
               Tambah Dokumen
             </button>
@@ -227,14 +227,14 @@ function TextInput({ placeholder, type = 'text', value, onChange }: { placeholde
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition-colors placeholder:text-gray-400 focus:border-[#1E376C]"
+      className="input-field h-11 w-full px-4 text-sm text-gray-700 placeholder:text-gray-400"
     />
   );
 }
 
 function SelectInput({ options, value, onChange }: { options: string[]; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void }) {
   return (
-    <select value={value} onChange={onChange} className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none transition-colors focus:border-[#1E376C]">
+    <select value={value} onChange={onChange} className="input-field h-11 w-full bg-white px-4 text-sm text-gray-700">
       {options.map((option) => (
         <option key={option} value={option}>
           {option}
@@ -251,7 +251,7 @@ function DateInput({ placeholder, value, onChange }: { placeholder: string; valu
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition-colors [color-scheme:light] focus:border-[#1E376C] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:text-[#1E376C] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+      className="input-field h-11 w-full px-4 text-sm text-gray-700 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:text-[#173B82] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
     />
   );
 }

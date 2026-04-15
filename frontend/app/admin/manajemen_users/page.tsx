@@ -105,14 +105,14 @@ export default function ManajemenUserPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manajemen User</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="page-title">Manajemen User</h1>
+          <p className="page-subtitle mt-1">
             Kelola user dan hak akses sistem
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-4 py-2.5 rounded-lg transition"
+          className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
         >
           <Plus size={16} />
           Tambah User
@@ -184,7 +184,7 @@ export default function ManajemenUserPage() {
             placeholder="Cari akun..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
           />
         </div>
 
@@ -192,7 +192,7 @@ export default function ManajemenUserPage() {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="appearance-none bg-white border border-gray-300 rounded-lg pl-4 pr-9 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium"
           >
             <option>Semua Role</option>
             <option>Admin</option>
@@ -209,11 +209,11 @@ export default function ManajemenUserPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="table-shell">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="table-head border-b border-gray-200">
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
                   Nama
                 </th>

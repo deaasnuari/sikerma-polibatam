@@ -46,9 +46,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Main Container - Sidebar + Content with gaps */}
-        <div className="flex flex-1 overflow-hidden gap-4 px-4 pt-4">
+        <div className="flex flex-1 overflow-hidden gap-4 px-4 pt-4 pb-2 min-h-0">
           {/* Sidebar with gap */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 h-full self-stretch">
             <AdminSidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           </div>
 

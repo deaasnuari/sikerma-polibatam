@@ -59,22 +59,22 @@ const dummyData: Pengajuan[] = [
 const statusConfig: Record<Status, { label: string; className: string; iconEl: React.ReactNode }> = {
   Menunggu: {
     label: 'Menunggu',
-    className: 'bg-yellow-50 text-yellow-700',
+    className: 'badge badge-warning',
     iconEl: <Clock size={13} />,
   },
   Diproses: {
     label: 'Diproses',
-    className: 'bg-blue-50 text-blue-700',
+    className: 'badge badge-info',
     iconEl: <Clock size={13} />,
   },
   Disetujui: {
     label: 'Disetujui',
-    className: 'bg-green-50 text-green-700',
+    className: 'badge badge-success',
     iconEl: <CheckCircle size={13} />,
   },
   Ditolak: {
     label: 'Ditolak',
-    className: 'bg-red-50 text-red-700',
+    className: 'badge badge-danger',
     iconEl: <XCircle size={13} />,
   },
 };
@@ -169,12 +169,12 @@ export default function PengajuanKerjasama() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Pengajuan Kerjasama</h1>
-          <p className="text-gray-600 text-sm mt-2">Kelola pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
+          <h1 className="page-title">Pengajuan Kerjasama</h1>
+          <p className="page-subtitle mt-2">Kelola pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
         </div>
         <Link
           href="/admin/data_pengajuan?view=ajukan"
-          className="flex items-center gap-2 bg-[#1E376C] hover:bg-[#2A4A8F] text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm flex-shrink-0"
+          className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm flex-shrink-0"
         >
           <Plus size={18} />
           Ajukan Kerjasama Baru
@@ -222,7 +222,7 @@ export default function PengajuanKerjasama() {
       </div>
 
       {/* Filter Row */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      <div className="toolbar-shell p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-sm text-gray-700 font-medium">
             <Filter size={15} />
@@ -231,7 +231,7 @@ export default function PengajuanKerjasama() {
           <select
             value={filterJurusan}
             onChange={(e) => setFilterJurusan(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white outline-none cursor-pointer"
+            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
           >
             <option>Semua Jurusan/unit</option>
             <option>Teknik Informatika</option>
@@ -241,7 +241,7 @@ export default function PengajuanKerjasama() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white outline-none cursor-pointer"
+            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
           >
             <option>Semua Status</option>
             <option>Menunggu</option>
@@ -256,7 +256,7 @@ export default function PengajuanKerjasama() {
               placeholder="Cari berdasarkan nama mitra atau judul..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-700 bg-white outline-none"
+              className="input-field w-full pl-9 pr-3 py-2 text-sm text-gray-700"
             />
           </div>
         </div>
@@ -269,7 +269,7 @@ export default function PengajuanKerjasama() {
           return (
             <div
               key={item.id}
-              className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+              className="card p-5 hover:shadow-md transition-shadow"
             >
               {/* Top row */}
               <div className="flex justify-between items-start gap-4">
@@ -279,7 +279,7 @@ export default function PengajuanKerjasama() {
                     Pengusul: {item.pengusul} &bull; {item.tanggal}
                   </p>
                 </div>
-                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 ${sc.className}`}>
+                <span className={`flex items-center gap-1.5 flex-shrink-0 ${sc.className}`}>
                   {sc.iconEl}
                   {sc.label}
                 </span>
@@ -305,7 +305,7 @@ export default function PengajuanKerjasama() {
                   <button
                     type="button"
                     onClick={() => setDetailItem(item)}
-                    className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg px-3 py-1.5 transition-colors"
+                    className="btn-secondary flex items-center gap-1.5 text-sm px-3 py-1.5"
                   >
                     <Eye size={14} />
                     Detail
@@ -313,7 +313,7 @@ export default function PengajuanKerjasama() {
                   <button
                     type="button"
                     onClick={() => openReview(item)}
-                    className="flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 border border-green-400 hover:border-green-500 rounded-lg px-3 py-1.5 font-medium transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
                   >
                     <MessageSquare size={14} />
                     Review
@@ -338,7 +338,7 @@ export default function PengajuanKerjasama() {
         })}
 
         {filtered.length === 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center text-gray-400">
+          <div className="card p-12 text-center text-gray-400">
             Tidak ada data yang sesuai dengan filter.
           </div>
         )}

@@ -109,10 +109,10 @@ export default function ArsipDokumenPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="page-title">
           Arsip Dokumen Kadaluarsa
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="page-subtitle mt-1">
           Daftar dokumen kerjasama yang sudah melewati masa berlaku
         </p>
       </div>
@@ -160,7 +160,7 @@ export default function ArsipDokumenPage() {
       </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+      <div className="card bg-slate-50 p-5">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
             <Info size={18} className="text-blue-600" />
@@ -204,21 +204,21 @@ export default function ArsipDokumenPage() {
             placeholder="Cari dokumen arsip..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
           />
         </div>
-        <button className="flex items-center gap-2 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-4 py-2.5 rounded-lg transition">
+        <button className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5">
           <Download size={15} />
           Export Arsip
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="table-shell">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="table-head border-b border-gray-200">
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
                   No.Dokumen
                 </th>
