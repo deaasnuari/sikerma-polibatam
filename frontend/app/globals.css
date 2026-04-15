@@ -58,14 +58,24 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  min-height: 2.75rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
   border-radius: 0.75rem;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, var(--color-secondary), #1d4ed8);
   box-shadow: 0 8px 18px rgba(23, 59, 130, 0.25);
 }
 
@@ -76,10 +86,20 @@ body {
 }
 
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  min-height: 2.75rem;
   background-color: white;
   color: var(--color-primary);
   border: 1px solid #cbd5e1;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
   border-radius: 0.75rem;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 

@@ -2,10 +2,15 @@
 
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
-import { Menu, LogOut, User, Bell } from 'lucide-react';
+import { Menu, LogOut, User, Bell, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getAdminNotifications } from '@/services/adminService';
+import {
+  getAdminNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '@/services/adminService';
 import { useRouter } from 'next/navigation';
+import type { AdminNotification } from '@/types/admin';
 
 interface AdminNavbarProps {
   toggleSidebar: () => void;
@@ -14,17 +19,36 @@ interface AdminNavbarProps {
 export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  const notifications = getAdminNotifications();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+  const refreshNotifications = () => {
+    setNotifications(getAdminNotifications());
+  };
 
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  const handleOpenNotification = (notification: AdminNotification) => {
+    setNotifications(markNotificationAsRead(notification.id));
+    setShowNotifications(false);
+    router.push(notification.href || '/admin/notifikasi');
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(markAllNotificationsAsRead());
+  };
+
+  const handleViewAll = () => {
+    setShowNotifications(false);
+    router.push('/admin/notifikasi');
   };
 
   useEffect(() => {
@@ -38,14 +62,21 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
       }
     }
 
+    const syncNotifications = () => refreshNotifications();
+
+    refreshNotifications();
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('admin-notifications-updated', syncNotifications);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('admin-notifications-updated', syncNotifications);
+    };
   }, []);
 
   return (
     <header className="bg-white sticky top-0 z-40 shadow-sm border border-slate-200 rounded-lg">
       <div className="px-4 py-3 md:py-3.5 flex justify-between items-center">
-        {/* Left - Logo/Brand */}
         <div className="flex items-center gap-2 flex-1">
           <button
             onClick={toggleSidebar}
@@ -72,11 +103,9 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
           </div>
         </div>
 
-        {/* Right - Notification & User Menu */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Notification Button */}
           <div className="relative" ref={notifRef}>
-            <button 
+            <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative text-gray-700 hover:bg-gray-100 rounded-lg p-2 transition-all duration-200"
               title="Notifikasi"
@@ -89,29 +118,51 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
               )}
             </button>
 
-            {/* Notification Dropdown */}
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Bell size={18} className="text-[#173B82]" />
-                    Notifikasi Terbaru
-                  </h3>
-                  <a href="#" className="text-xs text-[#173B82] hover:text-[#091222] font-medium">Lihat Semua</a>
+                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                  <div className="flex justify-between items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Bell size={18} className="text-[#173B82]" />
+                      Notifikasi Terbaru
+                    </h3>
+                    <button
+                      onClick={handleViewAll}
+                      className="text-xs text-[#173B82] hover:text-[#091222] font-medium"
+                    >
+                      Lihat Semua
+                    </button>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="mt-2 text-xs text-slate-600 hover:text-[#091222] font-medium flex items-center gap-1"
+                    >
+                      <CheckCheck size={14} />
+                      Tandai semua dibaca
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                      <div key={notif.id} className={`px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}>
+                    notifications.slice(0, 5).map((notif) => (
+                      <button
+                        key={notif.id}
+                        onClick={() => handleOpenNotification(notif)}
+                        className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}
+                      >
                         <div className="flex gap-3">
-                          <div className="w-2 h-2 bg-[#173B82] rounded-full mt-2 flex-shrink-0"></div>
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-[#173B82]' : 'bg-slate-300'}`}></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-900">{notif.title}</p>
                             <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">📌 dari: {notif.from}</p>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <p className="text-xs text-gray-500">📌 dari: {notif.from}</p>
+                              <p className="text-[11px] text-slate-400">{notif.createdAt}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))
                   ) : (
                     <div className="px-4 py-6 text-center text-gray-600">Tidak ada notifikasi</div>
@@ -121,9 +172,8 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
             )}
           </div>
 
-          {/* User Menu */}
           <div className="relative flex-shrink-0" ref={userMenuRef}>
-            <button 
+            <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-3 text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2 transition-all duration-200"
             >
@@ -136,7 +186,6 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
               </div>
             </button>
 
-            {/* User Dropdown */}
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-xl py-0 z-50 overflow-hidden">
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-100">

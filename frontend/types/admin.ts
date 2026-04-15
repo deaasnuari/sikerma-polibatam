@@ -4,6 +4,9 @@ export interface AdminNotification {
   message: string;
   from: string;
   read: boolean;
+  createdAt: string;
+  href?: string;
+  category?: 'approval' | 'comment' | 'reminder' | 'info';
 }
 
 export interface DashboardStat {
@@ -11,7 +14,7 @@ export interface DashboardStat {
   value: string;
   color: string;
   textColor: string;
-  iconKey: 'handshake' | 'building' | 'globe' | 'chart' | 'zap';
+  iconKey: 'handshake' | 'building' | 'globe' | 'chart' | 'zap' | 'file' | 'users';
 }
 
 export interface ChartItem {
@@ -27,6 +30,8 @@ export interface PopularSchemeItem {
 
 export interface QuickAction {
   label: string;
+  description: string;
+  href: string;
   color: string;
   iconKey: 'handshake' | 'users' | 'trending';
 }
