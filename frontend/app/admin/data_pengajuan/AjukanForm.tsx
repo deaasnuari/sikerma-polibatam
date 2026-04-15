@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, X } from 'lucide-react';
+import { submitPengajuan } from '@/services/adminPengajuanService';
 
 const ruangLingkupOptions = [
   'Penelitian',
@@ -14,8 +15,33 @@ const ruangLingkupOptions = [
   'Workshop',
   'Sertifikasi',
   'Joint Program',
-  
   'Lainnya',
+];
+
+const jurusanOptions = [
+  'Manajemen dan Bisnis',
+  'Teknik Elektro',
+  'Teknik Informatika',
+  'Teknik Mesin',
+];
+
+const unitOptions = [
+  'SHILAU (Satuan Hilirisasi Inovasi dan Layanan Usaha)',
+  'P4M (Pusat Penjaminan Mutu dan Pengembangan Pembelajaran)',
+  'P3M (Pusat Penelitian dan Pengabdian Kepada Masyarakat)',
+  'SPI (Satuan Pengawas Internal)',
+  'Akademik (Subag Akademik)',
+  'SBUM (Sub Bagian Umum)',
+  'UPA PKK (Pengembangan Karier dan Kewirausahaan)',
+  'UPA Perpustakaan',
+  'UPA PP (Perbaikan dan Perawatan)',
+  'UPA TIK (Teknologi Informasi dan Komunikasi)',
+  'Pokja OSDM (Organisasi dan SDM)',
+  'Pokja Perencanaan',
+  'Pokja Kemahasiswaan',
+  'Pokja BMN & Pengadaan',
+  'Pokja Keuangan',
+  'Pokja Humas dan Kerjasama',
 ];
 
 type TemplateDokumenConfig = {
@@ -73,6 +99,7 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
 export default function AjukanForm() {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
+  const asalOptions = asal === 'Jurusan' ? jurusanOptions : unitOptions;
   const [formData, setFormData] = useState({
     judulPengajuan: '',
     namaPengusul: '',
@@ -184,26 +211,22 @@ export default function AjukanForm() {
       return;
     }
 
-    const payload = {
-      id: Date.now(),
+    const savedPengajuan = submitPengajuan({
       judul: formData.judulPengajuan,
       pengusul: formData.namaPengusul,
-      tanggal: new Date().toISOString().slice(0, 10),
       mitra: formData.namaMitraTujuan,
       jenisDokumen: formData.jenisDokumen,
       jurusan: formData.asalUnit,
+      kategori: asal === 'Unit' ? 'Internal' : 'Eksternal',
+      emailPengusul: formData.emailPengusul,
+      whatsappPengusul: formData.whatsappPengusul,
       ruangLingkup: formData.ruangLingkup,
-      status: 'Menunggu',
       fileName: selectedFile?.name || '',
-    };
+    });
 
-    const existingDataRaw = localStorage.getItem('pengajuanKerjasamaData');
-    const existingData = existingDataRaw ? JSON.parse(existingDataRaw) : [];
-    localStorage.setItem('pengajuanKerjasamaData', JSON.stringify([payload, ...existingData]));
-
-    alert('Pengajuan berhasil disimpan');
-
-    router.push('/admin/data_pengajuan');
+    router.push(
+      `/admin/data_pengajuan/verifikasi-email?id=${savedPengajuan.id}&email=${encodeURIComponent(formData.emailPengusul)}`
+    );
   }
 
   function handleCancel() {
@@ -317,13 +340,14 @@ export default function AjukanForm() {
                 <select
                   value={formData.asalUnit}
                   onChange={(e) => handleInputChange('asalUnit', e.target.value)}
-                  className="input-field w-full px-4 h-11 text-base text-gray-700 bg-white"
+                  className="input-field w-full px-4 h-11 text-sm text-gray-700 bg-white"
                 >
                   <option value="">-- Pilih {asal} --</option>
-                  <option value="Teknik Informatika">Teknik Informatika</option>
-                  <option value="Teknik Elektro">Teknik Elektro</option>
-                  <option value="Akuntansi Manajerial">Akuntansi Manajerial</option>
-                  <option value="UPT Kerjasama">UPT Kerjasama</option>
+                  {asalOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
                 {errors.asalUnit && <p className="text-xs text-red-600 mt-1.5">{errors.asalUnit}</p>}
               </div>

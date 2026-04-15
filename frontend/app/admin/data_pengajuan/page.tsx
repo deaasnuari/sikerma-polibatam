@@ -5,58 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import AjukanForm from './AjukanForm';
+import {
+  filterPengajuanData,
+  getPengajuanData,
+  getPengajuanStats,
+  type PengajuanItem,
+  type PengajuanStatus,
+  updatePengajuanStatus,
+} from '@/services/adminPengajuanService';
 
-type Status = "Menunggu" | "Diproses" | "Disetujui" | "Ditolak";
-
-interface Pengajuan {
-  id: number;
-  judul: string;
-  pengusul: string;
-  tanggal: string;
-  mitra: string;
-  jenisDokumen: string;
-  jurusan: string;
-  ruangLingkup: string[];
-  status: Status;
-}
-
-const dummyData: Pengajuan[] = [
-  {
-    id: 1,
-    judul: "Kerja Sama Magang dengan PT Solusi Digital",
-    pengusul: "Dr. Ahmad Wijaya",
-    tanggal: "2026-02-25",
-    mitra: "PT Solusi Digital Indonesia",
-    jenisDokumen: "MoA",
-    jurusan: "Teknik Informatika",
-    ruangLingkup: ["Penelitian", "Pengabdian Masyarakat"],
-    status: "Menunggu",
-  },
-  {
-    id: 2,
-    judul: "Penelitian Bersama Universitas Malaysia",
-    pengusul: "Dr. Ahmad Wijaya",
-    tanggal: "2026-02-25",
-    mitra: "Universitas Teknologi Malaysia",
-    jenisDokumen: "MoU",
-    jurusan: "Teknik Informatika",
-    ruangLingkup: ["Penelitian", "Publikasi Bersama"],
-    status: "Diproses",
-  },
-  {
-    id: 3,
-    judul: "Pelatihan Kewirausahaan",
-    pengusul: "Dr. Ahmad Wijaya",
-    tanggal: "2026-02-25",
-    mitra: "Universitas Teknologi Malaysia",
-    jenisDokumen: "MoU",
-    jurusan: "Teknik Informatika",
-    ruangLingkup: ["Penelitian", "Publikasi Bersama"],
-    status: "Disetujui",
-  },
-];
-
-const statusConfig: Record<Status, { label: string; className: string; iconEl: React.ReactNode }> = {
+const statusConfig: Record<PengajuanStatus, { label: string; className: string; iconEl: React.ReactNode }> = {
   Menunggu: {
     label: 'Menunggu',
     className: 'badge badge-warning',
@@ -87,63 +45,84 @@ const dokumenBadge: Record<string, string> = {
 
 export default function PengajuanKerjasama() {
   const searchParams = useSearchParams();
-  const [filterJurusan, setFilterJurusan] = useState("Semua Jurusan/unit");
-  const [filterStatus, setFilterStatus] = useState("Semua Status");
-  const [search, setSearch] = useState("");
-  const [pengajuanData, setPengajuanData] = useState<Pengajuan[]>(dummyData);
-  const [detailItem, setDetailItem] = useState<Pengajuan | null>(null);
-  const [reviewItem, setReviewItem] = useState<Pengajuan | null>(null);
-  const [reviewDecision, setReviewDecision] = useState<Status>('Disetujui');
+  const [filterJurusan, setFilterJurusan] = useState('Semua Kategori Kerjasama');
+  const [filterStatus, setFilterStatus] = useState('Semua Status');
+  const [filterTahun, setFilterTahun] = useState('Semua Tahun');
+  const [search, setSearch] = useState('');
+  const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
+  const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
+  const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
+  const [reviewDecision, setReviewDecision] = useState<PengajuanStatus>('Disetujui');
   const [reviewComment, setReviewComment] = useState('');
 
   const isAjukanView = searchParams.get('view') === 'ajukan';
 
   useEffect(() => {
-    if (isAjukanView) return;
-
-    const storedRaw = localStorage.getItem('pengajuanKerjasamaData');
-    if (!storedRaw) {
-      setPengajuanData(dummyData);
+    if (isAjukanView) {
       return;
     }
 
-    try {
-      const stored = JSON.parse(storedRaw) as Pengajuan[];
-      if (Array.isArray(stored) && stored.length > 0) {
-        const merged = [
-          ...stored,
-          ...dummyData.filter((dummy) => !stored.some((item) => item.id === dummy.id)),
-        ];
-        setPengajuanData(merged);
-      } else {
-        setPengajuanData(dummyData);
-      }
-    } catch {
-      // If localStorage is invalid, fallback to default data.
-      setPengajuanData(dummyData);
-    }
+    const syncPengajuan = () => {
+      setPengajuanData(getPengajuanData());
+    };
+
+    syncPengajuan();
+    window.addEventListener('pengajuan-data-updated', syncPengajuan);
+
+    return () => window.removeEventListener('pengajuan-data-updated', syncPengajuan);
   }, [isAjukanView]);
 
   if (isAjukanView) {
     return <AjukanForm />;
   }
 
-  const totalPengajuan = pengajuanData.length;
-  const menunggu = pengajuanData.filter((d) => d.status === "Menunggu").length;
-  const diproses = pengajuanData.filter((d) => d.status === "Diproses").length;
-  const disetujui = pengajuanData.filter((d) => d.status === "Disetujui").length;
+  const { totalPengajuan, menunggu, diproses, disetujui } = getPengajuanStats(pengajuanData);
 
-  const filtered = pengajuanData.filter((d) => {
-    const matchStatus =
-      filterStatus === "Semua Status" || d.status === filterStatus;
-    const matchSearch =
-      search === "" ||
-      d.mitra.toLowerCase().includes(search.toLowerCase()) ||
-      d.judul.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchSearch;
+  const statCards = [
+    {
+      key: 'Semua Status',
+      label: 'Total Pengajuan',
+      value: totalPengajuan,
+      icon: FileText,
+      iconWrap: 'bg-gray-100',
+      iconText: 'text-gray-600',
+      valueText: 'text-gray-900',
+    },
+    {
+      key: 'Menunggu',
+      label: 'Menunggu',
+      value: menunggu,
+      icon: Clock,
+      iconWrap: 'bg-yellow-50',
+      iconText: 'text-yellow-600',
+      valueText: 'text-yellow-600',
+    },
+    {
+      key: 'Diproses',
+      label: 'Diproses',
+      value: diproses,
+      icon: Clock,
+      iconWrap: 'bg-blue-50',
+      iconText: 'text-blue-600',
+      valueText: 'text-blue-600',
+    },
+    {
+      key: 'Disetujui',
+      label: 'Disetujui',
+      value: disetujui,
+      icon: CheckCircle,
+      iconWrap: 'bg-green-50',
+      iconText: 'text-green-600',
+      valueText: 'text-green-600',
+    },
+  ];
+
+  const filtered = filterPengajuanData(pengajuanData, filterStatus, filterJurusan, search).filter((item) => {
+    if (filterTahun === 'Semua Tahun') return true;
+    return item.tanggal.startsWith(filterTahun);
   });
 
-  function openReview(item: Pengajuan) {
+  function openReview(item: PengajuanItem) {
     setReviewItem(item);
     setReviewDecision(item.status === 'Ditolak' ? 'Ditolak' : 'Disetujui');
     setReviewComment('');
@@ -152,12 +131,9 @@ export default function PengajuanKerjasama() {
   function saveReview() {
     if (!reviewItem) return;
 
-    const next = pengajuanData.map((item) =>
-      item.id === reviewItem.id ? { ...item, status: reviewDecision } : item,
-    );
+    const next = updatePengajuanStatus(reviewItem.id, reviewDecision, reviewComment);
 
     setPengajuanData(next);
-    localStorage.setItem('pengajuanKerjasamaData', JSON.stringify(next));
     setReviewItem(null);
     setReviewComment('');
     alert('Review pengajuan berhasil disimpan.');
@@ -170,7 +146,7 @@ export default function PengajuanKerjasama() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">Pengajuan Kerjasama</h1>
-          <p className="page-subtitle mt-2">Kelola pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
+          <p className="page-subtitle mt-2">Kelola data pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
         </div>
         <Link
           href="/admin/data_pengajuan?view=ajukan"
@@ -183,42 +159,31 @@ export default function PengajuanKerjasama() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <FileText size={20} className="text-gray-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Total Pengajuan</p>
-            <p className="text-2xl font-bold text-gray-900">{totalPengajuan}</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Clock size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Menunggu</p>
-            <p className="text-2xl font-bold text-yellow-600">{menunggu}</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Clock size={20} className="text-blue-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Diproses</p>
-            <p className="text-2xl font-bold text-blue-600">{diproses}</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <CheckCircle size={20} className="text-green-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Disetujui</p>
-            <p className="text-2xl font-bold text-green-600">{disetujui}</p>
-          </div>
-        </div>
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          const isActive = filterStatus === card.key;
+
+          return (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => setFilterStatus(card.key)}
+              className={`rounded-lg p-4 shadow-sm flex items-center gap-4 text-left border transition-all ${
+                isActive
+                  ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-200 shadow-md'
+                  : 'bg-white border-slate-200 hover:border-sky-200 hover:shadow-md'
+              }`}
+            >
+              <div className={`w-10 h-10 ${card.iconWrap} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <Icon size={20} className={card.iconText} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{card.label}</p>
+                <p className={`text-2xl font-bold ${card.valueText}`}>{card.value}</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter Row */}
@@ -233,10 +198,19 @@ export default function PengajuanKerjasama() {
             onChange={(e) => setFilterJurusan(e.target.value)}
             className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
           >
-            <option>Semua Jurusan/unit</option>
-            <option>Teknik Informatika</option>
-            <option>Teknik Elektro</option>
-            <option>Akuntansi</option>
+            <option>Semua Kategori Kerjasama</option>
+            <option>Internal</option>
+            <option>Eksternal</option>
+          </select>
+          <select
+            value={filterTahun}
+            onChange={(e) => setFilterTahun(e.target.value)}
+            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
+          >
+            <option>Semua Tahun</option>
+            <option>2026</option>
+            <option>2025</option>
+            <option>2024</option>
           </select>
           <select
             value={filterStatus}
