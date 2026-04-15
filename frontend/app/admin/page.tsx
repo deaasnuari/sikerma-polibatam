@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  FileText,
   Users,
   TrendingUp,
   Handshake,
@@ -20,11 +19,38 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  getAdminNotifications,
+  getDashboardStats,
+  getDocumentTypeDistribution,
+  getPopularSchemes,
+  getQuickActions,
+  getRegionalDistribution,
+} from '@/services/adminService';
+
+const statIcons = {
+  handshake: Handshake,
+  building: Building2,
+  globe: Globe,
+  chart: BarChart3,
+  zap: Zap,
+};
+
+const actionIcons = {
+  handshake: Handshake,
+  users: Users,
+  trending: TrendingUp,
+};
 
 export default function AdminDashboard() {
+  const notifications = getAdminNotifications();
+  const dashboardStats = getDashboardStats();
+  const quickActions = getQuickActions();
+  const regionalDistribution = getRegionalDistribution();
+  const documentTypeDistribution = getDocumentTypeDistribution();
+  const popularSchemes = getPopularSchemes();
   return (
     <div className="space-y-6">
 
@@ -48,46 +74,34 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-3">
-          {/* Success Notification */}
-          <div className="bg-white border-l-4 border-green-500 rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+          {notifications.map((notification, index) => (
+            <div
+              key={notification.id}
+              className={`bg-white border-l-4 ${index === 0 ? 'border-green-500' : 'border-blue-500'} rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer`}
+            >
+              <div className={`w-6 h-6 ${index === 0 ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                <svg className={`w-4 h-4 ${index === 0 ? 'text-green-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {index === 0 ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  )}
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">{notification.title}</p>
+                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                <p className="text-xs text-gray-500 mt-1">📌 dari: {notification.from}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900">Pengajuan Disetujui</p>
-              <p className="text-sm text-gray-600 mt-1">Pengajuan 'Kerja Sama Magong dengan PT Solusi Digital' telah disetujui.</p>
-              <p className="text-xs text-gray-500 mt-1">📌 dari: Admin SIKERMA</p>
-            </div>
-          </div>
-
-          {/* Info Notification */}
-          <div className="bg-white border-l-4 border-blue-500 rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900">Komentar Baru pada Pengajuan</p>
-              <p className="text-sm text-gray-600 mt-1">Pengajuan 'Kerja Sama Magong dengan PT Solusi Digital' telah mendapat komentar baru.</p>
-              <p className="text-xs text-gray-500 mt-1">📌 dari: Admin SIKERMA</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-        {[
-          { label: 'Total Kerjasama Aktif', value: '6', color: 'bg-green-100', textColor: 'text-green-700', icon: Handshake },
-          { label: 'Total Dalam Negeri', value: '154', color: 'bg-red-100', textColor: 'text-red-700', icon: Building2 },
-          { label: 'Total Luar Negeri', value: '31', color: 'bg-blue-100', textColor: 'text-blue-700', icon: Globe },
-          { label: 'Total Dokumen', value: '185', color: 'bg-orange-100', textColor: 'text-orange-700', icon: BarChart3 },
-          { label: 'Total Proses', value: '5', color: 'bg-indigo-100', textColor: 'text-indigo-700', icon: Zap },
-        ].map((stat, idx) => {
-          const IconComponent = stat.icon;
+        {dashboardStats.map((stat, idx) => {
+          const IconComponent = statIcons[stat.iconKey];
           return (
             <button key={idx} className={`${stat.color} rounded-lg p-3 md:p-4 text-center hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer`}>
               <div className="flex justify-center mb-2">
@@ -102,12 +116,8 @@ export default function AdminDashboard() {
 
       {/* Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-        {[
-          { label: 'Buat Kerjasama Baru', icon: Handshake, color: 'bg-blue-50 border-blue-200' },
-          { label: 'Lihat User', icon: Users, color: 'bg-green-50 border-green-200' },
-          { label: 'Monitoring', icon: TrendingUp, color: 'bg-purple-50 border-purple-200' },
-        ].map((action, idx) => {
-          const IconComponent = action.icon;
+        {quickActions.map((action, idx) => {
+          const IconComponent = actionIcons[action.iconKey];
           return (
             <button key={idx} className={`${action.color} border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow`}>
               <div className="flex justify-center mb-2">
@@ -129,10 +139,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={[
-                    { name: 'Dalam Negeri', value: 8, fill: '#3B82F6' },
-                    { name: 'Luar Negeri', value: 2, fill: '#A78BFA' },
-                  ]}
+                  data={regionalDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={true}
@@ -141,8 +148,9 @@ export default function AdminDashboard() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  <Cell fill="#3B82F6" />
-                  <Cell fill="#A78BFA" />
+                  {regionalDistribution.map((item) => (
+                    <Cell key={item.name} fill={item.fill} />
+                  ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -155,11 +163,7 @@ export default function AdminDashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={[
-                    { name: 'MoU', value: 4, fill: '#10B981' },
-                    { name: 'MoA', value: 5, fill: '#F59E0B' },
-                    { name: 'IA', value: 1, fill: '#EF4444' },
-                  ]}
+                  data={documentTypeDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={true}
@@ -168,9 +172,9 @@ export default function AdminDashboard() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  <Cell fill="#10B981" />
-                  <Cell fill="#F59E0B" />
-                  <Cell fill="#EF4444" />
+                  {documentTypeDistribution.map((item) => (
+                    <Cell key={item.name} fill={item.fill} />
+                  ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -186,13 +190,7 @@ export default function AdminDashboard() {
         
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
-            data={[
-              { name: 'Pelatihan', value: 3 },
-              { name: 'Maggang', value: 3 },
-              { name: 'Penelitian', value: 2 },
-              { name: 'Pertukaran Mahasiswa', value: 2 },
-              { name: 'Sertifikasi', value: 2 },
-            ]}
+            data={popularSchemes}
             margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />

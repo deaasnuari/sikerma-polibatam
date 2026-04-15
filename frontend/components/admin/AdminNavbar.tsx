@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Menu, LogOut, User, Bell } from 'lucide-react';
-import { useAuth } from '@/app/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
+import { getAdminNotifications } from '@/services/adminService';
 import { useRouter } from 'next/navigation';
 
 interface AdminNavbarProps {
@@ -17,13 +18,8 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  // Mock notifications
-  const notifications = [
-    { id: 1, title: 'Pengajuan Disetujui', message: "Pengajuan 'Kerja Sama Magong dengan PT Solusi Digital' telah disetujui.", from: 'Admin SIKERMA', read: false },
-    { id: 2, title: 'Komentar Baru pada Pengajuan', message: "Pengajuan 'Kerja Sama Magong dengan PT Solusi Digital' telah mendapat komentar baru.", from: 'Admin SIKERMA', read: false },
-  ];
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const notifications = getAdminNotifications();
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleLogout = () => {
     logout();
