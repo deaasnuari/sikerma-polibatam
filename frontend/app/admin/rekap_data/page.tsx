@@ -1,88 +1,28 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
-
-type RekapStatus = 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
-
-interface RekapDokumen {
-  noDokumen: string;
-  namaMitra: string;
-  jenis: 'MoA' | 'MoU' | 'IA';
-  unit: string;
-  tanggalMulai: string;
-  berlakuHingga: string;
-  tahun: string;
-  status: RekapStatus;
-  whatsappNumber?: string;
-}
-
-interface DokumenData {
-  nomorDokumen: string;
-  jenisDokumen: string;
-  namaPIC: string;
-  kategoriMitra: string;
-  namaMitra: string;
-  status: string;
-  jabatanMitra: string;
-  emailMitra: string;
-  tanggalMulai: string;
-  tanggalBerakhir: string;
-  alamatMitra: string;
-  whatsappMitra: string;
-}
-
-const initialRekapData: RekapDokumen[] = [
-  {
-    noDokumen: 'MoA/001/2026',
-    namaMitra: 'PT. Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    unit: 'Teknik Informatika',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    tahun: '2026',
-    status: 'Akan Berakhir',
-    whatsappNumber: '6283333333333',
-  },
-  {
-    noDokumen: 'MoU/002/2026',
-    namaMitra: 'Universitas Negeri Jakarta',
-    jenis: 'MoU',
-    unit: 'Teknik Informatika',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    tahun: '2026',
-    status: 'Aktif',
-    whatsappNumber: '6282222222222',
-  },
-  {
-    noDokumen: 'IA/002/2026',
-    namaMitra: 'PT. Digita Solutions',
-    jenis: 'IA',
-    unit: 'Teknik Informatika',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    tahun: '2026',
-    status: 'Kadaluarsa',
-    whatsappNumber: '6284444444444',
-  },
-];
-
-const jenisBadgeMap: Record<RekapDokumen['jenis'], string> = {
-  MoA: 'bg-cyan-100 text-cyan-700',
-  MoU: 'bg-violet-100 text-violet-700',
-  IA: 'bg-orange-100 text-orange-700',
-};
-
-const statusBadgeMap: Record<RekapStatus, string> = {
-  Aktif: 'bg-green-500 text-white',
-  'Akan Berakhir': 'bg-orange-500 text-white',
-  Kadaluarsa: 'bg-red-500 text-white',
-};
+import {
+  addRekapDokumen,
+  createDokumenFormData,
+  deleteRekapDokumen,
+  filterRekapData,
+  getAvailableYears,
+  getRekapData,
+  getRekapJenisOptions,
+  getRekapStats,
+  getRekapUnitOptions,
+  rekapJenisBadgeMap,
+  rekapStatusBadgeMap,
+  rekapStatusOptions,
+  updateRekapDokumen,
+  type DokumenData,
+  type RekapDokumen,
+} from '@/services/adminRekapDataService';
 
 export default function RekapDataPage() {
-  const [rekapData, setRekapData] = useState<RekapDokumen[]>(initialRekapData);
+  const [rekapData, setRekapData] = useState<RekapDokumen[]>([]);
   const [search, setSearch] = useState('');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
   const [filterUnit, setFilterUnit] = useState('Semua Jurusan/unit');
@@ -90,31 +30,52 @@ export default function RekapDataPage() {
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [isTambahModalOpen, setIsTambahModalOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<RekapDokumen | null>(null);
+  const [editingItem, setEditingItem] = useState<RekapDokumen | null>(null);
 
-  const jenisOptions = ['Semua Jenis', ...Array.from(new Set(rekapData.map((item) => item.jenis)))];
-  const unitOptions = ['Semua Jurusan/unit', ...Array.from(new Set(rekapData.map((item) => item.unit)))];
-  const statusOptions = ['Semua Status', 'Aktif', 'Akan Berakhir', 'Kadaluarsa'];
-  const availableYears = useMemo(() => Array.from(new Set(rekapData.map((item) => Number(item.tahun)))).sort((a, b) => a - b), []);
+  useEffect(() => {
+    const syncRekapData = () => {
+      setRekapData(getRekapData());
+    };
+
+    syncRekapData();
+    window.addEventListener('rekap-data-updated', syncRekapData);
+
+    return () => window.removeEventListener('rekap-data-updated', syncRekapData);
+  }, []);
+
+  const jenisOptions = getRekapJenisOptions(rekapData);
+  const unitOptions = getRekapUnitOptions(rekapData);
+  const statusOptions = rekapStatusOptions;
+  const availableYears = useMemo(() => getAvailableYears(rekapData), [rekapData]);
   const currentYear = new Date().getFullYear();
   const defaultYearRangeStart = Math.min(currentYear - 4, availableYears[0] ?? currentYear);
   const [yearRangeStart, setYearRangeStart] = useState(defaultYearRangeStart);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
-  const filteredRows = rekapData.filter((item) => {
-    const matchesJenis = filterJenis === 'Semua Jenis' || item.jenis === filterJenis;
-    const matchesUnit = filterUnit === 'Semua Jurusan/unit' || item.unit === filterUnit;
-    const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
-    const matchesTahun = filterTahun === null || item.tahun === filterTahun;
-    const matchesSearch =
-      search.trim() === '' || item.namaMitra.toLowerCase().includes(search.toLowerCase().trim());
-
-    return matchesJenis && matchesUnit && matchesStatus && matchesTahun && matchesSearch;
+  const filteredRows = filterRekapData(rekapData, {
+    filterJenis,
+    filterUnit,
+    filterStatus,
+    filterTahun,
+    search,
   });
 
-  const totalKerjasama = rekapData.length;
-  const totalAktif = rekapData.filter((item) => item.status === 'Aktif').length;
-  const totalAkanBerakhir = rekapData.filter((item) => item.status === 'Akan Berakhir').length;
-  const totalKadaluarsa = rekapData.filter((item) => item.status === 'Kadaluarsa').length;
+  const { totalKerjasama, totalAktif, totalAkanBerakhir, totalKadaluarsa } = getRekapStats(rekapData);
+
+  function handleDelete(item: RekapDokumen) {
+    const isConfirmed = window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`);
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    deleteRekapDokumen(item.noDokumen);
+    if (detailItem?.noDokumen === item.noDokumen) {
+      setDetailItem(null);
+    }
+    alert(`Dokumen ${item.noDokumen} berhasil dihapus.`);
+  }
 
   return (
     <div className="space-y-5">
@@ -297,7 +258,7 @@ export default function RekapDataPage() {
                 <th className="px-4 py-3">No.Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
-                <th className="px-4 py-3">Unit</th>
+                <th className="px-4 py-3">Jurusan / Unit</th>
                 <th className="px-4 py-3">Tanggal mulai</th>
                 <th className="px-4 py-3">Berlaku Hingga</th>
                 <th className="px-4 py-3">Status</th>
@@ -317,23 +278,38 @@ export default function RekapDataPage() {
                     <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
+                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${rekapJenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
                     </td>
                     <td className="px-4 py-3">{row.unit}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.tanggalMulai}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.berlakuHingga}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeMap[row.status]}`}>{row.status}</span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${rekapStatusBadgeMap[row.status]}`}>{row.status}</span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
-                        <button type="button" className="text-[#1E376C] transition-colors hover:text-[#2B4A93]" title="Lihat detail">
+                        <button
+                          type="button"
+                          onClick={() => setDetailItem(row)}
+                          className="text-[#1E376C] transition-colors hover:text-[#2B4A93]"
+                          title="Lihat detail"
+                        >
                           <Eye size={16} />
                         </button>
-                        <button type="button" className="text-green-600 transition-colors hover:text-green-700" title="Edit dokumen">
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem(row)}
+                          className="text-green-600 transition-colors hover:text-green-700"
+                          title="Edit dokumen"
+                        >
                           <Pencil size={16} />
                         </button>
-                        <button type="button" className="text-red-600 transition-colors hover:text-red-700" title="Hapus dokumen">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(row)}
+                          className="text-red-600 transition-colors hover:text-red-700"
+                          title="Hapus dokumen"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -346,27 +322,75 @@ export default function RekapDataPage() {
         </div>
       </section>
 
+      {detailItem && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
+          <div className="w-full max-w-2xl rounded-[24px] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#1E376C]">Detail Dokumen</h2>
+                <p className="text-sm text-gray-500 mt-1">Informasi lengkap dokumen rekap kerjasama</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailItem(null)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
+              <InfoItem label="No. Dokumen" value={detailItem.noDokumen} />
+              <InfoItem label="Jenis Dokumen" value={detailItem.jenis} />
+              <InfoItem label="Nama Mitra" value={detailItem.namaMitra} />
+              <InfoItem label="Kategori Asal" value={detailItem.kategoriUnit || 'Jurusan / Unit'} />
+              <InfoItem label="Jurusan / Unit" value={detailItem.unit} />
+              <InfoItem label="Tanggal Mulai" value={detailItem.tanggalMulai} />
+              <InfoItem label="Berlaku Hingga" value={detailItem.berlakuHingga} />
+              <InfoItem label="Tahun" value={detailItem.tahun} />
+              <InfoItem label="Status" value={detailItem.status} />
+              <InfoItem label="WhatsApp" value={detailItem.whatsappNumber || '-'} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <TambahDokumenModal
         isOpen={isTambahModalOpen}
         onClose={() => setIsTambahModalOpen(false)}
+        title="+ Tambah Dokumen Baru"
+        submitLabel="Tambah Dokumen"
         onSubmit={(data: DokumenData) => {
-          // Determine status based on dates
-          const tahun = new Date(data.tanggalMulai).getFullYear().toString();
-          const newDokumen: RekapDokumen = {
-            noDokumen: data.nomorDokumen,
-            namaMitra: data.namaMitra,
-            jenis: data.jenisDokumen as 'MoA' | 'MoU' | 'IA',
-            unit: 'Teknik Informatika', // Default unit, could be input
-            tanggalMulai: data.tanggalMulai,
-            berlakuHingga: data.tanggalBerakhir,
-            tahun,
-            status: (data.status as RekapStatus) || 'Aktif',
-            whatsappNumber: data.whatsappMitra,
-          };
-          setRekapData((prev) => [newDokumen, ...prev]);
+          addRekapDokumen(data);
           alert(`Dokumen "${data.namaMitra}" berhasil ditambahkan dengan WhatsApp: ${data.whatsappMitra}`);
         }}
       />
+
+      <TambahDokumenModal
+        isOpen={Boolean(editingItem)}
+        onClose={() => setEditingItem(null)}
+        initialData={editingItem ? createDokumenFormData(editingItem) : null}
+        title="Edit Dokumen"
+        submitLabel="Simpan Perubahan"
+        onSubmit={(data: DokumenData) => {
+          if (!editingItem) {
+            return;
+          }
+
+          updateRekapDokumen(editingItem.noDokumen, data);
+          setEditingItem(null);
+          alert(`Dokumen "${data.namaMitra}" berhasil diperbarui.`);
+        }}
+      />
+    </div>
+  );
+}
+
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-gray-800">{value}</p>
     </div>
   );
 }

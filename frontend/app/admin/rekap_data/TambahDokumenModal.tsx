@@ -1,48 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-
-interface DokumenData {
-  nomorDokumen: string;
-  jenisDokumen: string;
-  namaPIC: string;
-  kategoriMitra: string;
-  namaMitra: string;
-  status: string;
-  jabatanMitra: string;
-  emailMitra: string;
-  tanggalMulai: string;
-  tanggalBerakhir: string;
-  alamatMitra: string;
-  whatsappMitra: string;
-}
+import { rekapJurusanOptions, rekapUnitOptions, type DokumenData } from '@/services/adminRekapDataService';
 
 interface TambahDokumenModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: DokumenData) => void;
+  initialData?: DokumenData | null;
+  title?: string;
+  submitLabel?: string;
 }
 
 const jenisOptions = ['Pilih Jenis', 'MoU', 'MoA', 'IA'];
 const kategoriOptions = ['Pilih Kategori', 'Perusahaan', 'Instansi Pemerintah', 'Universitas', 'Organisasi'];
 const statusOptions = ['Aktif', 'Akan Berakhir', 'Kadaluarsa'];
 
-export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: TambahDokumenModalProps) {
-  const [formData, setFormData] = useState<DokumenData>({
-    nomorDokumen: '',
-    jenisDokumen: '',
-    namaPIC: '',
-    kategoriMitra: '',
-    namaMitra: '',
-    status: '',
-    jabatanMitra: '',
-    emailMitra: '',
-    tanggalMulai: '',
-    tanggalBerakhir: '',
-    alamatMitra: '',
-    whatsappMitra: '',
-  });
+const emptyFormData: DokumenData = {
+  nomorDokumen: '',
+  jenisDokumen: '',
+  namaPIC: '',
+  kategoriMitra: '',
+  namaMitra: '',
+  status: '',
+  jabatanMitra: '',
+  emailMitra: '',
+  tanggalMulai: '',
+  tanggalBerakhir: '',
+  alamatMitra: '',
+  whatsappMitra: '',
+  asalKategori: 'Jurusan',
+  unitKerja: '',
+};
+
+export default function TambahDokumenModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = null,
+  title = '+ Tambah Dokumen Baru',
+  submitLabel = 'Tambah Dokumen',
+}: TambahDokumenModalProps) {
+  const [formData, setFormData] = useState<DokumenData>(emptyFormData);
+  const pilihanUnit = useMemo(
+    () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...rekapJurusanOptions] : ['Pilih Unit', ...rekapUnitOptions]),
+    [formData.asalKategori]
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setFormData(initialData ?? emptyFormData);
+  }, [initialData, isOpen]);
 
   if (!isOpen) {
     return null;
@@ -53,20 +65,7 @@ export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: Tambah
     if (onSubmit) {
       onSubmit(formData);
     }
-    setFormData({
-      nomorDokumen: '',
-      jenisDokumen: '',
-      namaPIC: '',
-      kategoriMitra: '',
-      namaMitra: '',
-      status: '',
-      jabatanMitra: '',
-      emailMitra: '',
-      tanggalMulai: '',
-      tanggalBerakhir: '',
-      alamatMitra: '',
-      whatsappMitra: '',
-    });
+    setFormData(emptyFormData);
     onClose();
   };
 
@@ -78,7 +77,7 @@ export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: Tambah
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
-          <h2 className="text-[20px] font-bold text-[#1E376C]">+ Tambah Dokumen Baru</h2>
+          <h2 className="text-[20px] font-bold text-[#1E376C]">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -128,6 +127,44 @@ export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: Tambah
                 placeholder="Nama Perusahaan/Institusi"
                 value={formData.namaMitra}
                 onChange={(e) => handleInputChange('namaMitra', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Kategori Asal *">
+              <div className="flex flex-wrap gap-3 rounded-xl border border-gray-200 bg-slate-50 p-2">
+                {(['Jurusan', 'Unit'] as const).map((item) => {
+                  const isActive = formData.asalKategori === item;
+
+                  return (
+                    <label
+                      key={item}
+                      className={`flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive ? 'bg-[#1E376C] text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="asalKategori"
+                        value={item}
+                        checked={isActive}
+                        onChange={() => {
+                          handleInputChange('asalKategori', item);
+                          handleInputChange('unitKerja', '');
+                        }}
+                        className="sr-only"
+                      />
+                      {item}
+                    </label>
+                  );
+                })}
+              </div>
+            </Field>
+
+            <Field label={`Pilih ${formData.asalKategori} *`}>
+              <SelectInput
+                options={pilihanUnit}
+                value={formData.unitKerja}
+                onChange={(e) => handleInputChange('unitKerja', e.target.value)}
               />
             </Field>
 
@@ -202,7 +239,7 @@ export default function TambahDokumenModal({ isOpen, onClose, onSubmit }: Tambah
               type="submit"
               className="btn-primary inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
             >
-              Tambah Dokumen
+              {submitLabel}
             </button>
           </div>
         </form>
