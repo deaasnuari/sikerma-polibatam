@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import AjukanForm from './AjukanForm';
 import {
-  filterPengajuanData,
+  getFilteredPengajuanData,
   getPengajuanData,
   getPengajuanStats,
+  getPengajuanYearOptions,
+  pengajuanDokumenBadge,
+  savePengajuanReview,
   type PengajuanItem,
   type PengajuanStatus,
-  updatePengajuanStatus,
 } from '@/services/adminPengajuanService';
 
 const statusConfig: Record<PengajuanStatus, { label: string; className: string; iconEl: React.ReactNode }> = {
@@ -35,12 +37,6 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
     className: 'badge badge-danger',
     iconEl: <XCircle size={13} />,
   },
-};
-
-const dokumenBadge: Record<string, string> = {
-  MoA: 'bg-[#1E376C] text-white',
-  MoU: 'bg-purple-700 text-white',
-  PKS: 'bg-teal-700 text-white',
 };
 
 export default function PengajuanKerjasama() {
@@ -117,9 +113,13 @@ export default function PengajuanKerjasama() {
     },
   ];
 
-  const filtered = filterPengajuanData(pengajuanData, filterStatus, filterJurusan, search).filter((item) => {
-    if (filterTahun === 'Semua Tahun') return true;
-    return item.tanggal.startsWith(filterTahun);
+  const tahunOptions = getPengajuanYearOptions(pengajuanData);
+
+  const filtered = getFilteredPengajuanData(pengajuanData, {
+    filterStatus,
+    filterJurusan,
+    filterTahun,
+    search,
   });
 
   function openReview(item: PengajuanItem) {
@@ -131,7 +131,7 @@ export default function PengajuanKerjasama() {
   function saveReview() {
     if (!reviewItem) return;
 
-    const next = updatePengajuanStatus(reviewItem.id, reviewDecision, reviewComment);
+    const next = savePengajuanReview(reviewItem.id, reviewDecision, reviewComment);
 
     setPengajuanData(next);
     setReviewItem(null);
@@ -208,9 +208,9 @@ export default function PengajuanKerjasama() {
             className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
           >
             <option>Semua Tahun</option>
-            <option>2026</option>
-            <option>2025</option>
-            <option>2024</option>
+            {tahunOptions.map((tahun) => (
+              <option key={tahun}>{tahun}</option>
+            ))}
           </select>
           <select
             value={filterStatus}
@@ -267,7 +267,7 @@ export default function PengajuanKerjasama() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Jenis Dokumen</p>
-                  <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${dokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                  <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                     {item.jenisDokumen}
                   </span>
                 </div>
@@ -351,7 +351,7 @@ export default function PengajuanKerjasama() {
                   </div>
                   <div>
                     <p className="text-gray-500">Jenis Dokumen</p>
-                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${dokumenBadge[detailItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${pengajuanDokumenBadge[detailItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                       {detailItem.jenisDokumen}
                     </span>
                   </div>
@@ -418,7 +418,7 @@ export default function PengajuanKerjasama() {
                 </div>
                 <div>
                   <p className="text-gray-500">Jenis Dokumen</p>
-                  <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${dokumenBadge[reviewItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                  <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${pengajuanDokumenBadge[reviewItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                     {reviewItem.jenisDokumen}
                   </span>
                 </div>

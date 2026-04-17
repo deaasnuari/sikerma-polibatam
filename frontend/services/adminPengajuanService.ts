@@ -2,6 +2,7 @@ import { addAdminNotification } from '@/services/adminService';
 
 export type PengajuanStatus = 'Menunggu' | 'Diproses' | 'Disetujui' | 'Ditolak';
 
+// Tipe utama untuk satu data pengajuan kerjasama.
 export interface PengajuanItem {
   id: number;
   judul: string;
@@ -19,8 +20,24 @@ export interface PengajuanItem {
   fileName?: string;
 }
 
+// Key localStorage untuk menyimpan seluruh data pengajuan di sisi frontend.
 const STORAGE_KEY = 'pengajuanKerjasamaData';
 
+// Mapping warna badge berdasarkan jenis dokumen.
+export const pengajuanDokumenBadge: Record<string, string> = {
+  MoA: 'bg-[#1E376C] text-white',
+  MoU: 'bg-purple-700 text-white',
+  PKS: 'bg-teal-700 text-white',
+};
+
+export interface PengajuanFilterOptions {
+  filterStatus: string;
+  filterJurusan: string;
+  filterTahun: string;
+  search: string;
+}
+
+// Data awal dummy yang dipakai saat belum ada data tersimpan.
 const defaultPengajuanData: PengajuanItem[] = [
   {
     id: 1,
@@ -60,16 +77,19 @@ const defaultPengajuanData: PengajuanItem[] = [
   },
 ];
 
+// Cek agar akses localStorage hanya berjalan di browser.
 function canUseStorage(): boolean {
   return typeof window !== 'undefined';
 }
 
+// Mengirim event agar halaman lain bisa ikut refresh saat data berubah.
 function emitPengajuanUpdate() {
   if (canUseStorage()) {
     window.dispatchEvent(new Event('pengajuan-data-updated'));
   }
 }
 
+// Simpan list pengajuan terbaru ke localStorage lalu broadcast update.
 function savePengajuanData(items: PengajuanItem[]) {
   if (!canUseStorage()) {
     return;
@@ -79,6 +99,7 @@ function savePengajuanData(items: PengajuanItem[]) {
   emitPengajuanUpdate();
 }
 
+// Ambil seluruh data pengajuan, lalu gabungkan dengan data default bila perlu.
 export function getPengajuanData(): PengajuanItem[] {
   if (!canUseStorage()) {
     return defaultPengajuanData;
@@ -109,6 +130,7 @@ export function getPengajuanData(): PengajuanItem[] {
   }
 }
 
+// Membuat pengajuan baru dari form lalu menambahkan notifikasi ke admin.
 export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status'>): PengajuanItem {
   const payload: PengajuanItem = {
     ...data,
@@ -124,7 +146,7 @@ export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'st
   addAdminNotification({
     title: 'Pengajuan Baru Masuk',
     message: payload.emailPengusul
-      ? `Pengajuan '${payload.judul}' berhasil dikirim. Lanjutkan verifikasi email ke ${payload.emailPengusul}.`
+      ? `Pengajuan '${payload.judul}' berhasil dikirim oleh ${payload.emailPengusul} dan langsung masuk ke daftar review admin.`
       : `Pengajuan '${payload.judul}' berhasil dikirim dan menunggu review.`,
     from: payload.pengusul,
     href: '/admin/data_pengajuan',
@@ -134,6 +156,7 @@ export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'st
   return payload;
 }
 
+// Menandai bahwa email pengusul sudah diverifikasi.
 export function markPengajuanEmailVerified(id: number): PengajuanItem | null {
   let verifiedItem: PengajuanItem | null = null;
 
@@ -161,6 +184,7 @@ export function markPengajuanEmailVerified(id: number): PengajuanItem | null {
   return verifiedItem;
 }
 
+// Update status hasil review pengajuan dan kirim notifikasi otomatis.
 export function updatePengajuanStatus(
   id: number,
   status: PengajuanStatus,
@@ -194,6 +218,7 @@ export function updatePengajuanStatus(
   return updated;
 }
 
+// Hitung ringkasan jumlah pengajuan berdasarkan status.
 export function getPengajuanStats(items: PengajuanItem[]) {
   return {
     totalPengajuan: items.length,
@@ -201,6 +226,18 @@ export function getPengajuanStats(items: PengajuanItem[]) {
     diproses: items.filter((item) => item.status === 'Diproses').length,
     disetujui: items.filter((item) => item.status === 'Disetujui').length,
   };
+}
+
+// Ambil daftar tahun unik dari data pengajuan untuk isi dropdown filter.
+export function getPengajuanYearOptions(items: PengajuanItem[]): string[] {
+  return Array.from(new Set(items.map((item) => item.tanggal.slice(0, 4))))
+    .filter(Boolean)
+    .sort((a, b) => Number(b) - Number(a));
+}
+
+// Shortcut untuk proses review dari halaman admin.
+export function savePengajuanReview(id: number, status: PengajuanStatus, comment = ''): PengajuanItem[] {
+  return updatePengajuanStatus(id, status, comment);
 }
 
 function getKategoriPengajuan(item: PengajuanItem): 'Internal' | 'Eksternal' {
@@ -212,6 +249,7 @@ function getKategoriPengajuan(item: PengajuanItem): 'Internal' | 'Eksternal' {
   return source.includes('polibatam') || source.includes('upt') ? 'Internal' : 'Eksternal';
 }
 
+// Filter data berdasarkan status, kategori/jurusan, dan kata kunci pencarian.
 export function filterPengajuanData(
   items: PengajuanItem[],
   filterStatus: string,
@@ -235,4 +273,15 @@ export function filterPengajuanData(
 
     return matchStatus && matchJurusan && matchSearch;
   });
+}
+
+// Filter lanjutan yang juga memperhitungkan pilihan tahun.
+export function getFilteredPengajuanData(items: PengajuanItem[], filters: PengajuanFilterOptions) {
+  const filtered = filterPengajuanData(items, filters.filterStatus, filters.filterJurusan, filters.search);
+
+  if (filters.filterTahun === 'Semua Tahun') {
+    return filtered;
+  }
+
+  return filtered.filter((item) => item.tanggal.startsWith(filters.filterTahun));
 }

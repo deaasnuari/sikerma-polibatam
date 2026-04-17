@@ -49,7 +49,11 @@ type TemplateDokumenConfig = {
   subtitle: string;
   struktur: string[];
   note: string;
+  fileName: string;
+  downloadUrl: string;
 };
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
   MoU: {
@@ -60,11 +64,13 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
       'Para Pihak',
       'Latar Belakang',
       'Tujuan Kerjasama',
-      'Ruang Lingkup Kerjasama',
+      'Ruang Lingkup',
       'Jangka Waktu',
       'Penutup',
     ],
-    note: 'Template ini sudah disesuaikan dengan format standar Politeknik Negeri Batam.',
+    note: 'Gunakan template MOU asli ini, lalu edit dan upload kembali hasilnya.',
+    fileName: 'Draft MOU Industri.docx',
+    downloadUrl: '/templates/Draft%20MOU%20Industri.docx',
   },
   MoA: {
     title: 'Memorandum of Agreement (MoA)',
@@ -73,12 +79,14 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
       'Pembukaan',
       'Dasar Pelaksanaan',
       'Hak dan Kewajiban',
-      'Rencana Kegiatan',
+      'Program Magang',
       'Pendanaan',
       'Monitoring dan Evaluasi',
       'Penutup',
     ],
-    note: 'Template ini sudah disesuaikan dengan format standar Politeknik Negeri Batam.',
+    note: 'Gunakan template MOA asli ini, lalu edit dan upload kembali hasilnya.',
+    fileName: 'Draft MOA Magang.docx',
+    downloadUrl: '/templates/Draft%20MOA%20Magang.docx',
   },
   IA: {
     title: 'Implementation Arrangement (IA)',
@@ -87,12 +95,14 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
       'Informasi Program',
       'Target dan Indikator',
       'Peran Tim Pelaksana',
-      'Timeline Kegiatan',
-      'Output yang Diharapkan',
+      'Timeline',
+      'Output',
       'Pelaporan',
       'Penutup',
     ],
-    note: 'Template ini sudah disesuaikan dengan format standar Politeknik Negeri Batam.',
+    note: 'Gunakan template IA asli ini, lalu edit dan upload kembali hasilnya.',
+    fileName: 'DRAFT IA POLIBATAM.docx',
+    downloadUrl: '/templates/DRAFT%20IA%20POLIBATAM.docx',
   },
 };
 
@@ -131,41 +141,33 @@ export default function AjukanForm() {
     if (!formData.jenisDokumen || !defaultTemplateDokumenMap[formData.jenisDokumen]) return;
 
     const doc = defaultTemplateDokumenMap[formData.jenisDokumen];
-    const content = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office"
-            xmlns:w="urn:schemas-microsoft-com:office:word"
-            xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <meta charset="utf-8" />
-          <title>${doc.title}</title>
-        </head>
-        <body>
-          <h1>${doc.title}</h1>
-          <p>${doc.subtitle}</p>
-          <h3>Struktur Dokumen</h3>
-          <ol>
-            ${doc.struktur.map((item) => `<li>${item}</li>`).join('')}
-          </ol>
-          <p><strong>Catatan:</strong> ${doc.note}</p>
-        </body>
-      </html>
-    `;
-
-    const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Template_${formData.jenisDokumen}_Polibatam.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const link = document.createElement('a');
+    link.href = doc.downloadUrl;
+    link.download = doc.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
     setHasDownloadedTemplate(true);
     setErrors((prev) => ({ ...prev, templateDownload: '' }));
   }
 
   function handleFileChange(file: File | null) {
+    if (!file) {
+      setSelectedFile(null);
+      setErrors((prev) => ({ ...prev, fileDokumen: '' }));
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setSelectedFile(null);
+      setErrors((prev) => ({
+        ...prev,
+        fileDokumen: 'Ukuran file melebihi batas 10 MB. Silakan pilih file yang lebih kecil.',
+      }));
+      return;
+    }
+
     setSelectedFile(file);
     setErrors((prev) => ({ ...prev, fileDokumen: '' }));
   }
@@ -211,7 +213,7 @@ export default function AjukanForm() {
       return;
     }
 
-    const savedPengajuan = submitPengajuan({
+    submitPengajuan({
       judul: formData.judulPengajuan,
       pengusul: formData.namaPengusul,
       mitra: formData.namaMitraTujuan,
@@ -224,9 +226,8 @@ export default function AjukanForm() {
       fileName: selectedFile?.name || '',
     });
 
-    router.push(
-      `/admin/data_pengajuan/verifikasi-email?id=${savedPengajuan.id}&email=${encodeURIComponent(formData.emailPengusul)}`
-    );
+    alert('Pengajuan berhasil dikirim. Verifikasi email sedang dimatikan sementara.');
+    router.push('/admin/data_pengajuan');
   }
 
   function handleCancel() {
@@ -370,73 +371,67 @@ export default function AjukanForm() {
           </div>
 
           {formData.jenisDokumen && defaultTemplateDokumenMap[formData.jenisDokumen] && (
-            <div className="card bg-slate-50 p-4 sm:p-5 space-y-4">
-              <h3 className="text-xl font-bold text-gray-900">Template Dokumen</h3>
+            <div className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-4 sm:p-5 space-y-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Template Dokumen</h3>
+                <p className="text-sm text-gray-600 mt-1">Alurnya sederhana: download template, isi dokumen, lalu upload kembali.</p>
+              </div>
 
-              {false && (
-                <div className="rounded-2xl border border-[#D7E0F0] bg-white p-4 grid grid-cols-1 gap-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-1.5">Judul Template</label>
-                    <input
-                      type="text"
-                      value={defaultTemplateDokumenMap[formData.jenisDokumen].title}
-                      onChange={(e) => updateTemplateField('title', e.target.value)}
-                      className="input-field w-full px-3 h-10 text-sm text-gray-700"
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-white text-xs font-bold">1</span>
+                    <p className="text-sm font-semibold text-gray-900">Download Template</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-1.5">Subjudul Template</label>
-                    <input
-                      type="text"
-                      value={defaultTemplateDokumenMap[formData.jenisDokumen].subtitle}
-                      onChange={(e) => updateTemplateField('subtitle', e.target.value)}
-                      className="input-field w-full px-3 h-10 text-sm text-gray-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-1.5">Struktur Dokumen (1 baris = 1 poin)</label>
-                    <textarea
-                      rows={5}
-                      value={defaultTemplateDokumenMap[formData.jenisDokumen].struktur.join('\n')}
-                      onChange={(e) => updateTemplateStruktur(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-1.5">Catatan</label>
-                    <textarea
-                      rows={2}
-                      value={defaultTemplateDokumenMap[formData.jenisDokumen].note}
-                      onChange={(e) => updateTemplateField('note', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
-                    />
-                  </div>
+                  <p className="text-xs text-gray-600">Unduh file sesuai jenis dokumen yang dipilih.</p>
                 </div>
-              )}
+                <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-white text-xs font-bold">2</span>
+                    <p className="text-sm font-semibold text-gray-900">Isi Dokumen</p>
+                  </div>
+                  <p className="text-xs text-gray-600">Lengkapi template Word sesuai kebutuhan pengajuan.</p>
+                </div>
+                <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-white text-xs font-bold">3</span>
+                    <p className="text-sm font-semibold text-gray-900">Upload Hasil</p>
+                  </div>
+                  <p className="text-xs text-gray-600">Upload kembali file yang sudah kamu edit.</p>
+                </div>
+              </div>
 
-              <div className="card p-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-2xl font-bold text-[#173B82]">{defaultTemplateDokumenMap[formData.jenisDokumen].title}</p>
+                    <p className="text-xl font-bold text-[#173B82]">{defaultTemplateDokumenMap[formData.jenisDokumen].title}</p>
                     <p className="text-sm text-gray-600">{defaultTemplateDokumenMap[formData.jenisDokumen].subtitle}</p>
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#C9D8F5] bg-[#EEF4FF] px-3 py-1.5">
+                      <span className="text-[11px] font-semibold text-[#173B82]">Template aktif:</span>
+                      <span className="text-xs font-bold text-[#0F2F6B]">
+                        {defaultTemplateDokumenMap[formData.jenisDokumen].fileName}
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleDownloadTemplate}
-                    className="btn-primary inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-semibold shadow-sm"
+                    className="btn-primary inline-flex items-center justify-center gap-2 h-11 px-4 text-sm font-semibold shadow-sm"
                   >
                     <Download size={16} />
-                    Download
+                    Download Template
                   </button>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-sm font-semibold text-[#173B82] mb-1">Struktur Dokumen:</p>
-                  <ol className="list-decimal list-inside text-sm text-gray-700 space-y-0.5">
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-sm font-semibold text-[#173B82] mb-2">Isi utama dokumen:</p>
+                  <div className="flex flex-wrap gap-2">
                     {defaultTemplateDokumenMap[formData.jenisDokumen].struktur.map((item) => (
-                      <li key={item}>{item}</li>
+                      <span key={item} className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-gray-700">
+                        {item}
+                      </span>
                     ))}
-                  </ol>
+                  </div>
                 </div>
 
                 <p className="mt-3 text-xs text-[#173B82] bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
@@ -447,34 +442,51 @@ export default function AjukanForm() {
               <div>
                 <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Upload Dokumen *</label>
 
-                {!hasDownloadedTemplate && (
+                {!hasDownloadedTemplate ? (
                   <p className="text-xs text-[#1E376C] bg-[#EEF3FF] border border-[#D7E0F0] rounded-lg px-3 py-2 mb-2">
-                    Download template terlebih dahulu sebelum upload dokumen.
+                    Download template terlebih dahulu, lalu isi dan upload file hasilnya di sini.
+                  </p>
+                ) : (
+                  <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-2">
+                    Template sudah diunduh. Sekarang kamu bisa upload file hasil editnya.
                   </p>
                 )}
 
                 <label
-                  className={`w-full rounded-2xl border-2 border-dashed p-5 text-center block ${hasDownloadedTemplate ? 'border-[#BFD0EE] bg-[#F5F8FF] cursor-pointer' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
+                  className={`w-full rounded-2xl border-2 border-dashed p-5 text-center block transition-all ${!hasDownloadedTemplate
+                    ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
+                    : selectedFile
+                      ? 'border-green-400 bg-green-50 cursor-pointer shadow-sm'
+                      : 'border-[#BFD0EE] bg-[#F5F8FF] cursor-pointer'} `}
                 >
                   <input
                     type="file"
-                    accept=".doc,.docx,.pdf"
+                    accept=".doc,.docx"
                     disabled={!hasDownloadedTemplate}
                     onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                     className="hidden"
                   />
-                  <Upload className="mx-auto text-[#1E376C]" size={22} />
-                  <p className="text-base font-semibold text-[#1E376C] mt-2">Upload Dokumen MoU/MoA/IA</p>
-                  <p className="text-xs text-gray-500 mt-1">Drag & drop atau klik untuk memilih file</p>
-                  <span className="inline-flex mt-3 px-3 py-1 rounded-lg bg-[#1E376C] text-white text-xs font-semibold">
-                    Pilih File Word
+                  <Upload className={`mx-auto ${selectedFile ? 'text-green-600' : 'text-[#1E376C]'}`} size={22} />
+                  <p className={`text-base font-semibold mt-2 ${selectedFile ? 'text-green-700' : 'text-[#1E376C]'}`}>
+                    {selectedFile ? 'Dokumen Berhasil Dipilih' : 'Upload Hasil Template yang Sudah Diisi'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedFile ? 'File siap dikirim bersama pengajuan.' : 'Setelah download dan edit template, upload file Word-nya di sini'}
+                  </p>
+                  <span className={`inline-flex mt-3 px-3 py-1 rounded-lg text-xs font-semibold ${selectedFile ? 'bg-green-600 text-white' : 'bg-[#1E376C] text-white'}`}>
+                    {selectedFile ? 'Ganti File' : 'Pilih File Word'}
                   </span>
-                  <p className="text-[11px] text-gray-500 mt-2">Format: .doc, .docx, .pdf</p>
-                  <p className="text-[11px] text-gray-500">Ukuran maksimal 10MB</p>
+                  <p className="text-[11px] text-gray-500 mt-2">Format: .doc, .docx</p>
+                  <p className="text-[11px] text-gray-500">Ukuran maksimal 10 MB</p>
                   {selectedFile && (
-                    <p className="text-xs text-green-700 font-semibold mt-2">
-                      File dipilih: {selectedFile.name}
-                    </p>
+                    <div className="mt-3 space-y-1">
+                      <div className="inline-flex items-center rounded-lg border border-green-200 bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                        File dipilih: {selectedFile.name}
+                      </div>
+                      <p className="text-[11px] text-green-700">
+                        Ukuran file: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
                   )}
                 </label>
 
