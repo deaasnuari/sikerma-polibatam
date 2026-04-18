@@ -65,6 +65,41 @@ function MenuIcon() {
   );
 }
 
+/** SVG Pie Chart */
+function PieChart({ size, segments }: { size: number; segments: { value: number; color: string }[] }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 2;
+
+  let startAngle = -Math.PI / 2; // start from top
+
+  function describeArc(start: number, end: number) {
+    const x1 = cx + r * Math.cos(start);
+    const y1 = cy + r * Math.sin(start);
+    const x2 = cx + r * Math.cos(end);
+    const y2 = cy + r * Math.sin(end);
+    const largeArc = end - start > Math.PI ? 1 : 0;
+    return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+  }
+
+  const paths = segments.map((seg) => {
+    const angle = (seg.value / total) * 2 * Math.PI;
+    const endAngle = startAngle + angle;
+    const d = describeArc(startAngle, endAngle);
+    startAngle = endAngle;
+    return { d, color: seg.color };
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {paths.map((p, i) => (
+        <path key={i} d={p.d} fill={p.color} stroke="white" strokeWidth="1.5" />
+      ))}
+    </svg>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -115,10 +150,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-white shadow-md h-[72px] flex items-center justify-between px-8">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#e8f0ff] flex items-center justify-center overflow-hidden flex-shrink-0">
-            {/* Replace with <Image src="/logo.png" … /> when logo is available */}
-            <span className="text-[#1e376c] font-bold text-lg">P</span>
-          </div>
+          <img src="/polibatam_logo.png" alt="Logo Polibatam" className="w-12 h-12 object-contain flex-shrink-0" />
           <div>
             <p className="font-bold text-[#1e376c] text-[15px] leading-tight">SIKERMA POLIBATAM</p>
             <p className="text-[11px] text-gray-500">Sistem Informasi Kerjasama - Politeknik Negeri Batam</p>
@@ -127,18 +159,25 @@ export default function Home() {
 
         {/* Nav links */}
         <div className="hidden md:flex gap-7">
-          {['Beranda', 'Info Kerjasama', 'Kontak Kami'].map((label) => (
-            <a key={label} href="#" className="text-sm text-gray-700 hover:text-[#1e376c] transition-colors">
-              {label}
+          {[
+            { label: 'Beranda', href: '#beranda' },
+            { label: 'Info Kerjasama', href: '#info-kerjasama' },
+            { label: 'Kontak Kami', href: '#kontak' },
+          ].map((item) => (
+            <a key={item.label} href={item.href} className="text-sm text-gray-700 hover:text-[#1e376c] active:text-[#FF7F00] focus:text-[#FF7F00] transition-colors" style={{ outline: 'none', boxShadow: 'none' }}>
+              {item.label}
             </a>
           ))}
         </div>
 
         {/* Buttons */}
         <div className="flex gap-2">
-          <button className="px-5 py-2 rounded-md bg-[#1e376c] text-white text-sm font-medium hover:bg-[#162a55] transition-colors">
+          <a
+            href="/register"
+            className="px-5 py-2 rounded-md bg-[#1e376c] text-white text-sm font-medium hover:bg-[#162a55] transition-colors"
+          >
             Register
-          </button>
+          </a>
           <a
             href="/login"
             className="px-5 py-2 rounded-md bg-[#1e376c] text-white text-sm font-medium hover:bg-[#162a55] transition-colors"
@@ -150,14 +189,17 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <section
+        id="beranda"
         className="relative min-h-[380px] flex flex-col justify-end px-12 pb-10 overflow-hidden"
         style={{
-          backgroundImage: "url('/hero-bg.jpg')", // ganti dengan path foto gedung kamu
+          backgroundImage: "url('/polibatam.jpg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
-        {/* Overlay: gelap di kiri, transparan di kanan */}
+        {/* Layer 1: fill color 50% opacity */}
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(14,29,52,0.5)' }} />
+        {/* Layer 2: gradient overlay for text readability */}
         <div
           className="absolute inset-0"
           style={{
@@ -225,32 +267,70 @@ export default function Home() {
 
       {/* ── STATISTIK KERJASAMA ── */}
       <section className="bg-white shadow-sm mt-0 px-12 py-10">
-        <h2 className="text-center text-lg font-bold text-gray-900 tracking-wide mb-9">
+        <h2 className="text-center text-lg font-bold text-gray-900 tracking-wide mb-2">
           STATISTIK KERJASAMA
         </h2>
-        <div className="flex gap-16 justify-center items-start flex-wrap">
-          {/* Chart 1 */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-[220px] h-[220px] rounded-full bg-[#d9d9d9]" />
-            <div className="flex flex-col gap-2 w-[220px]">
-              <div className="h-3 rounded bg-[#d9d9d9]" />
-              <div className="h-3 rounded bg-[#d9d9d9] w-[140px]" />
+        <div className="mx-auto mb-8 h-1 w-10 rounded bg-[#1e376c]" />
+
+        <div className="flex gap-10 justify-center items-start flex-wrap">
+          {/* Chart 1 — Berdasarkan Jenis Mitra & Wilayah */}
+          <div className="flex flex-col items-center">
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-5 gap-y-1 mb-4 text-[11px] text-gray-600">
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#FFB6C1]" /> Instansi Dalam Negeri</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#ADD8E6]" /> Instansi Luar Negeri</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#F5F5DC]" /> Dudi Dalam Negeri</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#90EE90]" /> Dudi Luar Negeri</span>
+            </div>
+            <div className="flex items-end gap-1">
+              {/* Y-axis */}
+              <div className="flex flex-col justify-between h-[240px] text-[10px] text-gray-400 pr-1 pb-0">
+                {['1.0','0.9','0.8','0.7','0.6','0.5','0.4','0.3','0.2','0.1','0'].map((v) => (
+                  <span key={v} className="leading-none">{v}</span>
+                ))}
+              </div>
+              {/* Pie */}
+              <PieChart
+                size={240}
+                segments={[
+                  { value: 292, color: '#FFB6C1' },
+                  { value: 24,  color: '#ADD8E6' },
+                  { value: 154, color: '#F5F5DC' },
+                  { value: 7,   color: '#90EE90' },
+                ]}
+              />
             </div>
           </div>
-          {/* Chart 2 */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-[180px] h-[180px] rounded-full bg-[#d9d9d9]" />
-            <div className="flex flex-col gap-2 w-[180px]">
-              <div className="h-3 rounded bg-[#d9d9d9]" />
-              <div className="h-3 rounded bg-[#d9d9d9] w-[100px]" />
-              <div className="h-3 rounded bg-[#d9d9d9] w-[120px]" />
+
+          {/* Chart 2 — Berdasarkan Jenis Dokumen */}
+          <div className="flex flex-col items-center">
+            {/* Legend */}
+            <div className="flex gap-x-5 gap-y-1 mb-4 text-[11px] text-gray-600">
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#ADD8E6]" /> MoU</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-5 rounded-sm bg-[#F5F5DC]" /> MoA</span>
+            </div>
+            <div className="flex items-end gap-1">
+              {/* Y-axis */}
+              <div className="flex flex-col justify-between h-[240px] text-[10px] text-gray-400 pr-1 pb-0">
+                {['1.0','0.9','0.8','0.7','0.6','0.5','0.4','0.3','0.2','0.1','0'].map((v) => (
+                  <span key={v} className="leading-none">{v}</span>
+                ))}
+              </div>
+              {/* Pie */}
+              <PieChart
+                size={240}
+                segments={[
+                  { value: 263, color: '#ADD8E6' },
+                  { value: 215, color: '#F5F5DC' },
+                ]}
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* ── INFORMASI KERJASAMA ── */}
-      <section className="bg-white shadow-sm mt-4 px-12 py-9">
+      <section id="info-kerjasama" className="bg-white shadow-sm mt-4 px-12 py-9">
         <h2 className="text-center text-[17px] font-semibold text-gray-900 mb-6">
           Informasi Kerjasama
         </h2>
@@ -375,17 +455,12 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-[#0e1d34] px-12 pt-9 pb-0">
+      <footer id="kontak" className="bg-[#0e1d34] px-12 pt-9 pb-0">
         {/* Top row */}
         <div className="flex items-start justify-between pb-6 flex-wrap gap-6">
           {/* Left: brand */}
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-              {/* Replace with <Image src="/logo.png" … /> */}
-              <div className="w-11 h-11 rounded-full bg-[#e8f0ff] flex items-center justify-center">
-                <span className="text-[#1e376c] font-bold text-lg">P</span>
-              </div>
-            </div>
+            <img src="/polibatam_logo.png" alt="Logo Polibatam" className="w-14 h-14 object-contain flex-shrink-0" />
             <div>
               <p className="text-white font-bold text-[15px]">SIKERMA POLIBATAM</p>
               <p className="text-white/55 text-[11px] mt-0.5">
