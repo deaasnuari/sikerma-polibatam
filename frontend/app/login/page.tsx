@@ -64,7 +64,7 @@ export default function LoginPage() {
               Home
             </button>
 
-            <img src="/logo-polibatam.png" alt="Logo Polibatam" className="h-9 w-auto object-contain" />
+            <img src="/polibatam_logo.png" alt="Logo Polibatam" className="h-9 w-auto object-contain" />
           </div>
 
           <div className="mb-5 text-center">
