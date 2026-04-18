@@ -15,12 +15,20 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     : await response.text();
 
   if (!response.ok) {
-    const message =
-      typeof body === 'object' && body !== null && 'message' in body
-        ? String(body.message)
-        : 'Request gagal diproses';
+    const validationMessage =
+      typeof body === 'object' && body !== null && 'errors' in body && body.errors
+        ? Object.values(body.errors as Record<string, string[]>)
+            .flat()
+            .find(Boolean)
+        : undefined;
 
-    throw new Error(message);
+    const message =
+      validationMessage ||
+      (typeof body === 'object' && body !== null && 'message' in body
+        ? String(body.message)
+        : 'Request gagal diproses');
+
+    throw new Error(String(message));
   }
 
   return body as T;

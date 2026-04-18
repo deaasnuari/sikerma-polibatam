@@ -21,7 +21,7 @@ interface UserItem {
   email: string;
   role: 'Admin' | 'Jurusan' | 'Prodi' | 'Pimpinan' | 'Mitra';
   unitInstansi: string;
-  status: 'Aktif' | 'NonAktif';
+  status: 'Aktif' | 'NonAktif' | 'Ditolak';
 }
 
 const dummyUsers: UserItem[] = [
@@ -65,6 +65,7 @@ const dummyUsers: UserItem[] = [
     unitInstansi: 'Perusahaan Swasta',
     status: 'Aktif',
   },
+
 ];
 
 const roleColor: Record<string, { bg: string; text: string }> = {
@@ -78,14 +79,20 @@ const roleColor: Record<string, { bg: string; text: string }> = {
 const statusStyle: Record<string, { bg: string; text: string; dot: string }> = {
   Aktif: { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
   NonAktif: { bg: 'bg-gray-200', text: 'text-gray-600', dot: 'bg-gray-400' },
+  Ditolak: { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
 };
 
 export default function ManajemenUserPage() {
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('Semua Role');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [users, setUsers] = useState(dummyUsers);
 
-  const filtered = dummyUsers.filter((item) => {
+  const handleDelete = (id: number) => {
+    setUsers((prev) => prev.filter((user) => user.id !== id));
+  };
+
+  const filtered = users.filter((item) => {
     const matchRole =
       filterRole === 'Semua Role' || item.role === filterRole;
     const matchSearch =
@@ -94,11 +101,11 @@ export default function ManajemenUserPage() {
     return matchRole && matchSearch;
   });
 
-  const totalUser = dummyUsers.length;
-  const totalAdmin = dummyUsers.filter((u) => u.role === 'Admin').length;
-  const totalJurusan = dummyUsers.filter((u) => u.role === 'Jurusan').length;
-  const totalProdi = dummyUsers.filter((u) => u.role === 'Prodi').length;
-  const totalMitra = dummyUsers.filter((u) => u.role === 'Mitra').length;
+  const totalUser = users.length;
+  const totalAdmin = users.filter((u) => u.role === 'Admin').length;
+  const totalJurusan = users.filter((u) => u.role === 'Jurusan').length;
+  const totalProdi = users.filter((u) => u.role === 'Prodi').length;
+  const totalMitra = users.filter((u) => u.role === 'Mitra').length;
 
   return (
     <div className="space-y-6">
@@ -170,6 +177,8 @@ export default function ManajemenUserPage() {
           </div>
           <p className="text-3xl font-bold text-gray-900">{totalMitra}</p>
         </div>
+
+
       </div>
 
       {/* Search & Filter */}
@@ -289,6 +298,7 @@ export default function ManajemenUserPage() {
                           <Pencil size={14} className="text-blue-600" />
                         </button>
                         <button
+                          onClick={() => handleDelete(item.id)}
                           className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
                           title="Hapus User"
                         >

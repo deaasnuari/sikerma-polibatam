@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ChevronDown, Lock, User } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ChevronDown,
+  Lock,
+  Mail,
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
@@ -22,8 +28,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password, role);
-      router.push('/admin');
+      const loggedInUser = await login(email, password, role);
+
+      const roleRouteMap: Record<string, string> = {
+        admin: '/admin',
+        pimpinan: '/pimpinan',
+        internal: '/internal',
+        external: '/eksternal',
+      };
+
+      router.push(roleRouteMap[loggedInUser.role] || '/admin');
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Login gagal. Silakan coba lagi.';
@@ -34,60 +48,67 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#091222] text-white flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl">
-        {/* Header Brand */}
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-3 w-20 h-20 rounded-full bg-cyan-300/90 flex items-center justify-center">
-            <div className="w-12 h-6 rounded-full border-4 border-white/80 border-l-transparent border-b-transparent rotate-[-20deg]" />
-          </div>
-          <p className="text-3xl font-extrabold tracking-wide">SIKERMA POLIBATAM</p>
-          <p className="text-sm md:text-base text-blue-100 mt-2 leading-relaxed">
-            Sistem Informasi Kerjasama
-            <br />
-            Politeknik Negeri Batam
-          </p>
-        </div>
+    <div
+      className="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat px-4 py-6"
+      style={{ backgroundImage: "url('/polibatam.jpg')" }}
+    >
+      <div className="flex min-h-screen items-center justify-center bg-slate-950/55">
+        <div className="w-full max-w-[420px] rounded-[30px] border border-white/30 bg-white/90 p-5 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.45)] backdrop-blur-md md:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              <ArrowLeft size={14} />
+              Home
+            </button>
 
-        {/* Card */}
-        <div className="bg-[#F4F6FA] text-slate-800 rounded-2xl shadow-2xl px-8 py-8 md:px-10">
-          <div className="text-center mb-7">
-            <h1 className="text-4xl font-extrabold text-[#173B82]">SELAMAT DATANG</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Silakan Login Menggunakan Akun LDPI Anda
+            <img src="/logo-polibatam.png" alt="Logo Polibatam" className="h-9 w-auto object-contain" />
+          </div>
+
+          <div className="mb-5 text-center">
+            <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#173B82]">
+              Sikerma Polibatam
+            </p>
+            <h2 className="mt-3 text-3xl font-extrabold text-[#173B82]">Login</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Masuk untuk mengakses sistem kerja sama Polibatam.
             </p>
           </div>
 
-          {/* Error Message */}
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/90 p-3 text-xs leading-relaxed text-slate-600">
+            Registrasi mandiri saat ini hanya untuk <span className="font-semibold text-[#173B82]">mitra eksternal</span>.
+            Setelah daftar, akun mitra bisa langsung login tanpa menunggu approval.
+          </div>
+
           {error && (
-            <div className="mb-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" />
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+              <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username / Email */}
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-sm font-semibold text-[#173B82] mb-2">
-                Username / Email
+              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
+                Email
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-3 text-slate-400" size={18} />
+                <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Masukkan Username dan Email"
-                  className="input-field w-full h-11 pl-10 pr-4 text-sm"
+                  placeholder="Masukkan email"
+                  className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
                   required
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-[#173B82] mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
                 Password
               </label>
               <div className="relative">
@@ -96,76 +117,72 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan Password"
-                  className="input-field w-full h-11 pl-10 pr-4 text-sm"
+                  placeholder="Masukkan password"
+                  className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
                   required
                 />
               </div>
             </div>
 
-            {/* Role */}
-            <div className="relative">
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="input-field appearance-none w-full h-11 px-4 text-sm text-slate-600"
-                required
-              >
-                <option value="" disabled>
-                  Pilih Role
-                </option>
-                <option value="admin-humas">Admin/Humas</option>
-                <option value="pimpinan">Pimpinan</option>
-                <option value="internal">Internal</option>
-                <option value="external">External</option>
-              </select>
-              <ChevronDown
-                size={18}
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
-              />
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
+                Role Akses
+              </label>
+              <div className="relative">
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="input-field h-11 w-full appearance-none rounded-xl px-4 text-sm text-slate-600"
+                  required
+                >
+                  <option value="" disabled>
+                    Pilih Role
+                  </option>
+                  <option value="admin">Admin/Humas</option>
+                  <option value="pimpinan">Pimpinan</option>
+                  <option value="internal">Internal</option>
+                  <option value="external">Eksternal</option>
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
+                />
+              </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full h-11 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary h-11 w-full rounded-xl font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? 'Memproses...' : 'Login →'}
+                {isLoading ? 'Memproses...' : 'Masuk'}
             </button>
 
-            {/* Bottom Form Actions */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="inline-flex items-center gap-2 text-slate-600">
+            <div className="flex items-center justify-between pt-1 text-xs text-slate-600">
+              <label className="inline-flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
                 />
                 Ingat Saya
               </label>
-              <button
-                type="button"
-                className="text-slate-500 hover:text-[#173B82] transition"
-              >
-                Lupa Password?
-              </button>
+              <span className="rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-700">Aman</span>
             </div>
           </form>
 
-          <div className="mt-6 border-t border-slate-200 pt-4 text-center text-sm text-slate-600">
-            Belum Punya Akses?{' '}
-            <button type="button" className="font-semibold text-[#173B82] hover:underline">
-              Hubungi Administrator
+          <div className="mt-5 border-t border-slate-200 pt-3 text-center text-sm text-slate-600">
+            Belum punya akun mitra?{' '}
+            <button
+              type="button"
+              onClick={() => router.push('/register')}
+              className="font-semibold text-[#173B82] hover:underline"
+            >
+              Registrasi Mitra
             </button>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-blue-100/90 text-sm mt-8">
-          © 2026 Politeknik Negeri Batam - Sistem Informasi Kerjasama
-        </p>
       </div>
     </div>
   );
