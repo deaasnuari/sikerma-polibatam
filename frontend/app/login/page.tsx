@@ -33,7 +33,7 @@ export default function LoginPage() {
       const roleRouteMap: Record<string, string> = {
         admin: '/admin',
         pimpinan: '/pimpinan',
-        internal: '/internal',
+        internal: '/internal/dashboard',
         external: '/eksternal',
       };
 

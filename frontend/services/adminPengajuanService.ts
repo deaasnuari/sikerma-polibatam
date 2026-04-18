@@ -20,6 +20,9 @@ export interface PengajuanItem {
   ruangLingkup: string[];
   status: PengajuanStatus;
   fileName?: string;
+  reviewComment?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
 }
 
 // Key localStorage untuk menyimpan seluruh data pengajuan di sisi frontend.
@@ -38,6 +41,34 @@ export interface PengajuanFilterOptions {
   filterTahun: string;
   search: string;
 }
+
+export const pengajuanJurusanOptions = [
+  'Manajemen dan Bisnis',
+  'Teknik Elektro',
+  'Teknik Informatika',
+  'Teknik Mesin',
+];
+
+export const pengajuanUnitOptions = [
+  'SHILAU (Satuan Hilirisasi Inovasi dan Layanan Usaha)',
+  'P4M (Pusat Penjaminan Mutu dan Pengembangan Pembelajaran)',
+  'P3M (Pusat Penelitian dan Pengabdian Kepada Masyarakat)',
+  'SPI (Satuan Pengawas Internal)',
+  'Akademik (Subag Akademik)',
+  'SBUM (Sub Bagian Umum)',
+  'UPA PKK (Pengembangan Karier dan Kewirausahaan)',
+  'UPA Perpustakaan',
+  'UPA PP (Perbaikan dan Perawatan)',
+  'UPA TIK (Teknologi Informasi dan Komunikasi)',
+  'Pokja OSDM (Organisasi dan SDM)',
+  'Pokja Perencanaan',
+  'Pokja Kemahasiswaan',
+  'Pokja BMN & Pengadaan',
+  'Pokja Keuangan',
+  'Pokja Humas dan Kerjasama',
+];
+
+export const pengajuanJurusanUnitOptions = [...pengajuanJurusanOptions, ...pengajuanUnitOptions];
 
 // Data awal dummy yang dipakai saat belum ada data tersimpan.
 const defaultPengajuanData: PengajuanItem[] = [
@@ -82,6 +113,57 @@ const defaultPengajuanData: PengajuanItem[] = [
     tanggalBerakhir: '2026-12-10',
     ruangLingkup: ['Pelatihan', 'Pengembangan SDM'],
     status: 'Disetujui',
+    reviewComment: 'Dokumen sudah lengkap dan disetujui untuk tindak lanjut.',
+    reviewedAt: '2026-03-02',
+    reviewedBy: 'Admin SIKERMA',
+  },
+  {
+    id: 4,
+    judul: 'Kolaborasi Riset AI Jurusan TI',
+    pengusul: 'Siti Rahma',
+    tanggal: '2026-03-11',
+    mitra: 'PT Cerdas Data Nusantara',
+    jenisDokumen: 'MoA',
+    jurusan: 'Teknik Informatika',
+    kategori: 'Internal',
+    tanggalMulai: '2026-04-15',
+    tanggalBerakhir: '2027-04-15',
+    ruangLingkup: ['Penelitian', 'Publikasi Bersama'],
+    status: 'Diproses',
+    reviewComment: 'Admin sedang memvalidasi dokumen pendukung dan ruang lingkup kerja sama.',
+    reviewedAt: '2026-03-14',
+    reviewedBy: 'Admin SIKERMA',
+  },
+  {
+    id: 5,
+    judul: 'Program Magang Industri untuk Mahasiswa',
+    pengusul: 'Andi Saputra',
+    tanggal: '2026-03-19',
+    mitra: 'PT Inovasi Batam',
+    jenisDokumen: 'IA',
+    jurusan: 'Teknik Elektro',
+    kategori: 'Internal',
+    tanggalMulai: '2026-06-01',
+    tanggalBerakhir: '2026-12-31',
+    ruangLingkup: ['Magang', 'Pelatihan'],
+    status: 'Menunggu',
+  },
+  {
+    id: 6,
+    judul: 'Pengabdian Masyarakat Bersama Komunitas Digital',
+    pengusul: 'Nabila Putri',
+    tanggal: '2026-03-25',
+    mitra: 'Komunitas Digital Batam',
+    jenisDokumen: 'MoU',
+    jurusan: 'Manajemen Bisnis',
+    kategori: 'Internal',
+    tanggalMulai: '2026-07-01',
+    tanggalBerakhir: '2027-01-01',
+    ruangLingkup: ['Pengabdian Masyarakat', 'Pelatihan'],
+    status: 'Ditolak',
+    reviewComment: 'Mohon lengkapi dokumen legal mitra sebelum diajukan ulang.',
+    reviewedAt: '2026-03-28',
+    reviewedBy: 'Admin SIKERMA',
   },
 ];
 
@@ -205,7 +287,13 @@ export function updatePengajuanStatus(
       return item;
     }
 
-    updatedItem = { ...item, status };
+    updatedItem = {
+      ...item,
+      status,
+      reviewComment: comment?.trim() || undefined,
+      reviewedAt: new Date().toISOString().slice(0, 10),
+      reviewedBy: 'Admin SIKERMA',
+    };
     return updatedItem;
   });
 
@@ -272,12 +360,18 @@ export function filterPengajuanData(
       filterJurusan === 'Semua Kategori Kerjasama' ||
       item.jurusan === filterJurusan ||
       getKategoriPengajuan(item) === filterJurusan;
-    const keyword = search.toLowerCase();
+    const keyword = search.toLowerCase().trim();
+    const kategori = getKategoriPengajuan(item).toLowerCase();
+    const ruangLingkupText = item.ruangLingkup.join(' ').toLowerCase();
     const matchSearch =
       keyword === '' ||
       item.mitra.toLowerCase().includes(keyword) ||
       item.judul.toLowerCase().includes(keyword) ||
-      item.pengusul.toLowerCase().includes(keyword);
+      item.pengusul.toLowerCase().includes(keyword) ||
+      item.jurusan.toLowerCase().includes(keyword) ||
+      item.jenisDokumen.toLowerCase().includes(keyword) ||
+      kategori.includes(keyword) ||
+      ruangLingkupText.includes(keyword);
 
     return matchStatus && matchJurusan && matchSearch;
   });
