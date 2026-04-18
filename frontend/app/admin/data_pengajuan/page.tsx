@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import AjukanForm from './AjukanForm';
 import {
   getFilteredPengajuanData,
@@ -44,6 +44,7 @@ export default function PengajuanKerjasama() {
   const [filterJurusan, setFilterJurusan] = useState('Semua Kategori Kerjasama');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState('Semua Tahun');
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
   const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
@@ -114,6 +115,10 @@ export default function PengajuanKerjasama() {
   ];
 
   const tahunOptions = getPengajuanYearOptions(pengajuanData);
+  const currentYear = new Date().getFullYear();
+  const defaultYearRangeStart = Math.min(currentYear - 4, Number(tahunOptions[tahunOptions.length - 1] ?? currentYear));
+  const [yearRangeStart, setYearRangeStart] = useState(defaultYearRangeStart);
+  const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
   const filtered = getFilteredPengajuanData(pengajuanData, {
     filterStatus,
@@ -202,16 +207,82 @@ export default function PengajuanKerjasama() {
             <option>Internal</option>
             <option>Eksternal</option>
           </select>
-          <select
-            value={filterTahun}
-            onChange={(e) => setFilterTahun(e.target.value)}
-            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
-          >
-            <option>Semua Tahun</option>
-            {tahunOptions.map((tahun) => (
-              <option key={tahun}>{tahun}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setYearPickerOpen((prev) => !prev)}
+              className="input-field inline-flex min-w-[150px] items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 transition-colors"
+            >
+              <span>{filterTahun === 'Semua Tahun' ? 'Pilih Tahun' : filterTahun}</span>
+              <CalendarDays size={16} className="text-gray-500" />
+            </button>
+
+            {yearPickerOpen && (
+              <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
+                <div className="mb-3 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setYearRangeStart((prev) => prev - 12)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {yearRangeStart} - {yearRangeStart + 11}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setYearRangeStart((prev) => prev + 12)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {yearGrid.map((year) => {
+                    const yearString = String(year);
+                    const isSelected = yearString === filterTahun;
+                    const hasData = tahunOptions.includes(yearString);
+
+                    return (
+                      <button
+                        key={year}
+                        type="button"
+                        onClick={() => {
+                          setFilterTahun(yearString);
+                          setYearPickerOpen(false);
+                        }}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'border-[#1E376C] bg-[#1E376C] text-white'
+                            : hasData
+                              ? 'border-gray-200 bg-white text-gray-800 hover:border-[#1E376C] hover:text-[#1E376C]'
+                              : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200'
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+                  <p className="text-xs text-gray-500">Pilih tahun untuk menampilkan data tahunan</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterTahun('Semua Tahun');
+                      setYearPickerOpen(false);
+                    }}
+                    className="text-xs font-semibold text-[#1E376C] transition-colors hover:text-[#2B4A93]"
+                  >
+                    Semua Tahun
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -362,6 +433,14 @@ export default function PengajuanKerjasama() {
                   <div>
                     <p className="text-gray-500">Mitra Tujuan</p>
                     <p className="text-gray-900 font-medium">{detailItem.mitra}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Tanggal Mulai</p>
+                    <p className="text-gray-900 font-medium">{detailItem.tanggalMulai || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Tanggal Berakhir</p>
+                    <p className="text-gray-900 font-medium">{detailItem.tanggalBerakhir || '-'}</p>
                   </div>
                 </div>
               </div>

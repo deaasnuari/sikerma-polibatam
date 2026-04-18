@@ -116,6 +116,8 @@ export default function AjukanForm() {
     namaMitraTujuan: '',
     asalUnit: '',
     jenisDokumen: '',
+    tanggalMulai: '',
+    tanggalBerakhir: '',
     ruangLingkup: [] as string[],
     deskripsi: '',
     emailPengusul: '',
@@ -194,6 +196,11 @@ export default function AjukanForm() {
     if (!formData.namaMitraTujuan.trim()) nextErrors.namaMitraTujuan = 'Nama mitra tujuan wajib diisi';
     if (!formData.asalUnit.trim()) nextErrors.asalUnit = `Silakan pilih ${asal.toLowerCase()}`;
     if (!formData.jenisDokumen.trim()) nextErrors.jenisDokumen = 'Silakan pilih jenis dokumen';
+    if (!formData.tanggalMulai) nextErrors.tanggalMulai = 'Tanggal mulai wajib diisi';
+    if (!formData.tanggalBerakhir) nextErrors.tanggalBerakhir = 'Tanggal berakhir wajib diisi';
+    if (formData.tanggalMulai && formData.tanggalBerakhir && formData.tanggalBerakhir < formData.tanggalMulai) {
+      nextErrors.tanggalBerakhir = 'Tanggal berakhir tidak boleh lebih awal dari tanggal mulai';
+    }
     if (formData.ruangLingkup.length === 0) nextErrors.ruangLingkup = 'Pilih minimal 1 ruang lingkup';
     if (!formData.deskripsi.trim()) nextErrors.deskripsi = 'Deskripsi dan tujuan kerjasama wajib diisi';
     if (formData.jenisDokumen && !hasDownloadedTemplate) nextErrors.templateDownload = 'Download template terlebih dahulu';
@@ -220,6 +227,8 @@ export default function AjukanForm() {
       jenisDokumen: formData.jenisDokumen,
       jurusan: formData.asalUnit,
       kategori: asal === 'Unit' ? 'Internal' : 'Eksternal',
+      tanggalMulai: formData.tanggalMulai,
+      tanggalBerakhir: formData.tanggalBerakhir,
       emailPengusul: formData.emailPengusul,
       whatsappPengusul: formData.whatsappPengusul,
       ruangLingkup: formData.ruangLingkup,
@@ -237,6 +246,8 @@ export default function AjukanForm() {
       formData.namaMitraTujuan ||
       formData.asalUnit ||
       formData.jenisDokumen ||
+      formData.tanggalMulai ||
+      formData.tanggalBerakhir ||
       formData.ruangLingkup.length > 0 ||
       formData.deskripsi ||
       formData.emailPengusul ||
@@ -302,6 +313,31 @@ export default function AjukanForm() {
                   className="input-field w-full px-4 h-11 text-base text-gray-700"
                 />
                 {errors.namaMitraTujuan && <p className="text-xs text-red-600 mt-1.5">{errors.namaMitraTujuan}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Tanggal Mulai *</label>
+                  <input
+                    type="date"
+                    value={formData.tanggalMulai}
+                    onChange={(e) => handleInputChange('tanggalMulai', e.target.value)}
+                    className="input-field w-full px-4 h-11 text-base text-gray-700"
+                  />
+                  {errors.tanggalMulai && <p className="text-xs text-red-600 mt-1.5">{errors.tanggalMulai}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Tanggal Berakhir *</label>
+                  <input
+                    type="date"
+                    value={formData.tanggalBerakhir}
+                    min={formData.tanggalMulai || undefined}
+                    onChange={(e) => handleInputChange('tanggalBerakhir', e.target.value)}
+                    className="input-field w-full px-4 h-11 text-base text-gray-700"
+                  />
+                  {errors.tanggalBerakhir && <p className="text-xs text-red-600 mt-1.5">{errors.tanggalBerakhir}</p>}
+                </div>
               </div>
             </div>
 

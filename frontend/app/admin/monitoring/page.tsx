@@ -6,217 +6,26 @@ import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
 import RenewalHistoryModal from './RenewalHistoryModal';
 import NotificationHistoryModal from './NotificationHistoryModal';
 import NonactiveConfirmationModal from './NonactiveConfirmationModal';
+import {
+  createNonactiveRecord,
+  createNotificationRecord,
+  createRenewalRecord,
+  createWhatsAppLink,
+  findKerjasamaById,
+  getDefaultNotificationHistories,
+  getFilteredMonitoringData,
+  getMonitoringData,
+  getMonitoringStats,
+  getMonitoringTabs,
+  monitoringJenisBadgeMap,
+  monitoringStatusConfig,
+  type Kerjasama,
+  type MonitoringNotification,
+  type NonactiveRecord,
+  type RenewalRecord,
+  type TabKey,
+} from '@/services/adminMonitoringService';
 
-interface RenewalRecord {
-  id: string;
-  tanggalPermintaan: string;
-  statusResponse: 'menunggu' | 'disetujui' | 'ditolak';
-  catatan: string;
-  tanggalResponse?: string;
-}
-
-interface Notification {
-  id: string;
-  tanggalKirim: string;
-  jenis: 'reminder-3bulan' | 'reminder-1bulan' | 'urgent';
-  status: 'terkirim' | 'dibaca' | 'ditindaklanjuti' | 'tidak-direspons';
-  pesan: string;
-  emailMitra: string;
-}
-
-interface NonactiveRecord {
-  id: string;
-  tanggalDinonaktifkan: string;
-  alasan: string;
-  buktiFile?: {
-    nama: string;
-    ukuran: string;
-    tipe: string;
-    uploadedAt: string;
-  };
-  status: 'pending' | 'confirmed';
-}
-
-type StatusKerjasama = 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
-
-interface Kerjasama {
-  id: number;
-  namaMitra: string;
-  noDokumen: string;
-  jenis: 'MoU' | 'MoA' | 'IA';
-  status: StatusKerjasama;
-  tanggalMulai: string;
-  tanggalBerakhir: string;
-  sisaMasaBerlaku: string | null;
-  ruangLingkup: string[];
-  whatsappNumber: string;
-  emailMitra: string;
-}
-
-const dummyData: Kerjasama[] = [
-  {
-    id: 1,
-    namaMitra: 'BADAN PENGUSAHAAN BATAM',
-    noDokumen: '00',
-    jenis: 'MoU',
-    status: 'Aktif',
-    tanggalMulai: '01/01/2025',
-    tanggalBerakhir: '01/01/2028',
-    sisaMasaBerlaku: '20 Bulan',
-    ruangLingkup: ['Penelitian', 'Pengabdian Masyarakat'],
-    whatsappNumber: '6281234567890',
-    emailMitra: 'contact@bpb.go.id',
-  },
-  {
-    id: 2,
-    namaMitra: 'PT Feen Marine',
-    noDokumen: '00',
-    jenis: 'MoA',
-    status: 'Akan Berakhir',
-    tanggalMulai: '01/01/2025',
-    tanggalBerakhir: '01/01/2028',
-    sisaMasaBerlaku: null,
-    ruangLingkup: ['Magang', 'Kerja Praktek'],
-    whatsappNumber: '6289876543210',
-    emailMitra: 'admin@feenmarine.com',
-  },
-  {
-    id: 3,
-    namaMitra: 'PT. Riseal Propulsion Indonesia',
-    noDokumen: '00',
-    jenis: 'IA',
-    status: 'Kadaluarsa',
-    tanggalMulai: '01/01/2025',
-    tanggalBerakhir: '01/01/2028',
-    sisaMasaBerlaku: '1 Bulan',
-    ruangLingkup: ['Magang', 'Kerja Praktek'],
-    whatsappNumber: '6281111111111',
-    emailMitra: 'contact@riseal.co.id',
-  },
-  {
-    id: 4,
-    namaMitra: 'Universitas Negeri Jakarta',
-    noDokumen: '01',
-    jenis: 'MoU',
-    status: 'Aktif',
-    tanggalMulai: '15/03/2024',
-    tanggalBerakhir: '15/03/2027',
-    sisaMasaBerlaku: '11 Bulan',
-    ruangLingkup: ['Penelitian', 'Publikasi Bersama'],
-    whatsappNumber: '6282222222222',
-    emailMitra: 'kerjasama@unj.ac.id',
-  },
-  {
-    id: 5,
-    namaMitra: 'PT. Teknologi Maju Indonesia',
-    noDokumen: '02',
-    jenis: 'MoA',
-    status: 'Akan Berakhir',
-    tanggalMulai: '10/02/2023',
-    tanggalBerakhir: '10/05/2026',
-    sisaMasaBerlaku: '1 Bulan',
-    ruangLingkup: ['Magang', 'Penelitian'],
-    whatsappNumber: '6283333333333',
-    emailMitra: 'marketing@teknologimaju.id',
-  },
-  {
-    id: 6,
-    namaMitra: 'PT. Digital Solutions',
-    noDokumen: '03',
-    jenis: 'IA',
-    status: 'Kadaluarsa',
-    tanggalMulai: '01/06/2022',
-    tanggalBerakhir: '01/06/2025',
-    sisaMasaBerlaku: null,
-    ruangLingkup: ['Kerja Praktek'],
-    whatsappNumber: '6284444444444',
-    emailMitra: 'hr@digitalsolutions.co.id',
-  },
-  {
-    id: 7,
-    namaMitra: 'Politeknik Negeri Semarang',
-    noDokumen: '04',
-    jenis: 'MoU',
-    status: 'Akan Berakhir',
-    tanggalMulai: '20/07/2023',
-    tanggalBerakhir: '20/07/2026',
-    sisaMasaBerlaku: '3 Bulan',
-    ruangLingkup: ['Penelitian', 'Pengabdian Masyarakat'],
-    whatsappNumber: '6285555555555',
-    emailMitra: 'kerjasama@polines.ac.id',
-  },
-  {
-    id: 8,
-    namaMitra: 'PT Batam Aero Technic',
-    noDokumen: '05',
-    jenis: 'IA',
-    status: 'Aktif',
-    tanggalMulai: '05/01/2025',
-    tanggalBerakhir: '05/01/2029',
-    sisaMasaBerlaku: '33 Bulan',
-    ruangLingkup: ['Magang', 'Kerja Praktek', 'Penelitian'],
-    whatsappNumber: '6286666666666',
-    emailMitra: 'partnerships@batamtech.com',
-  },
-  {
-    id: 9,
-    namaMitra: 'Dinas Pendidikan Kepri',
-    noDokumen: '06',
-    jenis: 'MoU',
-    status: 'Kadaluarsa',
-    tanggalMulai: '01/04/2021',
-    tanggalBerakhir: '01/04/2024',
-    sisaMasaBerlaku: null,
-    ruangLingkup: ['Pengabdian Masyarakat'],
-    whatsappNumber: '6287777777777',
-    emailMitra: 'dinaspendidikan@kepriprov.go.id',
-  },
-  {
-    id: 10,
-    namaMitra: 'PT. Samator Gas Industri',
-    noDokumen: '07',
-    jenis: 'MoA',
-    status: 'Aktif',
-    tanggalMulai: '12/09/2024',
-    tanggalBerakhir: '12/09/2027',
-    sisaMasaBerlaku: '17 Bulan',
-    ruangLingkup: ['Kerja Praktek'],
-    whatsappNumber: '6288888888888',
-    emailMitra: 'corporate@samatorgas.com',
-  },
-];
-
-const jenisBadgeMap: Record<Kerjasama['jenis'], string> = {
-  MoU: 'bg-violet-100 text-violet-700',
-  MoA: 'bg-cyan-100 text-cyan-700',
-  IA: 'bg-orange-100 text-orange-700',
-};
-
-const statusConfig: Record<StatusKerjasama, { dot: string; label: string; border: string; bg: string; labelColor: string }> = {
-  Aktif: {
-    dot: 'bg-green-500',
-    label: 'Aktif',
-    border: 'border-l-green-500',
-    bg: 'bg-green-50',
-    labelColor: 'text-green-600',
-  },
-  'Akan Berakhir': {
-    dot: 'bg-orange-400',
-    label: 'akan berakhir',
-    border: 'border-l-orange-400',
-    bg: 'bg-orange-50',
-    labelColor: 'text-orange-500',
-  },
-  Kadaluarsa: {
-    dot: 'bg-red-500',
-    label: 'kadaluarsa',
-    border: 'border-l-red-500',
-    bg: 'bg-red-50',
-    labelColor: 'text-red-500',
-  },
-};
-
-type TabKey = 'Semua' | 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
 
 export default function MonitoringdanstatusPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('Semua');
@@ -224,43 +33,17 @@ export default function MonitoringdanstatusPage() {
   const [renewalModal, setRenewalModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [renewalHistories, setRenewalHistories] = useState<Record<number, RenewalRecord[]>>({});
   const [notificationModal, setNotificationModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
-  const [notificationHistories, setNotificationHistories] = useState<Record<number, Notification[]>>({
-    2: [
-      {
-        id: 'notif-1',
-        tanggalKirim: '10/04/2026',
-        jenis: 'reminder-3bulan',
-        status: 'terkirim',
-        pesan: 'Notifikasi reminder otomatis: Kerjasama akan berakhir dalam 3 bulan',
-        emailMitra: 'admin@feenmarine.com',
-      },
-    ],
-    5: [
-      {
-        id: 'notif-2',
-        tanggalKirim: '12/04/2026',
-        jenis: 'reminder-1bulan',
-        status: 'dibaca',
-        pesan: 'Notifikasi reminder otomatis: Kerjasama akan berakhir dalam 1 bulan',
-        emailMitra: 'marketing@teknologimaju.id',
-      },
-    ],
-  });
+  const [notificationHistories, setNotificationHistories] = useState<Record<number, MonitoringNotification[]>>(getDefaultNotificationHistories());
   const [nonactiveModal, setNonactiveModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [nonactiveHistories, setNonactiveHistories] = useState<Record<number, NonactiveRecord[]>>({});
 
-  const totalAktif = dummyData.filter((d) => d.status === 'Aktif').length;
-  const totalAkanBerakhir = dummyData.filter((d) => d.status === 'Akan Berakhir').length;
-  const totalKadaluarsa = dummyData.filter((d) => d.status === 'Kadaluarsa').length;
-
-  const filtered = activeTab === 'Semua' ? dummyData : dummyData.filter((d) => d.status === activeTab);
-
-  const tabs: { key: TabKey; label: string; count: number }[] = [
-    { key: 'Semua', label: 'Semua Status', count: dummyData.length },
-    { key: 'Aktif', label: 'Kerjasama Aktif', count: totalAktif },
-    { key: 'Akan Berakhir', label: 'Akan Berakhir', count: totalAkanBerakhir },
-    { key: 'Kadaluarsa', label: 'Kadaluarsa', count: totalKadaluarsa },
-  ];
+  const monitoringData = getMonitoringData();
+  const { totalAktif, totalAkanBerakhir, totalKadaluarsa } = getMonitoringStats(monitoringData);
+  const filtered = getFilteredMonitoringData(monitoringData, activeTab);
+  const tabs = getMonitoringTabs(monitoringData);
+  const selectedRenewalItem = findKerjasamaById(monitoringData, renewalModal.kerjasamaId);
+  const selectedNotificationItem = findKerjasamaById(monitoringData, notificationModal.kerjasamaId);
+  const selectedNonactiveItem = findKerjasamaById(monitoringData, nonactiveModal.kerjasamaId);
 
   return (
     <div className="space-y-5">
@@ -367,7 +150,7 @@ export default function MonitoringdanstatusPage() {
       {/* Cards List */}
       <div className="space-y-4">
         {filtered.map((item) => {
-          const cfg = statusConfig[item.status];
+          const cfg = monitoringStatusConfig[item.status];
           const isUrgent = item.status === 'Akan Berakhir' || item.status === 'Kadaluarsa';
 
           return (
@@ -380,7 +163,7 @@ export default function MonitoringdanstatusPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <p className="text-base font-extrabold text-gray-900 md:text-lg">{item.namaMitra}</p>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
+                    <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${monitoringJenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs font-semibold">
                     <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
@@ -437,7 +220,7 @@ export default function MonitoringdanstatusPage() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] px-3 py-1.5 text-xs font-semibold text-[#1E376C] transition-colors hover:bg-[#EEF2FF]"
                   >
                     <Eye size={13} />
-                    View Laporan Kegiatan
+                    Tambah Laporan Pelaksanaan
                   </button>
 
                   {isUrgent && (
@@ -453,8 +236,7 @@ export default function MonitoringdanstatusPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const waLink = `https://wa.me/${item.whatsappNumber}?text=Halo%20${encodeURIComponent(item.namaMitra)},%20saya%20ingin%20membahas%20tentang%20kerjasama%20${encodeURIComponent('No. ' + item.noDokumen)}`;
-                          window.open(waLink, '_blank');
+                          window.open(createWhatsAppLink(item), '_blank');
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-green-500 bg-green-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-600"
                       >
@@ -494,17 +276,19 @@ export default function MonitoringdanstatusPage() {
       <RenewalHistoryModal
         isOpen={renewalModal.open}
         onClose={() => setRenewalModal({ open: false, kerjasamaId: null })}
-        namaMitra={renewalModal.kerjasamaId ? dummyData.find((d) => d.id === renewalModal.kerjasamaId)?.namaMitra || '' : ''}
-        noDokumen={renewalModal.kerjasamaId ? dummyData.find((d) => d.id === renewalModal.kerjasamaId)?.noDokumen || '' : ''}
+        namaMitra={selectedRenewalItem?.namaMitra || ''}
+        noDokumen={selectedRenewalItem?.noDokumen || ''}
+        tanggalMulaiSaatIni={selectedRenewalItem?.tanggalMulai || ''}
+        tanggalBerakhirSaatIni={selectedRenewalItem?.tanggalBerakhir || ''}
         history={renewalHistories[renewalModal.kerjasamaId || 0] || []}
-        onAddRenewal={(catatan: string) => {
+        onAddRenewal={(catatan: string, tanggalMulaiBaru: string, tanggalBerakhirBaru: string) => {
           if (!renewalModal.kerjasamaId) return;
-          const newRecord: RenewalRecord = {
-            id: `renewal-${renewalModal.kerjasamaId}-${Date.now()}`,
-            tanggalPermintaan: new Date().toLocaleDateString('id-ID'),
-            statusResponse: 'menunggu',
+          const newRecord = createRenewalRecord(
+            renewalModal.kerjasamaId,
             catatan,
-          };
+            tanggalMulaiBaru,
+            tanggalBerakhirBaru
+          );
           setRenewalHistories((prev) => ({
             ...prev,
             [renewalModal.kerjasamaId]: [...(prev[renewalModal.kerjasamaId] || []), newRecord],
@@ -518,20 +302,17 @@ export default function MonitoringdanstatusPage() {
       <NotificationHistoryModal
         isOpen={notificationModal.open}
         onClose={() => setNotificationModal({ open: false, kerjasamaId: null })}
-        namaMitra={notificationModal.kerjasamaId ? dummyData.find((d) => d.id === notificationModal.kerjasamaId)?.namaMitra || '' : ''}
-        noDokumen={notificationModal.kerjasamaId ? dummyData.find((d) => d.id === notificationModal.kerjasamaId)?.noDokumen || '' : ''}
-        emailMitra={notificationModal.kerjasamaId ? dummyData.find((d) => d.id === notificationModal.kerjasamaId)?.emailMitra || '' : ''}
+        namaMitra={selectedNotificationItem?.namaMitra || ''}
+        noDokumen={selectedNotificationItem?.noDokumen || ''}
+        emailMitra={selectedNotificationItem?.emailMitra || ''}
         notifications={notificationHistories[notificationModal.kerjasamaId || 0] || []}
         onSendNotification={(jenis: string) => {
-          if (!notificationModal.kerjasamaId) return;
-          const newNotification: Notification = {
-            id: `notif-${notificationModal.kerjasamaId}-${Date.now()}`,
-            tanggalKirim: new Date().toLocaleDateString('id-ID'),
-            jenis: jenis as 'reminder-3bulan' | 'reminder-1bulan' | 'urgent',
-            status: 'terkirim',
-            pesan: `Notifikasi ${jenis} tentang status kerjasama Anda`,
-            emailMitra: dummyData.find((d) => d.id === notificationModal.kerjasamaId)?.emailMitra || '',
-          };
+          if (!notificationModal.kerjasamaId || !selectedNotificationItem) return;
+          const newNotification = createNotificationRecord(
+            notificationModal.kerjasamaId,
+            jenis as 'reminder-3bulan' | 'reminder-1bulan' | 'urgent',
+            selectedNotificationItem.emailMitra
+          );
           setNotificationHistories((prev) => ({
             ...prev,
             [notificationModal.kerjasamaId]: [...(prev[notificationModal.kerjasamaId] || []), newNotification],
@@ -542,28 +323,19 @@ export default function MonitoringdanstatusPage() {
       <NonactiveConfirmationModal
         isOpen={nonactiveModal.open}
         onClose={() => setNonactiveModal({ open: false, kerjasamaId: null })}
-        namaMitra={nonactiveModal.kerjasamaId ? dummyData.find((d) => d.id === nonactiveModal.kerjasamaId)?.namaMitra || '' : ''}
-        noDokumen={nonactiveModal.kerjasamaId ? dummyData.find((d) => d.id === nonactiveModal.kerjasamaId)?.noDokumen || '' : ''}
-        tanggalBerakhir={nonactiveModal.kerjasamaId ? dummyData.find((d) => d.id === nonactiveModal.kerjasamaId)?.tanggalBerakhir || '' : ''}
-        sisaMasaBerlaku={nonactiveModal.kerjasamaId ? dummyData.find((d) => d.id === nonactiveModal.kerjasamaId)?.sisaMasaBerlaku || null : null}
+        namaMitra={selectedNonactiveItem?.namaMitra || ''}
+        noDokumen={selectedNonactiveItem?.noDokumen || ''}
+        tanggalBerakhir={selectedNonactiveItem?.tanggalBerakhir || ''}
+        sisaMasaBerlaku={selectedNonactiveItem?.sisaMasaBerlaku || null}
         nonactiveHistory={nonactiveHistories[nonactiveModal.kerjasamaId || 0] || []}
         onConfirmNonactive={(alasan: string, buktiFile?: { nama: string; ukuran: string; tipe: string }) => {
           if (!nonactiveModal.kerjasamaId) return;
-          const newRecord: NonactiveRecord = {
-            id: `nonactive-${nonactiveModal.kerjasamaId}-${Date.now()}`,
-            tanggalDinonaktifkan: new Date().toLocaleDateString('id-ID'),
-            alasan,
-            buktiFile: buktiFile ? {
-              ...buktiFile,
-              uploadedAt: new Date().toLocaleDateString('id-ID'),
-            } : undefined,
-            status: 'confirmed',
-          };
+          const newRecord = createNonactiveRecord(nonactiveModal.kerjasamaId, alasan, buktiFile);
           setNonactiveHistories((prev) => ({
             ...prev,
             [nonactiveModal.kerjasamaId]: [...(prev[nonactiveModal.kerjasamaId] || []), newRecord],
           }));
-          alert(`Kerjasama "${dummyData.find((d) => d.id === nonactiveModal.kerjasamaId)?.namaMitra}" telah berhasil dinonaktifkan.`);
+          alert(`Kerjasama "${selectedNonactiveItem?.namaMitra || ''}" telah berhasil dinonaktifkan.`);
           setNonactiveModal({ open: false, kerjasamaId: null });
         }}
       />

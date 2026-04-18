@@ -75,6 +75,7 @@ export const rekapUnitOptions = [
 ];
 
 export const rekapJurusanUnitOptions = [...rekapJurusanOptions, ...rekapUnitOptions];
+export const rekapJenisOptions = ['MoA', 'MoU', 'IA'] as const;
 
 // Data default awal yang ditampilkan jika belum ada data tersimpan.
 const defaultRekapData: RekapDokumen[] = [
@@ -228,7 +229,7 @@ export function getRekapData(): RekapDokumen[] {
 
 // Ambil daftar jenis dokumen unik untuk dropdown filter.
 export function getRekapJenisOptions(items: RekapDokumen[]): string[] {
-  return ['Semua Jenis', ...Array.from(new Set(items.map((item) => item.jenis)))];
+  return ['Semua Jenis', ...Array.from(new Set([...rekapJenisOptions, ...items.map((item) => item.jenis)]))];
 }
 
 // Ambil daftar jurusan/unit unik untuk dropdown filter.

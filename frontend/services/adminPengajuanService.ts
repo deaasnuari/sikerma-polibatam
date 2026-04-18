@@ -12,6 +12,8 @@ export interface PengajuanItem {
   jenisDokumen: string;
   jurusan: string;
   kategori?: 'Internal' | 'Eksternal';
+  tanggalMulai?: string;
+  tanggalBerakhir?: string;
   emailPengusul?: string;
   whatsappPengusul?: string;
   emailTerverifikasi?: boolean;
@@ -48,6 +50,8 @@ const defaultPengajuanData: PengajuanItem[] = [
     jenisDokumen: 'MoA',
     jurusan: 'Teknik Informatika',
     kategori: 'Eksternal',
+    tanggalMulai: '2026-03-01',
+    tanggalBerakhir: '2027-03-01',
     ruangLingkup: ['Penelitian', 'Pengabdian Masyarakat'],
     status: 'Menunggu',
   },
@@ -60,6 +64,8 @@ const defaultPengajuanData: PengajuanItem[] = [
     jenisDokumen: 'MoU',
     jurusan: 'Teknik Informatika',
     kategori: 'Eksternal',
+    tanggalMulai: '2026-04-01',
+    tanggalBerakhir: '2028-04-01',
     ruangLingkup: ['Penelitian', 'Publikasi Bersama'],
     status: 'Diproses',
   },
@@ -72,6 +78,8 @@ const defaultPengajuanData: PengajuanItem[] = [
     jenisDokumen: 'MoU',
     jurusan: 'Teknik Informatika',
     kategori: 'Internal',
+    tanggalMulai: '2026-05-10',
+    tanggalBerakhir: '2026-12-10',
     ruangLingkup: ['Pelatihan', 'Pengembangan SDM'],
     status: 'Disetujui',
   },
