@@ -64,7 +64,7 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <ProtectedRoute requiredRole="eksternal">
+    <ProtectedRoute requiredRole="external">
       <div className="flex h-screen flex-col bg-gray-100">
         <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 

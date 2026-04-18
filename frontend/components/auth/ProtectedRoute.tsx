@@ -17,13 +17,20 @@ export default function ProtectedRoute({ children, requiredRole = 'admin' }: Pro
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (!isAuthenticated || !user) {
+      router.replace('/login');
       return;
     }
 
-    if (requiredRole && user?.role !== requiredRole) {
-      router.push('/');
+    if (requiredRole && user.role !== requiredRole) {
+      const roleRouteMap: Record<string, string> = {
+        admin: '/admin',
+        pimpinan: '/pimpinan',
+        internal: '/internal/dashboard',
+        external: '/eksternal',
+      };
+
+      router.replace(roleRouteMap[user.role] || '/login');
     }
   }, [isLoading, isAuthenticated, user, requiredRole, router]);
 

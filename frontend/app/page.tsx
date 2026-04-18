@@ -5,14 +5,23 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/admin');
+    if (isLoading || !isAuthenticated || !user) {
+      return;
     }
-  }, [isLoading, isAuthenticated, router]);
+
+    const roleRouteMap: Record<string, string> = {
+      admin: '/admin',
+      pimpinan: '/pimpinan',
+      internal: '/internal/dashboard',
+      external: '/eksternal',
+    };
+
+    router.replace(roleRouteMap[user.role] || '/login');
+  }, [isLoading, isAuthenticated, user, router]);
 
   if (isLoading) {
     return (
