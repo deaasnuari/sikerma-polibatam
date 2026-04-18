@@ -70,10 +70,16 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat px-4 py-6"
-      style={{ backgroundImage: "url('/polibatam.jpg')" }}
+      className="relative min-h-screen px-4 py-6"
     >
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/polibatam.jpg')" }}
+      />
+      {/* Color overlay #0E1D34 50% */}
+      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(14,29,52,0.5)' }} />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl items-center justify-center">
         <div className="w-full overflow-hidden rounded-[30px] border border-white/20 bg-slate-950/70 shadow-[0_24px_80px_rgba(15,23,42,0.55)] backdrop-blur-sm">
           <div className="border-b border-white/10 px-5 py-6 text-center text-white md:px-8">
             <div className="mb-4 flex items-center justify-between gap-3">
