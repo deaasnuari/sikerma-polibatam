@@ -12,9 +12,7 @@ export default function AdminFooter() {
             {/* Company Info - Left */}
             <div className="flex-1">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <div className="w-5 h-5 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-xs">S</span>
-                </div>
+                <img src="/polibatam_logo.png" alt="Logo Polibatam" className="w-8 h-8 object-contain flex-shrink-0" />
                 <h3 className="text-xs font-bold">SIKERMA POLIBATAM</h3>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed mb-1.5">

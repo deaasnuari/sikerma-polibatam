@@ -88,7 +88,7 @@ export default function AdminNavbar({ toggleSidebar }: AdminNavbarProps) {
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center justify-center flex-shrink-0">
               <Image
-                src="/logo-polibatam.png"
+                src="/polibatam_logo.png"
                 alt="Logo Polibatam"
                 width={30}
                 height={30}

@@ -67,7 +67,7 @@ export default function AdminSidebar({
         {/* Logo */}
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-700/60">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">S</div>
+            <img src="/polibatam_logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0" />
             {isOpen && (
               <div className="text-xs font-bold truncate">
                 <p className="text-white text-sm leading-tight">{portalTitle}</p>
