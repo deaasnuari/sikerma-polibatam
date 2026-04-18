@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, Eye, Filter, Search } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search } from 'lucide-react';
 
 interface KerjasamaItem {
   id: number;
@@ -105,7 +105,11 @@ const statusStyle: Record<KerjasamaItem['status'], string> = {
 export default function DaftarKerjasamaEksternalPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
-  const [filterTahun, setFilterTahun] = useState('Semua Tahun');
+  const [filterTahun, setFilterTahun] = useState<string | null>(null);
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [yearRangeStart, setYearRangeStart] = useState(currentYear - 4);
+  const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
   const filteredItems = useMemo(() => {
     const keyword = search.toLowerCase().trim();
@@ -118,7 +122,7 @@ export default function DaftarKerjasamaEksternalPage() {
         item.unit.toLowerCase().includes(keyword);
 
       const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
-      const matchesTahun = filterTahun === 'Semua Tahun' || item.tahun === filterTahun;
+      const matchesTahun = filterTahun === null || item.tahun === filterTahun;
 
       return matchesSearch && matchesStatus && matchesTahun;
     });
@@ -172,16 +176,78 @@ export default function DaftarKerjasamaEksternalPage() {
               <option>Berakhir</option>
             </select>
 
-            <select
-              value={filterTahun}
-              onChange={(event) => setFilterTahun(event.target.value)}
-              className="input-field h-10 px-3 text-sm text-slate-700"
-            >
-              <option>Semua Tahun</option>
-              <option>2026</option>
-              <option>2025</option>
-              <option>2024</option>
-            </select>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setYearPickerOpen((prev) => !prev)}
+                className="input-field inline-flex h-10 min-w-[150px] items-center justify-between gap-2 px-3 text-sm text-slate-700"
+              >
+                <span>{filterTahun ?? 'Pilih Tahun'}</span>
+                <CalendarDays size={15} className="text-slate-500" />
+              </button>
+
+              {yearPickerOpen && (
+                <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-[280px] rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                  <div className="mb-3 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setYearRangeStart((prev) => prev - 12)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {yearRangeStart} - {yearRangeStart + 11}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setYearRangeStart((prev) => prev + 12)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {yearGrid.map((year) => {
+                      const isSelected = String(year) === filterTahun;
+
+                      return (
+                        <button
+                          key={year}
+                          type="button"
+                          onClick={() => {
+                            setFilterTahun(String(year));
+                            setYearPickerOpen(false);
+                          }}
+                          className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                            isSelected
+                              ? 'border-[#071B3C] bg-[#071B3C] text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-[#071B3C] hover:text-[#071B3C]'
+                          }`}
+                        >
+                          {year}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <p className="text-xs text-slate-500">Pilih tahun dokumen</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterTahun(null);
+                        setYearPickerOpen(false);
+                      }}
+                      className="text-xs font-semibold text-[#071B3C] hover:text-[#0d2b5b]"
+                    >
+                      Semua Tahun
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
