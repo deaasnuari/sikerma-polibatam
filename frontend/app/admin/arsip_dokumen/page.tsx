@@ -22,7 +22,7 @@ interface ArsipDokumen {
   buktiFollowUp: string | null;
 }
 
-const dummyData: ArsipDokumen[] = [
+const initialData: ArsipDokumen[] = [
   {
     id: 1,
     noDokumen: 'MoA/001/2026',
@@ -89,19 +89,27 @@ const jenisColor: Record<string, string> = {
 
 export default function ArsipDokumenPage() {
   const [search, setSearch] = useState('');
+  const [data, setData] = useState<ArsipDokumen[]>(initialData);
 
-  const filtered = dummyData.filter(
+  const handleDelete = (id: number) => {
+    const item = data.find((d) => d.id === id);
+    if (!item) return;
+    if (!confirm(`Yakin ingin menghapus arsip "${item.noDokumen}" (${item.namaMitra})?`)) return;
+    setData((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const filtered = data.filter(
     (item) =>
       item.namaMitra.toLowerCase().includes(search.toLowerCase()) ||
       item.noDokumen.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalArsip = dummyData.length;
-  const kadaluarsaTahunIni = dummyData.filter((item) => {
+  const totalArsip = data.length;
+  const kadaluarsaTahunIni = data.filter((item) => {
     const tahun = item.berlakuHingga.split(' ').pop();
     return tahun === '2026';
   }).length;
-  const tidakDirespon = dummyData.filter(
+  const tidakDirespon = data.filter(
     (item) => item.statusFollowUp === 'Tidak Direspon'
   ).length;
 
@@ -312,6 +320,7 @@ export default function ArsipDokumenPage() {
                         <Download size={14} className="text-blue-600" />
                       </button>
                       <button
+                        onClick={() => handleDelete(item.id)}
                         className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
                         title="Hapus Arsip"
                       >

@@ -242,7 +242,7 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
 
     let polibatamLogoSrc = '';
     try {
-      polibatamLogoSrc = await loadImageAsDataUrl('/logo-polibatam.png');
+      polibatamLogoSrc = await loadImageAsDataUrl('/polibatam_logo.png');
     } catch {
       polibatamLogoSrc = '';
     }

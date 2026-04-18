@@ -395,6 +395,27 @@ export default function DetailStoryPage() {
     deskripsi: '',
   });
 
+  const [aktivitasList, setAktivitasList] = useState<AktivitasItem[]>(data?.aktivitas ?? []);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [showEditDokumen, setShowEditDokumen] = useState(false);
+  const [dokInfo, setDokInfo] = useState({
+    nama: data?.nama ?? '',
+    nomorDokumen: data?.nomorDokumen ?? '',
+    jenisDokumen: (data?.jenisDokumen ?? 'MoA') as string,
+    kategoriMitra: data?.kategoriMitra ?? '',
+    tanggalMulai: data?.tanggalMulai ?? '',
+    tanggalBerakhir: data?.tanggalBerakhir ?? '',
+    alamat: data?.alamat ?? '',
+    email: data?.email ?? '',
+    telepon: data?.telepon ?? '',
+  });
+  const [dokForm, setDokForm] = useState({ ...dokInfo });
+
+  const totalAktivitas = aktivitasList.length;
+  const selesaiCount = aktivitasList.filter((a) => a.status === 'selesai').length;
+  const berlangsungCount = aktivitasList.filter((a) => a.status === 'berlangsung').length;
+  const direncanakanCount = aktivitasList.filter((a) => a.status === 'direncanakan').length;
+
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -406,7 +427,18 @@ export default function DetailStoryPage() {
   };
 
   const handleSubmit = () => {
-    console.log('Submit:', formData);
+    if (editingId !== null) {
+      setAktivitasList((prev) =>
+        prev.map((a) => (a.id === editingId ? { ...a, ...formData } : a))
+      );
+      setEditingId(null);
+    } else {
+      const newId =
+        aktivitasList.length > 0
+          ? Math.max(...aktivitasList.map((a) => a.id)) + 1
+          : 1;
+      setAktivitasList((prev) => [...prev, { id: newId, ...formData }]);
+    }
     setShowAddForm(false);
     setFormData({
       judul: '',
@@ -422,6 +454,7 @@ export default function DetailStoryPage() {
 
   const handleCancel = () => {
     setShowAddForm(false);
+    setEditingId(null);
     setFormData({
       judul: '',
       jenisAktivitas: '',
@@ -432,6 +465,44 @@ export default function DetailStoryPage() {
       picMitra: '',
       deskripsi: '',
     });
+  };
+
+  const handleStartEdit = (item: AktivitasItem) => {
+    setEditingId(item.id);
+    setFormData({
+      judul: item.judul,
+      jenisAktivitas: item.jenisAktivitas,
+      tanggal: item.tanggal,
+      peserta: item.peserta,
+      status: item.status,
+      picPolibatam: item.picPolibatam,
+      picMitra: item.picMitra,
+      deskripsi: item.deskripsi,
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDeleteAktivitas = (id: number) => {
+    if (confirm('Apakah Anda yakin ingin menghapus aktivitas ini?')) {
+      setAktivitasList((prev) => prev.filter((a) => a.id !== id));
+    }
+  };
+
+  const handleOpenEditDokumen = () => {
+    setDokForm({ ...dokInfo });
+    setShowEditDokumen(true);
+  };
+
+  const handleSaveDokumen = () => {
+    setDokInfo({ ...dokForm });
+    setShowEditDokumen(false);
+  };
+
+  const handleDokFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setDokForm((prev) => ({ ...prev, [name]: value }));
   };
 
   if (!data) {
@@ -463,7 +534,10 @@ export default function DetailStoryPage() {
           Kembali
         </button>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium">
+          <button
+            onClick={handleOpenEditDokumen}
+            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium"
+          >
             <FileEdit size={15} />
             Edit Dokumen
           </button>
@@ -478,9 +552,9 @@ export default function DetailStoryPage() {
       <div className="bg-[#0e1d34] rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{data.nama}</h1>
+            <h1 className="text-2xl font-bold">{dokInfo.nama}</h1>
             <p className="text-sm text-blue-200 mt-1">
-              No. Dokumen: {data.nomorDokumen}
+              No. Dokumen: {dokInfo.nomorDokumen}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -491,21 +565,21 @@ export default function DetailStoryPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
           <div>
             <p className="text-xs text-blue-300">Jenis Dokumen</p>
-            <span className={`inline-block mt-1 text-xs font-semibold px-3 py-1 rounded-full border ${jenisColor[data.jenisDokumen]}`}>
-              {data.jenisDokumen}
+            <span className={`inline-block mt-1 text-xs font-semibold px-3 py-1 rounded-full border ${jenisColor[dokInfo.jenisDokumen] || jenisColor['MoA']}`}>
+              {dokInfo.jenisDokumen}
             </span>
           </div>
           <div>
             <p className="text-xs text-blue-300">Kategori Mitra</p>
-            <p className="font-semibold mt-1">{data.kategoriMitra}</p>
+            <p className="font-semibold mt-1">{dokInfo.kategoriMitra}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300">Tanggal Mulai</p>
-            <p className="font-semibold mt-1">{data.tanggalMulai}</p>
+            <p className="font-semibold mt-1">{dokInfo.tanggalMulai}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300">Tanggal Berakhir</p>
-            <p className="font-semibold mt-1">{data.tanggalBerakhir}</p>
+            <p className="font-semibold mt-1">{dokInfo.tanggalBerakhir}</p>
           </div>
         </div>
       </div>
@@ -521,15 +595,15 @@ export default function DetailStoryPage() {
             <div className="space-y-2 text-sm text-gray-600">
               <p className="flex items-center gap-2">
                 <MapPin size={14} className="text-gray-400" />
-                {data.alamat}
+                {dokInfo.alamat}
               </p>
               <p className="flex items-center gap-2">
                 <Mail size={14} className="text-gray-400" />
-                {data.email}
+                {dokInfo.email}
               </p>
               <p className="flex items-center gap-2">
                 <Phone size={14} className="text-gray-400" />
-                {data.telepon}
+                {dokInfo.telepon}
               </p>
             </div>
           </div>
@@ -574,7 +648,7 @@ export default function DetailStoryPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Aktivitas</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{data.totalAktivitas}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{totalAktivitas}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
             <Activity size={20} className="text-blue-600" />
@@ -583,7 +657,7 @@ export default function DetailStoryPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium">Selesai</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{data.selesai}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{selesaiCount}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
             <CheckCircle size={20} className="text-green-600" />
@@ -592,7 +666,7 @@ export default function DetailStoryPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium">Berlangsung</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{data.berlangsung}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{berlangsungCount}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
             <Timer size={20} className="text-purple-600" />
@@ -601,7 +675,7 @@ export default function DetailStoryPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium">Direncanakan</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{data.direncanakan}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{direncanakanCount}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
             <CalendarClock size={20} className="text-orange-600" />
@@ -617,7 +691,20 @@ export default function DetailStoryPage() {
           </h2>
           {!showAddForm && (
             <button
-              onClick={() => setShowAddForm(true)}
+              onClick={() => {
+                setEditingId(null);
+                setFormData({
+                  judul: '',
+                  jenisAktivitas: '',
+                  tanggal: '',
+                  peserta: 0,
+                  status: 'direncanakan' as 'direncanakan' | 'berlangsung' | 'selesai',
+                  picPolibatam: '',
+                  picMitra: '',
+                  deskripsi: '',
+                });
+                setShowAddForm(true);
+              }}
               className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
             >
               <Plus size={15} />
@@ -630,7 +717,7 @@ export default function DetailStoryPage() {
         {showAddForm && (
           <div className="border border-gray-200 rounded-xl p-6 mb-6 bg-gray-50/50">
             <h3 className="text-lg font-bold text-gray-900 mb-5">
-              Tambah Aktivitas Baru
+              {editingId !== null ? 'Edit Aktivitas' : 'Tambah Aktivitas Baru'}
             </h3>
 
             <div className="space-y-5">
@@ -770,7 +857,7 @@ export default function DetailStoryPage() {
                   onClick={handleSubmit}
                   className="bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition"
                 >
-                  Simpan Aktivitas
+                  {editingId !== null ? 'Simpan Perubahan' : 'Simpan Aktivitas'}
                 </button>
                 <button
                   onClick={handleCancel}
@@ -785,13 +872,13 @@ export default function DetailStoryPage() {
 
         {/* Aktivitas List */}
         <div className="space-y-4">
-          {data.aktivitas.length === 0 && (
+          {aktivitasList.length === 0 && (
             <div className="text-center py-8 text-gray-400">
               Belum ada aktivitas tercatat
             </div>
           )}
 
-          {data.aktivitas.map((item) => {
+          {aktivitasList.map((item) => {
             const sc = statusAktivitasColor[item.status];
             return (
               <div
@@ -839,10 +926,16 @@ export default function DetailStoryPage() {
                 </div>
 
                 <div className="flex items-start gap-2 shrink-0">
-                  <button className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition">
+                  <button
+                    onClick={() => handleStartEdit(item)}
+                    className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"
+                  >
                     <Pencil size={14} className="text-blue-600" />
                   </button>
-                  <button className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition">
+                  <button
+                    onClick={() => handleDeleteAktivitas(item.id)}
+                    className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
+                  >
                     <Trash2 size={14} className="text-red-600" />
                   </button>
                 </div>
@@ -851,6 +944,85 @@ export default function DetailStoryPage() {
           })}
         </div>
       </div>
+
+      {/* Edit Dokumen Modal */}
+      {showEditDokumen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-[#0e1d34] to-[#1a3a5c] rounded-t-2xl px-6 py-5">
+              <h2 className="text-lg font-bold text-white">Edit Dokumen Kerjasama</h2>
+              <p className="text-sm text-blue-200 mt-0.5">Perbarui informasi dokumen kerjasama</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Mitra</label>
+                <input type="text" name="nama" value={dokForm.nama} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nomor Dokumen</label>
+                  <input type="text" name="nomorDokumen" value={dokForm.nomorDokumen} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Jenis Dokumen</label>
+                  <div className="relative">
+                    <select name="jenisDokumen" value={dokForm.jenisDokumen} onChange={handleDokFormChange} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                      <option value="MoA">MoA</option>
+                      <option value="MoU">MoU</option>
+                      <option value="IA">IA</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Kategori Mitra</label>
+                  <div className="relative">
+                    <select name="kategoriMitra" value={dokForm.kategoriMitra} onChange={handleDokFormChange} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                      <option value="Dalam Negeri">Dalam Negeri</option>
+                      <option value="Luar Negeri">Luar Negeri</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Alamat</label>
+                  <input type="text" name="alamat" value={dokForm.alamat} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tanggal Mulai</label>
+                  <input type="text" name="tanggalMulai" value={dokForm.tanggalMulai} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" placeholder="DD/MM/YYYY" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tanggal Berakhir</label>
+                  <input type="text" name="tanggalBerakhir" value={dokForm.tanggalBerakhir} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" placeholder="DD/MM/YYYY" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                  <input type="email" name="email" value={dokForm.email} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Telepon</label>
+                  <input type="text" name="telepon" value={dokForm.telepon} onChange={handleDokFormChange} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setShowEditDokumen(false)} className="border border-gray-300 text-gray-700 text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-gray-50 transition">
+                Batal
+              </button>
+              <button onClick={handleSaveDokumen} className="bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition">
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

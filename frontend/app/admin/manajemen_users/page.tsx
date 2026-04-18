@@ -86,10 +86,53 @@ export default function ManajemenUserPage() {
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('Semua Role');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editUser, setEditUser] = useState<UserItem | null>(null);
   const [users, setUsers] = useState(dummyUsers);
 
+  // Form state shared by add & edit
+  const emptyForm = { nama: '', email: '', role: '' as string, unitInstansi: '', status: 'Aktif' as string, phone: '', username: '', password: '' };
+  const [form, setForm] = useState(emptyForm);
+
+  const openAdd = () => {
+    setForm(emptyForm);
+    setShowAddModal(true);
+  };
+
+  const openEdit = (item: UserItem) => {
+    setForm({ nama: item.nama, email: item.email, role: item.role, unitInstansi: item.unitInstansi, status: item.status, phone: '', username: '', password: '' });
+    setEditUser(item);
+  };
+
+  const handleSaveAdd = () => {
+    if (!form.nama.trim() || !form.email.trim() || !form.role) { alert('Lengkapi semua field wajib.'); return; }
+    const newUser: UserItem = {
+      id: Date.now(),
+      nama: form.nama,
+      email: form.email,
+      role: form.role as UserItem['role'],
+      unitInstansi: form.unitInstansi,
+      status: 'Aktif',
+    };
+    setUsers((prev) => [...prev, newUser]);
+    setShowAddModal(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editUser) return;
+    if (!form.nama.trim() || !form.email.trim() || !form.role) { alert('Lengkapi semua field wajib.'); return; }
+    setUsers((prev) => prev.map((u) => u.id === editUser.id ? { ...u, nama: form.nama, email: form.email, role: form.role as UserItem['role'], unitInstansi: form.unitInstansi, status: form.status as UserItem['status'] } : u));
+    setEditUser(null);
+  };
+
   const handleDelete = (id: number) => {
+    const item = users.find((u) => u.id === id);
+    if (!item) return;
+    if (!confirm(`Yakin ingin menghapus user "${item.nama}"?`)) return;
     setUsers((prev) => prev.filter((user) => user.id !== id));
+  };
+
+  const handleToggleStatus = (id: number) => {
+    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: u.status === 'Aktif' ? 'NonAktif' : 'Aktif' } : u));
   };
 
   const filtered = users.filter((item) => {
@@ -118,7 +161,7 @@ export default function ManajemenUserPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAdd}
           className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
         >
           <Plus size={16} />
@@ -282,16 +325,19 @@ export default function ManajemenUserPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text}`}
+                      <button
+                        onClick={() => handleToggleStatus(item.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition hover:opacity-80 ${sc.bg} ${sc.text}`}
+                        title="Klik untuk ubah status"
                       >
                         <UserCheck size={12} />
                         {item.status}
-                      </span>
+                      </button>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => openEdit(item)}
                           className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"
                           title="Edit User"
                         >
@@ -330,6 +376,8 @@ export default function ManajemenUserPage() {
                   </label>
                   <input
                     type="text"
+                    value={form.nama}
+                    onChange={(e) => setForm({ ...form, nama: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     placeholder="Masukkan nama lengkap"
                   />
@@ -340,6 +388,8 @@ export default function ManajemenUserPage() {
                   </label>
                   <input
                     type="text"
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     placeholder="Masukkan username"
                   />
@@ -353,6 +403,8 @@ export default function ManajemenUserPage() {
                   </label>
                   <input
                     type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     placeholder="contoh@polibatam.ac.id"
                   />
@@ -363,6 +415,8 @@ export default function ManajemenUserPage() {
                   </label>
                   <input
                     type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     placeholder="Masukkan password"
                   />
@@ -375,7 +429,11 @@ export default function ManajemenUserPage() {
                     Role <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <select className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <select
+                      value={form.role}
+                      onChange={(e) => setForm({ ...form, role: e.target.value })}
+                      className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
                       <option value="">Pilih Role</option>
                       <option value="Admin">Admin</option>
                       <option value="Jurusan">Jurusan</option>
@@ -395,6 +453,8 @@ export default function ManajemenUserPage() {
                   </label>
                   <input
                     type="text"
+                    value={form.unitInstansi}
+                    onChange={(e) => setForm({ ...form, unitInstansi: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     placeholder="Nama unit/instansi"
                   />
@@ -407,6 +467,8 @@ export default function ManajemenUserPage() {
                 </label>
                 <input
                   type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   placeholder="Contoh: 08123456789"
                 />
@@ -421,10 +483,75 @@ export default function ManajemenUserPage() {
                 Batal
               </button>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={handleSaveAdd}
                 className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition"
               >
                 Simpan User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-5">
+              Edit User — {editUser.nama}
+            </h3>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
+                  <input type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
+                  <div className="relative">
+                    <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                      <option value="Admin">Admin</option>
+                      <option value="Jurusan">Jurusan</option>
+                      <option value="Prodi">Prodi</option>
+                      <option value="Pimpinan">Pimpinan</option>
+                      <option value="Mitra">Mitra</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit/Instansi</label>
+                  <input type="text" value={form.unitInstansi} onChange={(e) => setForm({ ...form, unitInstansi: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                <div className="relative">
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="Aktif">Aktif</option>
+                    <option value="NonAktif">NonAktif</option>
+                    <option value="Ditolak">Ditolak</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setEditUser(null)} className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
+                Batal
+              </button>
+              <button onClick={handleSaveEdit} className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition">
+                Simpan Perubahan
               </button>
             </div>
           </div>
