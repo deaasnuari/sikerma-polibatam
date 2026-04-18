@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from 'lucide-react';
+import DetailKerjasamaModal from './DetailKerjasamaModal';
+import EditDokumenModal from './EditDokumenModal';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -16,7 +18,7 @@ interface KerjasamaItem {
   status: ApprovalStatus;
 }
 
-const defaultData: KerjasamaItem[] = [
+const initialData: KerjasamaItem[] = [
   { noDokumen: 'MoU/001/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoU', unit: 'Teknik Informatika', tanggalMulai: '28 Feb 2026', berlakuHingga: '28 Feb 2029', status: 'Menunggu' },
   { noDokumen: 'MoA/002/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoA', unit: 'Jurusan Teknik', tanggalMulai: '27 Feb 2026', berlakuHingga: '28 Feb 2028', status: 'Disetujui' },
   { noDokumen: 'IA/003/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'IA', unit: 'Teknik Elektro', tanggalMulai: '26 Feb 2026', berlakuHingga: '26 Feb 2027', status: 'Menunggu' },
@@ -46,14 +48,22 @@ const statusOptions = ['Semua Status', 'Menunggu', 'Disetujui', 'Ditolak'];
 const ITEMS_PER_PAGE = 10;
 
 export default function InternalRekapDataPage() {
+  const [data, setData] = useState<KerjasamaItem[]>(initialData);
   const [search, setSearch] = useState('');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [currentPage, setCurrentPage] = useState(1);
+  const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
+  const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
+
+  function handleDelete(item: KerjasamaItem) {
+    if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
+    setData((prev) => prev.filter((d) => d.noDokumen !== item.noDokumen));
+  }
 
   const filteredData = useMemo(() => {
-    return defaultData.filter((item) => {
+    return data.filter((item) => {
       const keyword = search.toLowerCase().trim();
       const matchesSearch =
         keyword === '' ||
@@ -64,7 +74,7 @@ export default function InternalRekapDataPage() {
       const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
       return matchesSearch && matchesJurusan && matchesJenis && matchesStatus;
     });
-  }, [search, filterJurusan, filterJenis, filterStatus]);
+  }, [data, search, filterJurusan, filterJenis, filterStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -181,13 +191,13 @@ export default function InternalRekapDataPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
-                        <button type="button" className="text-[#1E376C] transition-colors hover:text-[#2B4A93]" title="Lihat detail">
+                        <button type="button" onClick={() => setDetailItem(row)} className="text-[#1E376C] transition-colors hover:text-[#2B4A93]" title="Lihat detail">
                           <Eye size={16} />
                         </button>
-                        <button type="button" className="text-green-600 transition-colors hover:text-green-700" title="Edit">
+                        <button type="button" onClick={() => setEditItem(row)} className="text-green-600 transition-colors hover:text-green-700" title="Edit">
                           <Pencil size={16} />
                         </button>
-                        <button type="button" className="text-red-600 transition-colors hover:text-red-700" title="Hapus">
+                        <button type="button" onClick={() => handleDelete(row)} className="text-red-600 transition-colors hover:text-red-700" title="Hapus">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -229,6 +239,21 @@ export default function InternalRekapDataPage() {
           </div>
         </div>
       </section>
+
+      {detailItem && (
+        <DetailKerjasamaModal item={detailItem} onClose={() => setDetailItem(null)} />
+      )}
+
+      {editItem && (
+        <EditDokumenModal
+          item={editItem}
+          onClose={() => setEditItem(null)}
+          onSave={(data) => {
+            setEditItem(null);
+            alert(`Dokumen "${data.namaMitra}" berhasil diperbarui.`);
+          }}
+        />
+      )}
     </div>
   );
 }
