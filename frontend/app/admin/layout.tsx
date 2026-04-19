@@ -42,8 +42,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen bg-gray-100">
-        {/* Fixed Navbar - Full Width */}
-        <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="sticky top-0 z-50 px-4 pt-4">
+          <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        </div>
 
         {/* Main Container - Sidebar + Content with gaps */}
         <div className="flex flex-1 overflow-hidden gap-4 px-4 pt-4 pb-2 min-h-0">

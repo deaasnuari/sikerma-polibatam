@@ -85,17 +85,24 @@ class AuthController extends Controller
 
         $user = User::query()
             ->whereRaw('LOWER(email) = ?', [$identifier])
+            ->orWhereRaw('LOWER(username) = ?', [$identifier])
             ->first();
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+        if (! $user) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial login tidak valid.'],
+                'email' => ['Email atau username tidak terdaftar.'],
             ]);
         }
 
         if ($validated['role'] !== $user->role) {
             throw ValidationException::withMessages([
                 'role' => ['Role yang dipilih tidak sesuai dengan akun ini.'],
+            ]);
+        }
+
+        if (! Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Password yang Anda masukkan salah.'],
             ]);
         }
 

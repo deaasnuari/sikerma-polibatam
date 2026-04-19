@@ -41,8 +41,9 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Navbar - Fixed at top */}
-      <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="sticky top-0 z-50 px-4 pt-4">
+        <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      </div>
 
       {/* Main container with sidebar and content */}
       <div className="flex flex-1 overflow-hidden">

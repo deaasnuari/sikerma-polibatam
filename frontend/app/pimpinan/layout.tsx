@@ -61,7 +61,9 @@ export default function PimpinanLayout({ children }: { children: React.ReactNode
   return (
     <ProtectedRoute requiredRole="pimpinan">
       <div className="flex h-screen flex-col bg-gray-100">
-        <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="sticky top-0 z-50 px-4 pt-4">
+          <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        </div>
 
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden px-4 pt-4 pb-2">
           <div className="h-full flex-shrink-0 self-stretch">

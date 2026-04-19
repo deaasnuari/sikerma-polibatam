@@ -47,6 +47,20 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    if (!email.trim()) {
+      setError('Masukkan email terdaftar terlebih dahulu untuk reset password.');
+      return;
+    }
+
+    const subject = encodeURIComponent('Reset Password SIKERMA');
+    const body = encodeURIComponent(
+      `Halo Admin SIKERMA,\n\nSaya ingin melakukan reset password untuk akun dengan email: ${email.trim()}\n\nTerima kasih.`
+    );
+
+    window.location.href = `mailto:humas@polibatam.ac.id?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div
       className="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat px-4 py-6"
@@ -100,7 +114,8 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Masukkan email"
+                  placeholder="Masukkan email terdaftar"
+                  autoComplete="email"
                   className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
                   required
                 />
@@ -117,7 +132,8 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
+                  placeholder="Masukkan password akun"
+                  autoComplete="current-password"
                   className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
                   required
                 />
@@ -168,8 +184,17 @@ export default function LoginPage() {
                 />
                 Ingat Saya
               </label>
-              <span className="rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-700">Aman</span>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="font-semibold text-[#173B82] transition hover:underline"
+              >
+                Lupa Password?
+              </button>
             </div>
+            <p className="text-[11px] text-slate-500">
+              Gunakan email yang terdaftar dan password akun Anda untuk masuk.
+            </p>
           </form>
 
           <div className="mt-5 border-t border-slate-200 pt-3 text-center text-sm text-slate-600">

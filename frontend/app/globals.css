@@ -3,7 +3,8 @@
 :root {
   --color-primary: #091222;
   --color-secondary: #173B82;
-  --color-accent: #3B82F6;
+  --color-accent: #57C9E8;
+  --color-highlight: #F28C00;
   --color-bg: #F8FAFC;
   --color-surface: #FFFFFF;
   --color-text: #1F2937;
@@ -151,7 +152,7 @@ body {
 
 .badge-warning {
   background-color: #fef3c7;
-  color: #92400e;
+  color: #f2682a;
 }
 
 .badge-danger {

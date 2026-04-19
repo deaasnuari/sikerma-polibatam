@@ -70,7 +70,9 @@ export default function InternalLayout({ children }: { children: React.ReactNode
   return (
     <ProtectedRoute requiredRole="internal">
       <div className="flex h-screen flex-col bg-gray-100">
-        <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="sticky top-0 z-50 px-4 pt-4">
+          <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        </div>
 
         <div className="flex flex-1 overflow-hidden gap-4 px-4 pt-4 pb-2 min-h-0">
           <div className="flex-shrink-0 h-full self-stretch">

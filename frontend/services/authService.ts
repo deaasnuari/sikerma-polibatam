@@ -68,10 +68,12 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthUser> 
 }
 
 export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
+  const identifier = payload.email.trim().toLowerCase();
   const selectedRole = normalizeRole(payload.role);
   const hasApiUrl = Boolean(process.env.NEXT_PUBLIC_API_URL);
   const apiPayload = {
     ...payload,
+    email: identifier,
     role: selectedRole === 'user' ? payload.role : selectedRole,
   };
 
@@ -86,7 +88,7 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
       if (userData?.email) {
         return {
           id: String(userData.id ?? '1'),
-          name: userData.name ?? payload.email.split('@')[0],
+          name: userData.name ?? identifier.split('@')[0],
           username: userData.username,
           email: userData.email,
           institution_name: userData.institution_name,
@@ -144,14 +146,21 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
     },
   };
 
-  const matchedDemoUser = demoAccounts[payload.email.toLowerCase()];
-  if (matchedDemoUser && payload.password === 'Sikerma#2026') {
-    if (selectedRole !== 'user' && matchedDemoUser.role !== selectedRole) {
-      throw new Error('Role yang dipilih tidak sesuai dengan akun ini');
-    }
+  const matchedDemoUser = Object.values(demoAccounts).find(
+    (user) => user.email.toLowerCase() === identifier || user.username?.toLowerCase() === identifier,
+  );
 
-    return matchedDemoUser;
+  if (!matchedDemoUser) {
+    throw new Error('Email atau username tidak terdaftar.');
   }
 
-  throw new Error('Email atau password salah');
+  if (selectedRole !== 'user' && matchedDemoUser.role !== selectedRole) {
+    throw new Error('Role yang dipilih tidak sesuai dengan akun ini.');
+  }
+
+  if (payload.password !== 'Sikerma#2026') {
+    throw new Error('Password yang Anda masukkan salah.');
+  }
+
+  return matchedDemoUser;
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import AdminNavbar from '@/components/admin/AdminNavbar';
+import AdminFooter from '@/components/admin/AdminFooter';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -103,28 +103,8 @@ function PieChart({ size, segments }: { size: number; segments: { value: number;
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-
   const [currentPage, setCurrentPage] = useState(1);
-  const [search, setSearch]           = useState('');
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/admin');
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const [search, setSearch] = useState('');
 
   // ── Table logic ──────────────────────────────────────────────────────────────
   const filtered = tableData.filter(
@@ -145,47 +125,9 @@ export default function Home() {
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <main className="bg-[#f8f9fa] font-sans">
-
-      {/* ── NAVBAR ── */}
-      <nav className="sticky top-0 z-50 bg-white shadow-md h-[72px] flex items-center justify-between px-8">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <img src="/polibatam_logo.png" alt="Logo Polibatam" className="w-12 h-12 object-contain flex-shrink-0" />
-          <div>
-            <p className="font-bold text-[#1e376c] text-[15px] leading-tight">SIKERMA POLIBATAM</p>
-            <p className="text-[11px] text-gray-500">Sistem Informasi Kerjasama - Politeknik Negeri Batam</p>
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <div className="hidden md:flex gap-7">
-          {[
-            { label: 'Beranda', href: '#beranda' },
-            { label: 'Info Kerjasama', href: '#info-kerjasama' },
-            { label: 'Kontak Kami', href: '#kontak' },
-          ].map((item) => (
-            <a key={item.label} href={item.href} className="text-sm text-gray-700 hover:text-[#1e376c] active:text-[#FF7F00] focus:text-[#FF7F00] transition-colors" style={{ outline: 'none', boxShadow: 'none' }}>
-              {item.label}
-            </a>
-          ))}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-2">
-          <a
-            href="/register"
-            className="px-5 py-2 rounded-md bg-[#1e376c] text-white text-sm font-medium hover:bg-[#162a55] transition-colors"
-          >
-            Register
-          </a>
-          <a
-            href="/login"
-            className="px-5 py-2 rounded-md bg-[#1e376c] text-white text-sm font-medium hover:bg-[#162a55] transition-colors"
-          >
-            Login
-          </a>
-        </div>
-      </nav>
+      <div className="sticky top-0 z-50">
+        <AdminNavbar isPublic />
+      </div>
 
       {/* ── HERO ── */}
       <section
@@ -454,43 +396,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer id="kontak" className="bg-[#0e1d34] px-12 pt-9 pb-0">
-        {/* Top row */}
-        <div className="flex items-start justify-between pb-6 flex-wrap gap-6">
-          {/* Left: brand */}
-          <div className="flex items-center gap-3">
-            <img src="/polibatam_logo.png" alt="Logo Polibatam" className="w-14 h-14 object-contain flex-shrink-0" />
-            <div>
-              <p className="text-white font-bold text-[15px]">SIKERMA POLIBATAM</p>
-              <p className="text-white/55 text-[11px] mt-0.5">
-                Sistem Informasi Kerjasama - Politeknik Negeri Batam
-              </p>
-            </div>
-          </div>
-
-          {/* Right: contact */}
-          <div className="text-right">
-            <p className="text-white/65 text-[11px] leading-relaxed mb-1">
-              Alamat: Jl. Ahmad Yani Batam Kota, Kota Batam,
-              <br />
-              Kepulauan Riau, Indonesia
-            </p>
-            <p className="text-white/65 text-[11px] leading-loose">
-              Phone : +62-778-469858 Ext.1017
-              <br />
-              Fax : +62-778-463620
-              <br />
-              Email : info@polibatam.ac.id
-            </p>
-          </div>
-        </div>
-
-        {/* Divider + copyright */}
-        <div className="border-t border-white/15 py-4 text-center">
-          <p className="text-white/55 text-[13px]">© 2025 Politeknik Negeri Batam</p>
-        </div>
-      </footer>
+      <div id="kontak" className="px-4 pb-4 pt-4">
+        <AdminFooter />
+      </div>
     </main>
   );
 }
