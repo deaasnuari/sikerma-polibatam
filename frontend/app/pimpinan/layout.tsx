@@ -46,12 +46,6 @@ export default function PimpinanLayout({ children }: { children: React.ReactNode
       href: '/pimpinan/daftar_kerjasama',
       icon: FileText,
     },
-    {
-      label: 'Keluar',
-      href: '#logout',
-      icon: LogOut,
-      onClick: handleLogout,
-    },
   ];
 
   if (!isHydrated) {
@@ -73,7 +67,8 @@ export default function PimpinanLayout({ children }: { children: React.ReactNode
               menuItems={menuItems}
               portalTitle="SIKERMA"
               portalSubtitle="Pimpinan"
-              backgroundClassName="bg-[#102A43]"
+              backgroundClassName="bg-[#091222]"
+              activeItemClassName="border-l-[#f5c542] bg-white/12 text-white shadow-sm"
             />
           </div>
 

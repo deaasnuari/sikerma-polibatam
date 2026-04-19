@@ -97,15 +97,6 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
     >
       <div className="px-4 py-3 md:py-3.5 flex justify-between items-center">
         <div className="flex items-center gap-2 flex-1">
-          {toggleSidebar && !isPublic && (
-            <button
-              onClick={toggleSidebar}
-              className="text-[#091222] hover:bg-slate-100 rounded p-2 transition-all duration-200 md:hidden flex-shrink-0"
-              title="Toggle sidebar"
-            >
-              <Menu size={20} />
-            </button>
-          )}
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center justify-center flex-shrink-0">
               <Image
@@ -317,21 +308,18 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
         )}
       </div>
 
-      {isPublic && (
-        <div className="w-full overflow-hidden leading-none">
-          <svg
-            viewBox="0 0 1200 8"
-            preserveAspectRatio="none"
-            className="block h-2 w-full"
-            aria-hidden="true"
-            shapeRendering="crispEdges"
-          >
-            <rect width="1200" height="8" fill="var(--color-primary)" />
-            <polygon points="-30,0 82,0 58,8 -54,8" fill="var(--color-highlight)" />
-            <polygon points="76,0 180,0 156,8 52,8" fill="var(--color-accent)" />
-          </svg>
-        </div>
-      )}
+      <div className="w-full overflow-hidden leading-none">
+        <svg
+          viewBox="0 0 1200 12"
+          preserveAspectRatio="none"
+          className="block h-3 w-full"
+          aria-hidden="true"
+        >
+          <rect width="1200" height="12" fill="var(--color-primary)" />
+          <path d="M0 0 H120 L88 12 H0 Z" fill="var(--color-highlight)" />
+          <path d="M86 0 H268 L232 12 H50 Z" fill="var(--color-accent)" />
+        </svg>
+      </div>
     </header>
   );
 }

@@ -220,7 +220,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
           <button
             type="button"
             onClick={() => setShowTambah((prev) => !prev)}
-            className="relative z-10 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#091222] to-[#173B82] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:shadow-md"
+            className="relative z-10 inline-flex items-center gap-1.5 rounded-xl bg-[#091222] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#173B82] hover:shadow-md"
           >
             <Plus size={14} />
             Tambah Aktivitas

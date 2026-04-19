@@ -67,7 +67,7 @@ export default function LoginPage() {
       style={{ backgroundImage: "url('/polibatam.jpg')" }}
     >
       <div className="flex min-h-screen items-center justify-center bg-slate-950/55">
-        <div className="w-full max-w-[420px] rounded-[30px] border border-white/30 bg-white/90 p-5 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.45)] backdrop-blur-md md:p-6">
+        <div className="w-full max-w-[920px] rounded-[30px] border border-white/30 bg-white/90 p-4 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.45)] backdrop-blur-md md:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <button
               type="button"
@@ -81,131 +81,148 @@ export default function LoginPage() {
             <img src="/polibatam_logo.png" alt="Logo Polibatam" className="h-9 w-auto object-contain" />
           </div>
 
-          <div className="mb-5 text-center">
-            <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#173B82]">
-              Sikerma Polibatam
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold text-[#173B82]">Login</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Masuk untuk mengakses sistem kerja sama Polibatam.
-            </p>
-          </div>
-
-          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/90 p-3 text-xs leading-relaxed text-slate-600">
-            Registrasi mandiri saat ini hanya untuk <span className="font-semibold text-[#173B82]">mitra eksternal</span>.
-            Setelah daftar, akun mitra bisa langsung login tanpa menunggu approval.
-          </div>
-
-          {error && (
-            <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
-              <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Masukkan email terdaftar"
-                  autoComplete="email"
-                  className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
-                  required
-                />
+          <div className="grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-start md:gap-6">
+            <div className="rounded-2xl bg-slate-50/90 p-4 md:p-5">
+              <div className="text-center md:text-left">
+                <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#173B82]">
+                  Sikerma Polibatam
+                </p>
+                <h2 className="mt-3 text-3xl font-extrabold text-[#173B82]">Login</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Masuk untuk mengakses sistem kerja sama Polibatam.
+                </p>
               </div>
-            </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password akun"
-                  autoComplete="current-password"
-                  className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
-                  required
-                />
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/90 p-3 text-xs leading-relaxed text-slate-600">
+                Registrasi mandiri saat ini hanya untuk <span className="font-semibold text-[#173B82]">mitra eksternal</span>.
+                Setelah daftar, akun mitra bisa langsung login tanpa menunggu approval.
               </div>
-            </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
-                Role Akses
-              </label>
-              <div className="relative">
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="input-field h-11 w-full appearance-none rounded-xl px-4 text-sm text-slate-600"
-                  required
+              <div className="mt-4 hidden border-t border-slate-200 pt-4 text-sm text-slate-600 md:block">
+                Belum punya akun mitra?{' '}
+                <button
+                  type="button"
+                  onClick={() => router.push('/register')}
+                  className="font-semibold text-[#173B82] hover:underline"
                 >
-                  <option value="" disabled>
-                    Pilih Role
-                  </option>
-                  <option value="admin">Admin/Humas</option>
-                  <option value="pimpinan">Pimpinan</option>
-                  <option value="internal">Internal</option>
-                  <option value="external">Eksternal</option>
-                </select>
-                <ChevronDown
-                  size={18}
-                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
-                />
+                  Registrasi Mitra
+                </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary h-11 w-full rounded-xl font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            >
-                {isLoading ? 'Memproses...' : 'Masuk'}
-            </button>
+            <div>
+              {error && (
+                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                  <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
 
-            <div className="flex items-center justify-between pt-1 text-xs text-slate-600">
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
-                />
-                Ingat Saya
-              </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="font-semibold text-[#173B82] transition hover:underline"
-              >
-                Lupa Password?
-              </button>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Masukkan email terdaftar"
+                      autoComplete="email"
+                      className="input-field h-10 w-full rounded-xl pl-10 pr-4 text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Masukkan password akun"
+                      autoComplete="current-password"
+                      className="input-field h-10 w-full rounded-xl pl-10 pr-4 text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
+                    Role Akses
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="input-field h-10 w-full appearance-none rounded-xl px-4 text-sm text-slate-600"
+                      required
+                    >
+                      <option value="" disabled>
+                        Pilih Role
+                      </option>
+                      <option value="admin">Admin/Humas</option>
+                      <option value="pimpinan">Pimpinan</option>
+                      <option value="internal">Internal</option>
+                      <option value="external">Eksternal</option>
+                    </select>
+                    <ChevronDown
+                      size={18}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary h-10 w-full rounded-xl font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? 'Memproses...' : 'Masuk'}
+                </button>
+
+                <div className="flex items-center justify-between pt-1 text-xs text-slate-600">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
+                    />
+                    Ingat Saya
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="font-semibold text-[#173B82] transition hover:underline"
+                  >
+                    Lupa Password?
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Gunakan email yang terdaftar dan password akun Anda untuk masuk.
+                </p>
+              </form>
+
+              <div className="mt-5 border-t border-slate-200 pt-3 text-center text-sm text-slate-600 md:hidden">
+                Belum punya akun mitra?{' '}
+                <button
+                  type="button"
+                  onClick={() => router.push('/register')}
+                  className="font-semibold text-[#173B82] hover:underline"
+                >
+                  Registrasi Mitra
+                </button>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-500">
-              Gunakan email yang terdaftar dan password akun Anda untuk masuk.
-            </p>
-          </form>
-
-          <div className="mt-5 border-t border-slate-200 pt-3 text-center text-sm text-slate-600">
-            Belum punya akun mitra?{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/register')}
-              className="font-semibold text-[#173B82] hover:underline"
-            >
-              Registrasi Mitra
-            </button>
           </div>
         </div>
       </div>

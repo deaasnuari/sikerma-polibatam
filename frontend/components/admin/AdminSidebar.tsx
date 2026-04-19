@@ -22,6 +22,7 @@ interface AdminSidebarProps {
   portalTitle?: string;
   portalSubtitle?: string;
   backgroundClassName?: string;
+  activeItemClassName?: string;
 }
 
 const defaultMenuItems: SidebarMenuItem[] = [
@@ -41,6 +42,7 @@ export default function AdminSidebar({
   portalTitle = 'SIKERMA',
   portalSubtitle = 'Polibatam',
   backgroundClassName = 'bg-[#091222]',
+  activeItemClassName = 'border-l-[#57C9E8] bg-[#57C9E8]/15 text-white shadow-sm',
 }: AdminSidebarProps) {
   const pathname = usePathname();
 
@@ -60,10 +62,18 @@ export default function AdminSidebar({
       {isOpen && <div className="fixed inset-0 bg-black/40 z-20 md:hidden" onClick={toggleSidebar} />}
 
       {/* Sidebar */}
-      <aside className={`fixed md:relative top-0 left-0 h-full md:h-full ${backgroundClassName} text-gray-300 z-30 flex flex-col transition-all duration-300 rounded-lg shadow-md overflow-hidden
+      <aside className={`fixed md:relative top-0 left-0 h-full md:h-full ${backgroundClassName} text-gray-300 z-30 flex flex-col transition-all duration-300 rounded-lg shadow-md overflow-visible
         ${isOpen ? 'w-48 md:w-44' : 'w-20'}
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[#091222] shadow-md transition hover:bg-slate-50 hover:text-[#173B82]"
+          title={isOpen ? 'Tutup sidebar' : 'Buka sidebar'}
+        >
+          {isOpen ? <X size={16} /> : <Menu size={16} />}
+        </button>
+
         {/* Logo */}
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-700/60">
           <div className="flex items-center gap-2 min-w-0">
@@ -75,19 +85,16 @@ export default function AdminSidebar({
               </div>
             )}
           </div>
-          <button onClick={toggleSidebar} className="text-gray-400 hover:text-white md:hidden flex-shrink-0">
-            {isOpen ? <X size={16} /> : <Menu size={16} />}
-          </button>
         </div>
 
         {/* Navigasi */}
-        <nav className="flex-1 flex flex-col px-2 gap-1 overflow-y-auto py-2">
+        <nav className="flex-1 flex flex-col px-2 gap-1 overflow-y-auto py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = item.onClick ? false : isActive(item.href);
-            const sharedClassName = `flex w-full items-center gap-2 rounded-lg border-l-4 px-3 py-2.5 transition-all duration-200 text-sm ${
+            const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2 px-3 justify-start' : 'justify-center px-2'} rounded-lg border-l-4 py-2.5 transition-all duration-200 text-sm ${
               active
-                ? 'border-l-sky-300 bg-white/12 text-white shadow-sm'
+                ? activeItemClassName
                 : 'border-l-transparent text-slate-300 hover:bg-white/5 hover:text-white'
             }`;
 

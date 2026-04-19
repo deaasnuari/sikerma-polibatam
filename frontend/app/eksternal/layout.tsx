@@ -51,12 +51,6 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
       href: '/eksternal/pengajuan_baru',
       icon: SquarePen,
     },
-    {
-      label: 'Keluar',
-      href: '#logout',
-      icon: LogOut,
-      onClick: handleLogout,
-    },
   ];
 
   if (!isHydrated) {
@@ -78,7 +72,8 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
               menuItems={menuItems}
               portalTitle="SIKERMA"
               portalSubtitle="Mitra Eksternal"
-              backgroundClassName="bg-[#071B3C]"
+              backgroundClassName="bg-[#091222]"
+              activeItemClassName="border-l-[#F28C00] bg-white/12 text-white shadow-sm"
             />
           </div>
 

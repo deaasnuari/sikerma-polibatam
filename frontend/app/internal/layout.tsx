@@ -82,7 +82,8 @@ export default function InternalLayout({ children }: { children: React.ReactNode
               menuItems={menuItems}
               portalTitle="SIKERMA"
               portalSubtitle="Internal"
-              backgroundClassName="bg-[#16396b]"
+              backgroundClassName="bg-[#091222]"
+              activeItemClassName="border-l-emerald-300 bg-white/12 text-white shadow-sm"
             />
           </div>
 
