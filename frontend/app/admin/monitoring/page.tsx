@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
 import RenewalHistoryModal from './RenewalHistoryModal';
@@ -36,8 +36,18 @@ export default function MonitoringdanstatusPage() {
   const [notificationHistories, setNotificationHistories] = useState<Record<number, MonitoringNotification[]>>(getDefaultNotificationHistories());
   const [nonactiveModal, setNonactiveModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [nonactiveHistories, setNonactiveHistories] = useState<Record<number, NonactiveRecord[]>>({});
+  const [monitoringData, setMonitoringData] = useState<Kerjasama[]>([]);
 
-  const monitoringData = getMonitoringData();
+  useEffect(() => {
+    const syncMonitoringData = () => {
+      setMonitoringData(getMonitoringData());
+    };
+
+    syncMonitoringData();
+    window.addEventListener('monitoring-data-updated', syncMonitoringData);
+
+    return () => window.removeEventListener('monitoring-data-updated', syncMonitoringData);
+  }, []);
   const { totalAktif, totalAkanBerakhir, totalKadaluarsa } = getMonitoringStats(monitoringData);
   const filtered = getFilteredMonitoringData(monitoringData, activeTab);
   const tabs = getMonitoringTabs(monitoringData);

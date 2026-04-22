@@ -6,6 +6,7 @@ export type RekapJenis = 'MoA' | 'MoU' | 'IA';
 
 // Tipe data utama untuk satu baris dokumen pada tabel rekap.
 export interface RekapDokumen {
+  sourcePengajuanId?: number;
   noDokumen: string;
   namaMitra: string;
   jenis: RekapJenis;
@@ -201,6 +202,42 @@ function mapDokumenDataToRekap(data: DokumenData): RekapDokumen {
   };
 }
 
+type PengajuanSyncPayload = {
+  id: number;
+  mitra: string;
+  jenisDokumen: string;
+  jurusan: string;
+  tanggalMulai?: string;
+  tanggalBerakhir?: string;
+  whatsappPengusul?: string;
+};
+
+function resolveRekapStatusFromTanggalBerakhir(tanggalBerakhir?: string): RekapStatus {
+  if (!tanggalBerakhir) {
+    return 'Aktif';
+  }
+
+  const endDate = new Date(tanggalBerakhir);
+
+  if (Number.isNaN(endDate.getTime())) {
+    return 'Aktif';
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysDiff = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysDiff < 0) {
+    return 'Kadaluarsa';
+  }
+
+  if (daysDiff <= 90) {
+    return 'Akan Berakhir';
+  }
+
+  return 'Aktif';
+}
+
 // Ambil seluruh data rekap dan gabungkan dengan data default jika perlu.
 export function getRekapData(): RekapDokumen[] {
   if (!canUseStorage()) {
@@ -340,5 +377,41 @@ export function deleteRekapDokumen(noDokumen: string): RekapDokumen[] {
     category: 'reminder',
   });
 
+  return updated;
+}
+
+// Sinkronisasi satu data pengajuan menjadi baris rekap data.
+export function upsertRekapFromPengajuan(payload: PengajuanSyncPayload): RekapDokumen[] {
+  const jenis = (payload.jenisDokumen === 'MoA' || payload.jenisDokumen === 'MoU' || payload.jenisDokumen === 'IA')
+    ? payload.jenisDokumen
+    : 'MoU';
+
+  const nextItem: RekapDokumen = {
+    sourcePengajuanId: payload.id,
+    noDokumen: `PGJ/${payload.id}`,
+    namaMitra: payload.mitra,
+    jenis,
+    unit: payload.jurusan,
+    tanggalMulai: formatDisplayDate(payload.tanggalMulai || ''),
+    berlakuHingga: formatDisplayDate(payload.tanggalBerakhir || ''),
+    tahun: (payload.tanggalMulai || new Date().toISOString().slice(0, 10)).slice(0, 4),
+    status: resolveRekapStatusFromTanggalBerakhir(payload.tanggalBerakhir),
+    whatsappNumber: payload.whatsappPengusul,
+  };
+
+  const current = getRekapData();
+  const hasExisting = current.some((item) => item.sourcePengajuanId === payload.id);
+  const updated = hasExisting
+    ? current.map((item) => (item.sourcePengajuanId === payload.id ? nextItem : item))
+    : [nextItem, ...current];
+
+  saveRekapData(updated);
+  return updated;
+}
+
+// Hapus data rekap yang berasal dari satu pengajuan.
+export function removeRekapByPengajuanId(pengajuanId: number): RekapDokumen[] {
+  const updated = getRekapData().filter((item) => item.sourcePengajuanId !== pengajuanId);
+  saveRekapData(updated);
   return updated;
 }

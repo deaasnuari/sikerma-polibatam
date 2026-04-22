@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity,
@@ -14,6 +14,7 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
+import { getHiddenStoryIds } from '@/services/adminStoryAktivitasService';
 
 interface Kerjasama {
   id: number;
@@ -125,8 +126,22 @@ export default function StoryAktivitasPage() {
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState('Semua Tahun');
   const [search, setSearch] = useState('');
+  const [hiddenStoryIds, setHiddenStoryIds] = useState<number[]>([]);
 
-  const filtered = dummyData.filter((item) => {
+  useEffect(() => {
+    const syncHiddenStoryIds = () => {
+      setHiddenStoryIds(getHiddenStoryIds());
+    };
+
+    syncHiddenStoryIds();
+    window.addEventListener('story-data-updated', syncHiddenStoryIds);
+
+    return () => window.removeEventListener('story-data-updated', syncHiddenStoryIds);
+  }, []);
+
+  const visibleData = dummyData.filter((item) => !hiddenStoryIds.includes(item.id));
+
+  const filtered = visibleData.filter((item) => {
     const matchJenis =
       filterJenis === 'Semua Jenis' || item.jenis === filterJenis;
     const matchStatus =
@@ -139,12 +154,12 @@ export default function StoryAktivitasPage() {
     return matchJenis && matchStatus && matchTahun && matchSearch;
   });
 
-  const totalAktivitas = dummyData.reduce((s, i) => s + i.aktivitas, 0);
-  const kerjasamaAktif = dummyData.filter((i) => i.status === 'Aktif').length;
+  const totalAktivitas = visibleData.reduce((s, i) => s + i.aktivitas, 0);
+  const kerjasamaAktif = visibleData.filter((i) => i.status === 'Aktif').length;
   const bulanIni = 2;
   const rataRata =
-    dummyData.length > 0
-      ? Math.round(totalAktivitas / dummyData.length)
+    visibleData.length > 0
+      ? Math.round(totalAktivitas / visibleData.length)
       : 0;
 
   return (

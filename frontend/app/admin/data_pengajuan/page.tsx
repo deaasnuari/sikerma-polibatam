@@ -1,20 +1,44 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import AjukanForm from './AjukanForm';
 import {
+  deletePengajuanItem,
   getFilteredPengajuanData,
   getPengajuanData,
   getPengajuanStats,
   getPengajuanYearOptions,
   pengajuanDokumenBadge,
   savePengajuanReview,
+  updatePengajuanItem,
   type PengajuanItem,
   type PengajuanStatus,
 } from '@/services/adminPengajuanService';
+
+type EditFormState = {
+  id: number;
+  judul: string;
+  mitra: string;
+  jurusan: string;
+  jenisDokumen: string;
+  tanggalMulai: string;
+  tanggalBerakhir: string;
+  ruangLingkup: string[];
+};
+
+const ruangLingkupOptions = [
+  'Penelitian',
+  'Pengabdian Masyarakat',
+  'Magang',
+  'Pertukaran Mahasiswa',
+  'Pelatihan',
+  'Workshop',
+  'Sertifikasi',
+  'Joint Program',
+  'Lainnya',
+];
 
 const statusConfig: Record<PengajuanStatus, { label: string; className: string; iconEl: React.ReactNode }> = {
   Menunggu: {
@@ -41,6 +65,9 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
 
 export default function PengajuanKerjasama() {
   const searchParams = useSearchParams();
+  const isAjukanView = searchParams.get('view') === 'ajukan';
+
+  // Keep hook order stable on every render to avoid runtime hook mismatch.
   const [filterJurusan, setFilterJurusan] = useState('Semua Kategori Kerjasama');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState('Semua Tahun');
@@ -51,14 +78,12 @@ export default function PengajuanKerjasama() {
   const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
   const [reviewDecision, setReviewDecision] = useState<PengajuanStatus>('Disetujui');
   const [reviewComment, setReviewComment] = useState('');
-
-  const isAjukanView = searchParams.get('view') === 'ajukan';
+  const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
+  const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
 
   useEffect(() => {
-    if (isAjukanView) {
-      return;
-    }
-
     const syncPengajuan = () => {
       setPengajuanData(getPengajuanData());
     };
@@ -67,11 +92,13 @@ export default function PengajuanKerjasama() {
     window.addEventListener('pengajuan-data-updated', syncPengajuan);
 
     return () => window.removeEventListener('pengajuan-data-updated', syncPengajuan);
-  }, [isAjukanView]);
+  }, []);
 
-  if (isAjukanView) {
-    return <AjukanForm />;
-  }
+  useEffect(() => {
+    if (isAjukanView) {
+      setAjukanModalOpen(true);
+    }
+  }, [isAjukanView]);
 
   const { totalPengajuan, menunggu, diproses, disetujui } = getPengajuanStats(pengajuanData);
 
@@ -141,10 +168,71 @@ export default function PengajuanKerjasama() {
     setPengajuanData(next);
     setReviewItem(null);
     setReviewComment('');
-    alert('Review pengajuan berhasil disimpan.');
+    setInfoModalMessage('Review pengajuan berhasil disimpan.');
   }
 
-  return (
+  function openEdit(item: PengajuanItem) {
+    setEditForm({
+      id: item.id,
+      judul: item.judul,
+      mitra: item.mitra,
+      jurusan: item.jurusan,
+      jenisDokumen: item.jenisDokumen,
+      tanggalMulai: item.tanggalMulai || '',
+      tanggalBerakhir: item.tanggalBerakhir || '',
+      ruangLingkup: item.ruangLingkup,
+    });
+  }
+
+  function saveEdit() {
+    if (!editForm) return;
+
+    if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
+      setInfoModalMessage('Judul, mitra, dan jurusan wajib diisi untuk menyimpan perubahan.');
+      return;
+    }
+
+    if (editForm.ruangLingkup.length === 0) {
+      setInfoModalMessage('Pilih minimal 1 ruang lingkup pada form edit.');
+      return;
+    }
+
+    const next = updatePengajuanItem(editForm.id, {
+      judul: editForm.judul.trim(),
+      mitra: editForm.mitra.trim(),
+      jurusan: editForm.jurusan.trim(),
+      jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
+      tanggalMulai: editForm.tanggalMulai || undefined,
+      tanggalBerakhir: editForm.tanggalBerakhir || undefined,
+      ruangLingkup: editForm.ruangLingkup,
+    });
+
+    setPengajuanData(next);
+    setEditForm(null);
+    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+  }
+
+  function confirmDelete() {
+    if (!deleteTarget) return;
+
+    const deletedId = deleteTarget.id;
+    const next = deletePengajuanItem(deletedId);
+
+    setPengajuanData(next);
+    setDeleteTarget(null);
+
+    if (detailItem?.id === deletedId) {
+      setDetailItem(null);
+    }
+
+    if (reviewItem?.id === deletedId) {
+      setReviewItem(null);
+    }
+
+    setInfoModalMessage('Data pengajuan berhasil dihapus.');
+  }
+
+    return (
     <div className="space-y-6">
 
       {/* Header */}
@@ -153,13 +241,14 @@ export default function PengajuanKerjasama() {
           <h1 className="page-title">Pengajuan Kerjasama</h1>
           <p className="page-subtitle mt-2">Kelola data pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
         </div>
-        <Link
-          href="/admin/data_pengajuan?view=ajukan"
+        <button
+          type="button"
+          onClick={() => setAjukanModalOpen(true)}
           className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm flex-shrink-0"
         >
           <Plus size={18} />
           Ajukan Kerjasama Baru
-        </Link>
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -363,6 +452,22 @@ export default function PengajuanKerjasama() {
                     <MessageSquare size={14} />
                     Review
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="flex items-center gap-1.5 text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
+                  >
+                    <Pencil size={14} />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(item)}
+                    className="flex items-center gap-1.5 text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
+                  >
+                    <Trash2 size={14} />
+                    Hapus
+                  </button>
                 </div>
               </div>
 
@@ -388,6 +493,22 @@ export default function PengajuanKerjasama() {
           </div>
         )}
       </div>
+
+        {ajukanModalOpen && (
+            <div
+              className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-[2px] p-4"
+              onClick={() => setAjukanModalOpen(false)}
+            >
+              <div className="flex min-h-full items-center justify-center">
+                <div
+                  className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <AjukanForm onClose={() => setAjukanModalOpen(false)} />
+                </div>
+            </div>
+          </div>
+        )}
 
       {detailItem && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
@@ -556,6 +677,184 @@ export default function PengajuanKerjasama() {
                   Simpan dan kirim notifikasi
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editForm && (
+        <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Edit Pengajuan</h3>
+              <button type="button" onClick={() => setEditForm(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
+                <input
+                  type="text"
+                  value={editForm.judul}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, judul: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Mitra Tujuan</label>
+                <input
+                  type="text"
+                  value={editForm.mitra}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, mitra: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
+                <input
+                  type="text"
+                  value={editForm.jurusan}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jurusan: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
+                <input
+                  type="text"
+                  value={editForm.jenisDokumen}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jenisDokumen: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
+                <input
+                  type="date"
+                  value={editForm.tanggalMulai}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tanggalMulai: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Tanggal Berakhir</label>
+                <input
+                  type="date"
+                  value={editForm.tanggalBerakhir}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tanggalBerakhir: e.target.value } : prev))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-slate-700">Ruang Lingkup</label>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {ruangLingkupOptions.map((option) => {
+                    const checked = editForm.ruangLingkup.includes(option);
+
+                    return (
+                      <label
+                        key={option}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          checked
+                            ? 'border-[#1E376C] bg-[#EEF2FF] text-[#1E376C]'
+                            : 'border-slate-300 bg-white text-slate-700 hover:border-[#1E376C]'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setEditForm((prev) => {
+                              if (!prev) {
+                                return prev;
+                              }
+
+                              const exists = prev.ruangLingkup.includes(option);
+                              const ruangLingkup = exists
+                                ? prev.ruangLingkup.filter((item) => item !== option)
+                                : [...prev.ruangLingkup, option];
+
+                              return { ...prev, ruangLingkup };
+                            });
+                          }}
+                          className="h-4 w-4 accent-[#1E376C]"
+                        />
+                        {option}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditForm(null)}
+                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Hapus Pengajuan</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-700">
+                Yakin ingin menghapus pengajuan <span className="font-semibold">{deleteTarget.judul}</span>? Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="h-9 px-4 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {infoModalMessage && (
+        <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Informasi</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-700">{infoModalMessage}</p>
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setInfoModalMessage(null)}
+                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

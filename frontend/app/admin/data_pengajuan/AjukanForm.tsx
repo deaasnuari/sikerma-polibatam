@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, X } from 'lucide-react';
@@ -106,7 +105,19 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
   },
 };
 
-export default function AjukanForm() {
+type AjukanFormProps = {
+  onClose?: () => void;
+};
+
+type DialogState = {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm?: () => void;
+};
+
+export default function AjukanForm({ onClose }: AjukanFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const asalOptions = asal === 'Jurusan' ? jurusanOptions : unitOptions;
@@ -126,6 +137,16 @@ export default function AjukanForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+
+  function closeFormView() {
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    router.push('/admin/data_pengajuan');
+  }
 
   function handleInputChange(field: string, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -216,7 +237,11 @@ export default function AjukanForm() {
     e.preventDefault();
 
     if (!validateForm()) {
-      alert('Harap isi semua form wajib sebelum submit.');
+      setDialog({
+        title: 'Form Belum Lengkap',
+        message: 'Harap isi semua form wajib sebelum submit.',
+        confirmLabel: 'OK',
+      });
       return;
     }
 
@@ -235,8 +260,12 @@ export default function AjukanForm() {
       fileName: selectedFile?.name || '',
     });
 
-    alert('Pengajuan berhasil dikirim. Verifikasi email sedang dimatikan sementara.');
-    router.push('/admin/data_pengajuan');
+    setDialog({
+      title: 'Pengajuan Berhasil',
+      message: 'Pengajuan berhasil dikirim. Verifikasi email sedang dimatikan sementara.',
+      confirmLabel: 'OK',
+      onConfirm: closeFormView,
+    });
   }
 
   function handleCancel() {
@@ -254,11 +283,18 @@ export default function AjukanForm() {
       formData.whatsappPengusul ||
       selectedFile;
 
-    if (hasChanges && !window.confirm('Perubahan belum disimpan. Yakin ingin batal?')) {
+    if (hasChanges) {
+      setDialog({
+        title: 'Batalkan Perubahan?',
+        message: 'Perubahan belum disimpan. Yakin ingin batal?',
+        confirmLabel: 'Ya, Batalkan',
+        cancelLabel: 'Lanjut Edit',
+        onConfirm: closeFormView,
+      });
       return;
     }
 
-    router.push('/admin/data_pengajuan');
+    closeFormView();
   }
 
   return (
@@ -267,13 +303,14 @@ export default function AjukanForm() {
         <div>
           <h1 className="page-title">Form Pengajuan Kerjasama Baru</h1>
         </div>
-        <Link
-          href="/admin/data_pengajuan"
+        <button
+          type="button"
+          onClick={handleCancel}
           className="text-gray-400 hover:text-gray-600 transition-colors mt-1"
           aria-label="Kembali ke daftar pengajuan"
         >
           <X size={24} />
-        </Link>
+        </button>
       </div>
 
       <form className="px-7 pb-7 space-y-6" onSubmit={handleSubmit}>
@@ -610,6 +647,41 @@ export default function AjukanForm() {
           </button>
         </div>
       </form>
+
+      {dialog && (
+        <div className="fixed inset-0 z-[80] bg-black/55 backdrop-blur-[2px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">{dialog.title}</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-700 leading-relaxed">{dialog.message}</p>
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
+              {dialog.cancelLabel && (
+                <button
+                  type="button"
+                  onClick={() => setDialog(null)}
+                  className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200"
+                >
+                  {dialog.cancelLabel}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  const onConfirm = dialog.onConfirm;
+                  setDialog(null);
+                  onConfirm?.();
+                }}
+                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+              >
+                {dialog.confirmLabel || 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

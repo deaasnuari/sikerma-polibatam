@@ -43,6 +43,7 @@ export default function TambahDokumenModal({
   submitLabel = 'Tambah Dokumen',
 }: TambahDokumenModalProps) {
   const [formData, setFormData] = useState<DokumenData>(emptyFormData);
+  const [errors, setErrors] = useState<Partial<Record<keyof DokumenData, string>>>({});
   const pilihanUnit = useMemo(
     () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...rekapJurusanOptions] : ['Pilih Unit', ...rekapUnitOptions]),
     [formData.asalKategori]
@@ -62,6 +63,25 @@ export default function TambahDokumenModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newErrors: Partial<Record<keyof DokumenData, string>> = {};
+    if (!formData.nomorDokumen.trim()) newErrors.nomorDokumen = 'Nomor dokumen wajib diisi';
+    if (!formData.jenisDokumen || formData.jenisDokumen === 'Pilih Jenis') newErrors.jenisDokumen = 'Jenis dokumen wajib dipilih';
+    if (!formData.namaPIC.trim()) newErrors.namaPIC = 'Nama PIC wajib diisi';
+    if (!formData.kategoriMitra || formData.kategoriMitra === 'Pilih Kategori') newErrors.kategoriMitra = 'Kategori mitra wajib dipilih';
+    if (!formData.namaMitra.trim()) newErrors.namaMitra = 'Nama mitra wajib diisi';
+    if (!formData.unitKerja || formData.unitKerja === 'Pilih Jurusan' || formData.unitKerja === 'Pilih Unit') newErrors.unitKerja = `${formData.asalKategori} wajib dipilih`;
+    if (!formData.status) newErrors.status = 'Status wajib dipilih';
+    if (!formData.tanggalMulai) newErrors.tanggalMulai = 'Tanggal mulai wajib diisi';
+    if (!formData.tanggalBerakhir) newErrors.tanggalBerakhir = 'Tanggal berakhir wajib diisi';
+    if (!formData.alamatMitra.trim()) newErrors.alamatMitra = 'Alamat mitra wajib diisi';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     if (onSubmit) {
       onSubmit(formData);
     }
@@ -71,6 +91,9 @@ export default function TambahDokumenModal({
 
   const handleInputChange = (field: keyof DokumenData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -90,43 +113,57 @@ export default function TambahDokumenModal({
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-            <Field label="Nomor Dokumen *">
+            <Field label="Nomor Dokumen *" error={errors.nomorDokumen}>
               <TextInput
                 placeholder="Contoh: 001/MoU/2026"
                 value={formData.nomorDokumen}
                 onChange={(e) => handleInputChange('nomorDokumen', e.target.value)}
+                hasError={!!errors.nomorDokumen}
               />
             </Field>
 
-            <Field label="Jenis Dokumen *">
+            <Field label="Jenis Dokumen *" error={errors.jenisDokumen}>
               <SelectInput
                 options={jenisOptions}
                 value={formData.jenisDokumen}
                 onChange={(e) => handleInputChange('jenisDokumen', e.target.value)}
+                hasError={!!errors.jenisDokumen}
               />
             </Field>
 
-            <Field label="Nama PIC *">
+            <Field label="Nama PIC *" error={errors.namaPIC}>
               <TextInput
                 placeholder="Nama PIC"
                 value={formData.namaPIC}
                 onChange={(e) => handleInputChange('namaPIC', e.target.value)}
+                hasError={!!errors.namaPIC}
               />
             </Field>
 
-            <Field label="Kategori Mitra *">
+            <Field label="Kategori Mitra *" error={errors.kategoriMitra}>
               <SelectInput
                 options={kategoriOptions}
                 value={formData.kategoriMitra}
                 onChange={(e) => handleInputChange('kategoriMitra', e.target.value)}
+                hasError={!!errors.kategoriMitra}
               />
             </Field>
 
-            <Field label="Nama Mitra *">
+            <Field label="Nama Mitra *" error={errors.namaMitra}>
               <TextInput
                 placeholder="Nama Perusahaan/Institusi"
                 value={formData.namaMitra}
                 onChange={(e) => handleInputChange('namaMitra', e.target.value)}
+                hasError={!!errors.namaMitra}
+              />
+            </Field>
+
+            <Field label="Status *" error={errors.status}>
+              <SelectInput
+                options={statusOptions}
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
+                hasError={!!errors.status}
               />
             </Field>
 
@@ -160,19 +197,12 @@ export default function TambahDokumenModal({
               </div>
             </Field>
 
-            <Field label={`Pilih ${formData.asalKategori} *`}>
+            <Field label={`Pilih ${formData.asalKategori} *`} error={errors.unitKerja}>
               <SelectInput
                 options={pilihanUnit}
                 value={formData.unitKerja}
                 onChange={(e) => handleInputChange('unitKerja', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Status *">
-              <SelectInput
-                options={statusOptions}
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
+                hasError={!!errors.unitKerja}
               />
             </Field>
 
@@ -193,27 +223,30 @@ export default function TambahDokumenModal({
               />
             </Field>
 
-            <Field label="Tanggal Mulai *">
+            <Field label="Tanggal Mulai *" error={errors.tanggalMulai}>
               <DateInput
                 placeholder="mm/dd/yy"
                 value={formData.tanggalMulai}
                 onChange={(e) => handleInputChange('tanggalMulai', e.target.value)}
+                hasError={!!errors.tanggalMulai}
               />
             </Field>
 
-            <Field label="Tanggal Berakhir *">
+            <Field label="Tanggal Berakhir *" error={errors.tanggalBerakhir}>
               <DateInput
                 placeholder="mm/dd/yy"
                 value={formData.tanggalBerakhir}
                 onChange={(e) => handleInputChange('tanggalBerakhir', e.target.value)}
+                hasError={!!errors.tanggalBerakhir}
               />
             </Field>
 
-            <Field label="Alamat Mitra *">
+            <Field label="Alamat Mitra *" error={errors.alamatMitra}>
               <TextInput
                 placeholder="Alamat Lengkap Mitra"
                 value={formData.alamatMitra}
                 onChange={(e) => handleInputChange('alamatMitra', e.target.value)}
+                hasError={!!errors.alamatMitra}
               />
             </Field>
 
@@ -248,30 +281,31 @@ export default function TambahDokumenModal({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-gray-900">{label}</span>
       {children}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </label>
   );
 }
 
-function TextInput({ placeholder, type = 'text', value, onChange }: { placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function TextInput({ placeholder, type = 'text', value, onChange, hasError }: { placeholder: string; type?: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; hasError?: boolean }) {
   return (
     <input
       type={type}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="input-field h-11 w-full px-4 text-sm text-gray-700 placeholder:text-gray-400"
+      className={`input-field h-11 w-full px-4 text-sm text-gray-700 placeholder:text-gray-400 ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
     />
   );
 }
 
-function SelectInput({ options, value, onChange }: { options: string[]; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void }) {
+function SelectInput({ options, value, onChange, hasError }: { options: string[]; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; hasError?: boolean }) {
   return (
-    <select value={value} onChange={onChange} className="input-field h-11 w-full bg-white px-4 text-sm text-gray-700">
+    <select value={value} onChange={onChange} className={`input-field h-11 w-full bg-white px-4 text-sm text-gray-700 ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}>
       {options.map((option) => (
         <option key={option} value={option}>
           {option}
@@ -281,14 +315,14 @@ function SelectInput({ options, value, onChange }: { options: string[]; value: s
   );
 }
 
-function DateInput({ placeholder, value, onChange }: { placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function DateInput({ placeholder, value, onChange, hasError }: { placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; hasError?: boolean }) {
   return (
     <input
       type="date"
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="input-field h-11 w-full px-4 text-sm text-gray-700 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:text-[#173B82] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+      className={`input-field h-11 w-full px-4 text-sm text-gray-700 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:text-[#173B82] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
     />
   );
 }

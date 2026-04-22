@@ -1,4 +1,7 @@
 import { addAdminNotification } from '@/services/adminService';
+import { removeMonitoringByPengajuanId, upsertMonitoringFromPengajuan } from '@/services/adminMonitoringService';
+import { removeRekapByPengajuanId, upsertRekapFromPengajuan } from '@/services/adminRekapDataService';
+import { hideStoryByPengajuanId } from '@/services/adminStoryAktivitasService';
 
 export type PengajuanStatus = 'Menunggu' | 'Diproses' | 'Disetujui' | 'Ditolak';
 
@@ -233,6 +236,27 @@ export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'st
   const updated = [payload, ...getPengajuanData()];
   savePengajuanData(updated);
 
+  upsertRekapFromPengajuan({
+    id: payload.id,
+    mitra: payload.mitra,
+    jenisDokumen: payload.jenisDokumen,
+    jurusan: payload.jurusan,
+    tanggalMulai: payload.tanggalMulai,
+    tanggalBerakhir: payload.tanggalBerakhir,
+    whatsappPengusul: payload.whatsappPengusul,
+  });
+
+  upsertMonitoringFromPengajuan({
+    id: payload.id,
+    mitra: payload.mitra,
+    jenisDokumen: payload.jenisDokumen,
+    tanggalMulai: payload.tanggalMulai,
+    tanggalBerakhir: payload.tanggalBerakhir,
+    ruangLingkup: payload.ruangLingkup,
+    whatsappPengusul: payload.whatsappPengusul,
+    emailPengusul: payload.emailPengusul,
+  });
+
   addAdminNotification({
     title: 'Pengajuan Baru Masuk',
     message: payload.emailPengusul
@@ -334,6 +358,80 @@ export function getPengajuanYearOptions(items: PengajuanItem[]): string[] {
 // Shortcut untuk proses review dari halaman admin.
 export function savePengajuanReview(id: number, status: PengajuanStatus, comment = ''): PengajuanItem[] {
   return updatePengajuanStatus(id, status, comment);
+}
+
+// Mengubah data pengajuan tertentu dari halaman admin.
+export function updatePengajuanItem(
+  id: number,
+  updates: Partial<Omit<PengajuanItem, 'id' | 'tanggal'>>
+): PengajuanItem[] {
+  let updatedItem: PengajuanItem | null = null;
+
+  const updated = getPengajuanData().map((item) => {
+    if (item.id !== id) {
+      return item;
+    }
+
+    updatedItem = {
+      ...item,
+      ...updates,
+      id: item.id,
+      tanggal: item.tanggal,
+    };
+
+    return updatedItem;
+  });
+
+  savePengajuanData(updated);
+
+  if (updatedItem) {
+    upsertRekapFromPengajuan({
+      id: updatedItem.id,
+      mitra: updatedItem.mitra,
+      jenisDokumen: updatedItem.jenisDokumen,
+      jurusan: updatedItem.jurusan,
+      tanggalMulai: updatedItem.tanggalMulai,
+      tanggalBerakhir: updatedItem.tanggalBerakhir,
+      whatsappPengusul: updatedItem.whatsappPengusul,
+    });
+
+    upsertMonitoringFromPengajuan({
+      id: updatedItem.id,
+      mitra: updatedItem.mitra,
+      jenisDokumen: updatedItem.jenisDokumen,
+      tanggalMulai: updatedItem.tanggalMulai,
+      tanggalBerakhir: updatedItem.tanggalBerakhir,
+      ruangLingkup: updatedItem.ruangLingkup,
+      whatsappPengusul: updatedItem.whatsappPengusul,
+      emailPengusul: updatedItem.emailPengusul,
+    });
+  }
+
+  return updated;
+}
+
+// Menghapus satu data pengajuan dari daftar.
+export function deletePengajuanItem(id: number): PengajuanItem[] {
+  const current = getPengajuanData();
+  const removed = current.find((item) => item.id === id);
+  const updated = current.filter((item) => item.id !== id);
+
+  savePengajuanData(updated);
+  removeRekapByPengajuanId(id);
+  removeMonitoringByPengajuanId(id);
+  hideStoryByPengajuanId(id);
+
+  if (removed) {
+    addAdminNotification({
+      title: 'Pengajuan Dihapus',
+      message: `Pengajuan '${removed.judul}' telah dihapus dari daftar admin.`,
+      from: 'Admin SIKERMA',
+      href: '/admin/data_pengajuan',
+      category: 'reminder',
+    });
+  }
+
+  return updated;
 }
 
 function getKategoriPengajuan(item: PengajuanItem): 'Internal' | 'Eksternal' {

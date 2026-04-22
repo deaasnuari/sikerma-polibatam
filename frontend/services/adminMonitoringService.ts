@@ -38,6 +38,7 @@ export type TabKey = 'Semua' | 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
 
 export interface Kerjasama {
   id: number;
+  sourcePengajuanId?: number;
   namaMitra: string;
   noDokumen: string;
   jenis: 'MoU' | 'MoA' | 'IA';
@@ -49,6 +50,8 @@ export interface Kerjasama {
   whatsappNumber: string;
   emailMitra: string;
 }
+
+const STORAGE_KEY = 'adminMonitoringKerjasamaData';
 
 // Data awal monitoring yang ditampilkan ketika halaman dibuka.
 const defaultMonitoringData: Kerjasama[] = [
@@ -240,9 +243,94 @@ export const monitoringStatusConfig: Record<StatusKerjasama, { dot: string; labe
   },
 };
 
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function emitMonitoringUpdate() {
+  if (canUseStorage()) {
+    window.dispatchEvent(new Event('monitoring-data-updated'));
+  }
+}
+
+function saveMonitoringData(items: Kerjasama[]) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  emitMonitoringUpdate();
+}
+
+function formatDisplayDate(dateValue?: string): string {
+  if (!dateValue) {
+    return '-';
+  }
+
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return dateValue;
+  }
+
+  return parsedDate.toLocaleDateString('id-ID');
+}
+
+function resolveStatusAndSisa(tanggalBerakhir?: string): { status: StatusKerjasama; sisaMasaBerlaku: string | null } {
+  if (!tanggalBerakhir) {
+    return { status: 'Aktif', sisaMasaBerlaku: null };
+  }
+
+  const endDate = new Date(tanggalBerakhir);
+
+  if (Number.isNaN(endDate.getTime())) {
+    return { status: 'Aktif', sisaMasaBerlaku: null };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffMs = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { status: 'Kadaluarsa', sisaMasaBerlaku: null };
+  }
+
+  const diffMonths = Math.max(1, Math.ceil(diffDays / 30));
+  const sisaMasaBerlaku = `${diffMonths} Bulan`;
+
+  if (diffDays <= 90) {
+    return { status: 'Akan Berakhir', sisaMasaBerlaku };
+  }
+
+  return { status: 'Aktif', sisaMasaBerlaku };
+}
+
 // Ambil seluruh data kerjasama untuk monitoring.
 export function getMonitoringData(): Kerjasama[] {
-  return defaultMonitoringData;
+  if (!canUseStorage()) {
+    return defaultMonitoringData;
+  }
+
+  const storedRaw = window.localStorage.getItem(STORAGE_KEY);
+
+  if (!storedRaw) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultMonitoringData));
+    return defaultMonitoringData;
+  }
+
+  try {
+    const stored = JSON.parse(storedRaw) as Kerjasama[];
+
+    if (!Array.isArray(stored)) {
+      return defaultMonitoringData;
+    }
+
+    return stored;
+  } catch {
+    return defaultMonitoringData;
+  }
 }
 
 // Ambil riwayat notifikasi awal dan clone agar state React aman diubah.
@@ -343,4 +431,55 @@ export function createNonactiveRecord(
       : undefined,
     status: 'confirmed',
   };
+}
+
+type PengajuanSyncPayload = {
+  id: number;
+  mitra: string;
+  jenisDokumen: string;
+  tanggalMulai?: string;
+  tanggalBerakhir?: string;
+  ruangLingkup: string[];
+  whatsappPengusul?: string;
+  emailPengusul?: string;
+};
+
+// Sinkronisasi pengajuan ke daftar monitoring.
+export function upsertMonitoringFromPengajuan(payload: PengajuanSyncPayload): Kerjasama[] {
+  const jenis = (payload.jenisDokumen === 'MoA' || payload.jenisDokumen === 'MoU' || payload.jenisDokumen === 'IA')
+    ? payload.jenisDokumen
+    : 'MoU';
+
+  const { status, sisaMasaBerlaku } = resolveStatusAndSisa(payload.tanggalBerakhir);
+
+  const nextItem: Kerjasama = {
+    id: payload.id,
+    sourcePengajuanId: payload.id,
+    namaMitra: payload.mitra,
+    noDokumen: `PGJ/${payload.id}`,
+    jenis,
+    status,
+    tanggalMulai: formatDisplayDate(payload.tanggalMulai),
+    tanggalBerakhir: formatDisplayDate(payload.tanggalBerakhir),
+    sisaMasaBerlaku,
+    ruangLingkup: payload.ruangLingkup.length ? payload.ruangLingkup : ['Lainnya'],
+    whatsappNumber: payload.whatsappPengusul || '-',
+    emailMitra: payload.emailPengusul || '-',
+  };
+
+  const current = getMonitoringData();
+  const hasExisting = current.some((item) => item.sourcePengajuanId === payload.id);
+  const updated = hasExisting
+    ? current.map((item) => (item.sourcePengajuanId === payload.id ? nextItem : item))
+    : [nextItem, ...current];
+
+  saveMonitoringData(updated);
+  return updated;
+}
+
+// Hapus data monitoring yang berasal dari pengajuan tertentu.
+export function removeMonitoringByPengajuanId(pengajuanId: number): Kerjasama[] {
+  const updated = getMonitoringData().filter((item) => item.sourcePengajuanId !== pengajuanId);
+  saveMonitoringData(updated);
+  return updated;
 }
