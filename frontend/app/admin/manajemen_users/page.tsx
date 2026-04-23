@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Users,
   Search,
@@ -14,17 +14,28 @@ import {
   Building2,
   Handshake,
 } from 'lucide-react';
+import {
+  createAdminUser,
+  deleteAdminUser,
+  getAdminUsers,
+  type UiRole,
+  type UiStatus,
+  updateAdminUser,
+  updateAdminUserStatus,
+} from '@/services/adminUserService';
 
 interface UserItem {
   id: number;
   nama: string;
   email: string;
-  role: 'Admin' | 'Jurusan' | 'Prodi' | 'Pimpinan' | 'Mitra';
+  role: UiRole;
   unitInstansi: string;
-  status: 'Aktif' | 'NonAktif' | 'Ditolak';
+  status: UiStatus;
+  username?: string;
+  phone?: string;
 }
 
-const dummyUsers: UserItem[] = [
+const fallbackUsers: UserItem[] = [
   {
     id: 1,
     nama: 'Ahmad Fauzi',
@@ -87,52 +98,166 @@ export default function ManajemenUserPage() {
   const [filterRole, setFilterRole] = useState('Semua Role');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editUser, setEditUser] = useState<UserItem | null>(null);
-  const [users, setUsers] = useState(dummyUsers);
+  const [users, setUsers] = useState<UserItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state shared by add & edit
   const emptyForm = { nama: '', email: '', role: '' as string, unitInstansi: '', status: 'Aktif' as string, phone: '', username: '', password: '' };
   const [form, setForm] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadUsers = async () => {
+      try {
+        const result = await getAdminUsers();
+        if (mounted) {
+          setUsers(result);
+        }
+      } catch (error) {
+        console.error('Gagal memuat data user dari backend, menggunakan data fallback.', error);
+        if (mounted) {
+          setUsers(fallbackUsers);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const openAdd = () => {
     setForm(emptyForm);
+    setFormErrors({});
+    setServerError('');
     setShowAddModal(true);
   };
 
   const openEdit = (item: UserItem) => {
     setForm({ nama: item.nama, email: item.email, role: item.role, unitInstansi: item.unitInstansi, status: item.status, phone: '', username: '', password: '' });
     setEditUser(item);
+    setFormErrors({});
+    setServerError('');
   };
 
-  const handleSaveAdd = () => {
-    if (!form.nama.trim() || !form.email.trim() || !form.role) { alert('Lengkapi semua field wajib.'); return; }
-    const newUser: UserItem = {
-      id: Date.now(),
-      nama: form.nama,
-      email: form.email,
-      role: form.role as UserItem['role'],
-      unitInstansi: form.unitInstansi,
-      status: 'Aktif',
-    };
-    setUsers((prev) => [...prev, newUser]);
-    setShowAddModal(false);
+  const handleSaveAdd = async () => {
+    const errors: Record<string, string> = {};
+    if (!form.nama.trim()) errors.nama = 'Nama lengkap wajib diisi.';
+    if (!form.username.trim()) errors.username = 'Username wajib diisi.';
+    else if (form.username.trim().length < 4) errors.username = 'Username minimal 4 karakter.';
+    if (!form.email.trim()) errors.email = 'Email wajib diisi.';
+    if (!form.password) errors.password = 'Password wajib diisi.';
+    else if (form.password.length < 8) errors.password = 'Password minimal 8 karakter.';
+    if (!form.role) errors.role = 'Role wajib dipilih.';
+    if (!form.unitInstansi.trim()) errors.unitInstansi = 'Unit/Instansi wajib diisi.';
+    if (!form.phone.trim()) errors.phone = 'No. Telepon wajib diisi.';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    try {
+      setServerError('');
+      setSubmitting(true);
+      const newUser = await createAdminUser({
+        nama: form.nama,
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        role: form.role as UiRole,
+        unitInstansi: form.unitInstansi,
+        phone: form.phone,
+      });
+
+      setUsers((prev) => [newUser, ...prev]);
+      setShowAddModal(false);
+      setForm(emptyForm);
+      setFormErrors({});
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'Gagal menambahkan user.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editUser) return;
-    if (!form.nama.trim() || !form.email.trim() || !form.role) { alert('Lengkapi semua field wajib.'); return; }
-    setUsers((prev) => prev.map((u) => u.id === editUser.id ? { ...u, nama: form.nama, email: form.email, role: form.role as UserItem['role'], unitInstansi: form.unitInstansi, status: form.status as UserItem['status'] } : u));
-    setEditUser(null);
+
+    const errors: Record<string, string> = {};
+    if (!form.nama.trim()) errors.nama = 'Nama lengkap wajib diisi.';
+    if (!form.email.trim()) errors.email = 'Email wajib diisi.';
+    if (!form.role) errors.role = 'Role wajib dipilih.';
+    if (!form.unitInstansi.trim()) errors.unitInstansi = 'Unit/Instansi wajib diisi.';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    try {
+      setServerError('');
+      setSubmitting(true);
+      const updatedUser = await updateAdminUser(editUser.id, {
+        nama: form.nama,
+        email: form.email,
+        role: form.role as UiRole,
+        unitInstansi: form.unitInstansi,
+        status: form.status as UiStatus,
+      });
+
+      setUsers((prev) => prev.map((u) => (u.id === editUser.id ? updatedUser : u)));
+      setEditUser(null);
+      setForm(emptyForm);
+      setFormErrors({});
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'Gagal mengubah user.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     const item = users.find((u) => u.id === id);
     if (!item) return;
     if (!confirm(`Yakin ingin menghapus user "${item.nama}"?`)) return;
-    setUsers((prev) => prev.filter((user) => user.id !== id));
+
+    try {
+      setSubmitting(true);
+      await deleteAdminUser(id);
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Gagal menghapus user.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleToggleStatus = (id: number) => {
-    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: u.status === 'Aktif' ? 'NonAktif' : 'Aktif' } : u));
+  const handleToggleStatus = async (id: number) => {
+    const currentUser = users.find((u) => u.id === id);
+    if (!currentUser) return;
+
+    const nextStatus: UiStatus = currentUser.status === 'Aktif' ? 'NonAktif' : 'Aktif';
+
+    try {
+      setSubmitting(true);
+      const updated = await updateAdminUserStatus(id, nextStatus);
+      setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Gagal mengubah status user.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const filtered = users.filter((item) => {
@@ -162,6 +287,7 @@ export default function ManajemenUserPage() {
         </div>
         <button
           onClick={openAdd}
+          disabled={submitting}
           className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
         >
           <Plus size={16} />
@@ -287,7 +413,18 @@ export default function ManajemenUserPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
+              {loading && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-10 text-center text-gray-500"
+                  >
+                    Memuat data user...
+                  </td>
+                </tr>
+              )}
+
+              {!loading && filtered.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
@@ -298,7 +435,7 @@ export default function ManajemenUserPage() {
                 </tr>
               )}
 
-              {filtered.map((item) => {
+              {!loading && filtered.map((item) => {
                 const rc = roleColor[item.role];
                 const sc = statusStyle[item.status];
                 return (
@@ -327,6 +464,7 @@ export default function ManajemenUserPage() {
                     <td className="py-3.5 px-4">
                       <button
                         onClick={() => handleToggleStatus(item.id)}
+                        disabled={submitting}
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition hover:opacity-80 ${sc.bg} ${sc.text}`}
                         title="Klik untuk ubah status"
                       >
@@ -338,6 +476,7 @@ export default function ManajemenUserPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openEdit(item)}
+                          disabled={submitting}
                           className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"
                           title="Edit User"
                         >
@@ -345,6 +484,7 @@ export default function ManajemenUserPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
+                          disabled={submitting}
                           className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
                           title="Hapus User"
                         >
@@ -377,10 +517,11 @@ export default function ManajemenUserPage() {
                   <input
                     type="text"
                     value={form.nama}
-                    onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => { setForm({ ...form, nama: e.target.value }); setFormErrors((p) => ({ ...p, nama: '' })); }}
+                    className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Masukkan nama lengkap"
                   />
+                  {formErrors.nama && <p className="text-red-500 text-xs mt-1">{formErrors.nama}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -389,10 +530,11 @@ export default function ManajemenUserPage() {
                   <input
                     type="text"
                     value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => { setForm({ ...form, username: e.target.value }); setFormErrors((p) => ({ ...p, username: '' })); }}
+                    className={`w-full border ${formErrors.username ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Masukkan username"
                   />
+                  {formErrors.username && <p className="text-red-500 text-xs mt-1">{formErrors.username}</p>}
                 </div>
               </div>
 
@@ -404,10 +546,11 @@ export default function ManajemenUserPage() {
                   <input
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => { setForm({ ...form, email: e.target.value }); setFormErrors((p) => ({ ...p, email: '' })); }}
+                    className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="contoh@polibatam.ac.id"
                   />
+                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -416,10 +559,11 @@ export default function ManajemenUserPage() {
                   <input
                     type="password"
                     value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    placeholder="Masukkan password"
+                    onChange={(e) => { setForm({ ...form, password: e.target.value }); setFormErrors((p) => ({ ...p, password: '' })); }}
+                    className={`w-full border ${formErrors.password ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    placeholder="Min. 8 karakter"
                   />
+                  {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
                 </div>
               </div>
 
@@ -431,8 +575,8 @@ export default function ManajemenUserPage() {
                   <div className="relative">
                     <select
                       value={form.role}
-                      onChange={(e) => setForm({ ...form, role: e.target.value })}
-                      className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      onChange={(e) => { setForm({ ...form, role: e.target.value }); setFormErrors((p) => ({ ...p, role: '' })); }}
+                      className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     >
                       <option value="">Pilih Role</option>
                       <option value="Admin">Admin</option>
@@ -446,6 +590,7 @@ export default function ManajemenUserPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                     />
                   </div>
+                  {formErrors.role && <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -454,10 +599,11 @@ export default function ManajemenUserPage() {
                   <input
                     type="text"
                     value={form.unitInstansi}
-                    onChange={(e) => setForm({ ...form, unitInstansi: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => { setForm({ ...form, unitInstansi: e.target.value }); setFormErrors((p) => ({ ...p, unitInstansi: '' })); }}
+                    className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Nama unit/instansi"
                   />
+                  {formErrors.unitInstansi && <p className="text-red-500 text-xs mt-1">{formErrors.unitInstansi}</p>}
                 </div>
               </div>
 
@@ -468,25 +614,34 @@ export default function ManajemenUserPage() {
                 <input
                   type="tel"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  onChange={(e) => { setForm({ ...form, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: '' })); }}
+                  className={`w-full border ${formErrors.phone ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                   placeholder="Contoh: 08123456789"
                 />
+                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
               </div>
             </div>
+
+            {serverError && (
+              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {serverError}
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddModal(false)}
+                disabled={submitting}
                 className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
               >
                 Batal
               </button>
               <button
                 onClick={handleSaveAdd}
+                disabled={submitting}
                 className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition"
               >
-                Simpan User
+                {submitting ? 'Menyimpan...' : 'Simpan User'}
               </button>
             </div>
           </div>
@@ -505,11 +660,13 @@ export default function ManajemenUserPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
-                  <input type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                  <input type="text" value={form.nama} onChange={(e) => { setForm({ ...form, nama: e.target.value }); setFormErrors((p) => ({ ...p, nama: '' })); }} className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.nama && <p className="text-red-500 text-xs mt-1">{formErrors.nama}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                  <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFormErrors((p) => ({ ...p, email: '' })); }} className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                 </div>
               </div>
 
@@ -517,7 +674,7 @@ export default function ManajemenUserPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
                   <div className="relative">
-                    <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <select value={form.role} onChange={(e) => { setForm({ ...form, role: e.target.value }); setFormErrors((p) => ({ ...p, role: '' })); }} className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}>
                       <option value="Admin">Admin</option>
                       <option value="Jurusan">Jurusan</option>
                       <option value="Prodi">Prodi</option>
@@ -526,10 +683,12 @@ export default function ManajemenUserPage() {
                     </select>
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
+                  {formErrors.role && <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit/Instansi</label>
-                  <input type="text" value={form.unitInstansi} onChange={(e) => setForm({ ...form, unitInstansi: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                  <input type="text" value={form.unitInstansi} onChange={(e) => { setForm({ ...form, unitInstansi: e.target.value }); setFormErrors((p) => ({ ...p, unitInstansi: '' })); }} className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.unitInstansi && <p className="text-red-500 text-xs mt-1">{formErrors.unitInstansi}</p>}
                 </div>
               </div>
 
@@ -546,12 +705,18 @@ export default function ManajemenUserPage() {
               </div>
             </div>
 
+            {serverError && (
+              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {serverError}
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setEditUser(null)} className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
                 Batal
               </button>
-              <button onClick={handleSaveEdit} className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition">
-                Simpan Perubahan
+              <button onClick={handleSaveEdit} disabled={submitting} className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition">
+                {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
           </div>

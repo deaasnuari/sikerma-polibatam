@@ -5,6 +5,7 @@ const STORAGE_KEY = 'user';
 
 function normalizeRole(role?: string): UserRole {
   switch (role) {
+    case 'admin':
     case 'admin-humas':
       return 'admin';
     case 'pimpinan':
@@ -70,45 +71,42 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthUser> 
 export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
   const identifier = payload.email.trim().toLowerCase();
   const selectedRole = normalizeRole(payload.role);
-  const hasApiUrl = Boolean(process.env.NEXT_PUBLIC_API_URL);
   const apiPayload = {
     ...payload,
     email: identifier,
     role: selectedRole === 'user' ? payload.role : selectedRole,
   };
 
-  if (hasApiUrl) {
-    try {
-      const response = await apiRequest<{ user?: Partial<AuthUser>; data?: Partial<AuthUser> }>('/login', {
-        method: 'POST',
-        body: JSON.stringify(apiPayload),
-      });
+  try {
+    const response = await apiRequest<{ user?: Partial<AuthUser>; data?: Partial<AuthUser> }>('/login', {
+      method: 'POST',
+      body: JSON.stringify(apiPayload),
+    });
 
-      const userData = response.user || response.data;
-      if (userData?.email) {
-        return {
-          id: String(userData.id ?? '1'),
-          name: userData.name ?? identifier.split('@')[0],
-          username: userData.username,
-          email: userData.email,
-          institution_name: userData.institution_name,
-          phone: userData.phone,
-          position: userData.position,
-          account_type: userData.account_type,
-          approval_status: userData.approval_status as 'active' | 'pending' | 'rejected' | undefined,
-          role: normalizeRole(userData.role),
-        };
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      const isNetworkIssue = /fetch|network|failed to fetch|load failed/i.test(message);
-
-      if (!isNetworkIssue) {
-        throw error;
-      }
-
-      console.warn('Laravel API login gagal, menggunakan fallback lokal.', error);
+    const userData = response.user || response.data;
+    if (userData?.email) {
+      return {
+        id: String(userData.id ?? '1'),
+        name: userData.name ?? identifier.split('@')[0],
+        username: userData.username,
+        email: userData.email,
+        institution_name: userData.institution_name,
+        phone: userData.phone,
+        position: userData.position,
+        account_type: userData.account_type,
+        approval_status: userData.approval_status as 'active' | 'pending' | 'rejected' | undefined,
+        role: normalizeRole(userData.role),
+      };
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    const isNetworkIssue = /fetch|network|failed to fetch|load failed/i.test(message);
+
+    if (!isNetworkIssue) {
+      throw error;
+    }
+
+    console.warn('Laravel API tidak tersedia, menggunakan akun demo.', error);
   }
 
   const demoAccounts: Record<string, AuthUser> = {
