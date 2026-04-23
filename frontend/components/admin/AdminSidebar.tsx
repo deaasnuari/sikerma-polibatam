@@ -12,6 +12,7 @@ export interface SidebarMenuItem {
   icon: LucideIcon;
   label: string;
   href: string;
+  children?: Array<{ label: string; href: string }>;
   onClick?: () => void;
 }
 
@@ -29,7 +30,12 @@ const defaultMenuItems: SidebarMenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: FileText, label: 'Data Pengajuan', href: '/admin/data_pengajuan' },
   { icon: RefreshCw, label: 'Rekap Data', href: '/admin/rekap_data' },
-  { icon: BarChart3, label: 'Monitoring & Status', href: '/admin/monitoring' },
+  {
+    icon: BarChart3,
+    label: 'Monitoring & Status',
+    href: '/admin/monitoring',
+    children: [{ label: 'Permintaan Perpanjangan', href: '/admin/monitoring/perpanjangan' }],
+  },
   { icon: BookOpen, label: 'Story & Aktivitas', href: '/admin/story_aktivitas' },
   { icon: Archive, label: 'Arsip Dokumen', href: '/admin/arsip_dokumen' },
   { icon: Users, label: 'Manajemen User', href: '/admin/manajemen_users' },
@@ -92,6 +98,11 @@ export default function AdminSidebar({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = item.onClick ? false : isActive(item.href);
+            const showChildren = Boolean(
+              isOpen &&
+              item.children?.length &&
+              (pathname === item.href || pathname.startsWith(`${item.href}/`))
+            );
             const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2 px-3 justify-start' : 'justify-center px-2'} rounded-lg border-l-4 py-2.5 transition-all duration-200 text-sm ${
               active
                 ? activeItemClassName
@@ -114,15 +125,38 @@ export default function AdminSidebar({
             }
 
             return (
-              <Link
-                key={`${item.label}-${item.href}`}
-                href={item.href}
-                title={!isOpen ? item.label : undefined}
-                className={sharedClassName}
-              >
-                <Icon size={16} className="flex-shrink-0" />
-                {isOpen && <span className="truncate text-xs font-medium">{item.label}</span>}
-              </Link>
+              <div key={`${item.label}-${item.href}`} className="space-y-1">
+                <Link
+                  href={item.href}
+                  title={!isOpen ? item.label : undefined}
+                  className={sharedClassName}
+                >
+                  <Icon size={16} className="flex-shrink-0" />
+                  {isOpen && <span className="truncate text-xs font-medium">{item.label}</span>}
+                </Link>
+
+                {showChildren && (
+                  <div className="ml-7 space-y-1 border-l border-slate-600/60 pl-3">
+                    {item.children?.map((child) => {
+                      const childActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
+
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`block rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                            childActive
+                              ? 'bg-[#57C9E8]/20 text-white'
+                              : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

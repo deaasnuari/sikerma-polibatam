@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { CalendarDays, Download, Paperclip, Upload, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
@@ -68,6 +68,14 @@ const initialForm = {
   teleponKontak: '',
 };
 
+const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
+
+type InternalPengajuanDraft = {
+  asal: 'Jurusan' | 'Unit';
+  formData: typeof initialForm;
+  hasDownloadedTemplate: boolean;
+};
+
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -89,6 +97,49 @@ export default function InternalAjukanKerjasamaForm({
   const [dokumen, setDokumen] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const storedRaw = window.localStorage.getItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
+      if (!storedRaw) {
+        return;
+      }
+
+      const parsed = JSON.parse(storedRaw) as Partial<InternalPengajuanDraft>;
+
+      if (parsed.asal === 'Jurusan' || parsed.asal === 'Unit') {
+        setAsal(parsed.asal);
+      }
+
+      if (parsed.formData) {
+        setFormData({ ...initialForm, ...parsed.formData });
+      }
+
+      if (typeof parsed.hasDownloadedTemplate === 'boolean') {
+        setHasDownloadedTemplate(parsed.hasDownloadedTemplate);
+      }
+    } catch {
+      // Abaikan draft rusak agar form tetap bisa dipakai normal.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const draft: InternalPengajuanDraft = {
+      asal,
+      formData,
+      hasDownloadedTemplate,
+    };
+
+    window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
+  }, [asal, formData, hasDownloadedTemplate]);
 
   const handleJenisDokumenChange = (value: string) => {
     setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
@@ -147,6 +198,10 @@ export default function InternalAjukanKerjasamaForm({
         .filter(Boolean),
       fileName: dokumen.map((file) => file.name).join(', ') || 'Dokumen pendukung internal',
     });
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
+    }
 
     alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
 

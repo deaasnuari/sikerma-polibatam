@@ -18,6 +18,7 @@ interface UploadedTemplateFile {
   nama: string;
   ukuran: string;
   uploadedAt: string;
+  tipe: string;
 }
 
 interface TemplateFormState {
@@ -78,7 +79,16 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
   const [namaMengetahui, setNamaMengetahui] = useState('');
   const [nipMengetahui, setNipMengetahui] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  function isInlinePreviewSupported(fileType?: string) {
+    if (!fileType) {
+      return false;
+    }
+
+    return fileType.startsWith('image/') || fileType === 'application/pdf';
+  }
 
   function getStorageKey(currentData: NonNullable<LaporanKegiatanTemplateModalProps['data']>) {
     return `laporan-kegiatan-template-${currentData.noDokumen}-${currentData.jenis}`;
@@ -153,6 +163,14 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
     }
   }, [data]);
 
+  useEffect(() => {
+    return () => {
+      if (uploadedPreviewUrl) {
+        URL.revokeObjectURL(uploadedPreviewUrl);
+      }
+    };
+  }, [uploadedPreviewUrl]);
+
   function getCurrentState(): TemplateFormState {
     return {
       judulKerjasama,
@@ -192,20 +210,43 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (uploadedPreviewUrl) {
+      URL.revokeObjectURL(uploadedPreviewUrl);
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setUploadedPreviewUrl(nextPreviewUrl);
+
     setUploadLaporan({
       nama: file.name,
       ukuran: formatFileSize(file.size),
       uploadedAt: new Date().toLocaleString('id-ID'),
+      tipe: file.type,
     });
     setSaveMessage('File laporan dipilih. Klik Simpan untuk menyimpan data.');
     window.setTimeout(() => setSaveMessage(''), 2200);
   }
 
   function handleRemoveUpload() {
+    if (uploadedPreviewUrl) {
+      URL.revokeObjectURL(uploadedPreviewUrl);
+      setUploadedPreviewUrl(null);
+    }
+
     setUploadLaporan(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  }
+
+  function handleOpenUploadedFile() {
+    if (!uploadedPreviewUrl) {
+      setSaveMessage('File belum tersedia untuk dibuka. Upload ulang file terlebih dahulu.');
+      window.setTimeout(() => setSaveMessage(''), 2200);
+      return;
+    }
+
+    window.open(uploadedPreviewUrl, '_blank', 'noopener,noreferrer');
   }
 
   function escapeHtml(value: string) {
@@ -492,10 +533,47 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
                 </div>
 
                 {uploadLaporan ? (
-                  <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
-                    <p className="font-semibold">File terpilih: {uploadLaporan.nama}</p>
-                    <p className="mt-1">Ukuran: {uploadLaporan.ukuran}</p>
-                    <p>Waktu upload: {uploadLaporan.uploadedAt}</p>
+                  <div className="mt-3 space-y-3">
+                    <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                      <p className="font-semibold">File terpilih: {uploadLaporan.nama}</p>
+                      <p className="mt-1">Ukuran: {uploadLaporan.ukuran}</p>
+                      <p>Tipe file: {uploadLaporan.tipe || '-'}</p>
+                      <p>Waktu upload: {uploadLaporan.uploadedAt}</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenUploadedFile}
+                        className="inline-flex items-center gap-1 rounded-md border border-[#1E376C] px-3 py-2 text-xs font-semibold text-[#1E376C] transition-colors hover:bg-[#EEF2FF]"
+                      >
+                        <FileText size={14} />
+                        Lihat File Upload
+                      </button>
+                      {!isInlinePreviewSupported(uploadLaporan.tipe) && (
+                        <p className="text-[11px] text-gray-500">
+                          Preview inline untuk tipe ini tidak didukung browser. File tetap bisa dibuka/diunduh lewat tombol.
+                        </p>
+                      )}
+                    </div>
+
+                    {uploadedPreviewUrl && isInlinePreviewSupported(uploadLaporan.tipe) && (
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        {uploadLaporan.tipe.startsWith('image/') ? (
+                          <img
+                            src={uploadedPreviewUrl}
+                            alt={uploadLaporan.nama}
+                            className="max-h-[360px] w-full rounded object-contain"
+                          />
+                        ) : (
+                          <iframe
+                            src={uploadedPreviewUrl}
+                            title="Preview file laporan"
+                            className="h-[420px] w-full rounded"
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="mt-3 text-xs text-gray-500">Belum ada file yang diupload.</p>

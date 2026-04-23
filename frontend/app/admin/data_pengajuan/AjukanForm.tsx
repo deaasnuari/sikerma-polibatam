@@ -140,6 +140,25 @@ type FormDisplaySettings = {
 const DISPLAY_SETTINGS_KEY = 'admin-ajukan-form-display-settings';
 const TEMPLATE_SETTINGS_KEY = 'admin-ajukan-form-template-settings';
 const CUSTOM_RUANG_LINGKUP_KEY = 'admin-ajukan-custom-ruang-lingkup';
+const FORM_DRAFT_KEY = 'admin-ajukan-form-draft-v1';
+
+type AjukanFormDraft = {
+  asal: 'Jurusan' | 'Unit';
+  formData: {
+    judulPengajuan: string;
+    namaPengusul: string;
+    namaMitraTujuan: string;
+    asalUnit: string;
+    jenisDokumen: string;
+    tanggalMulai: string;
+    tanggalBerakhir: string;
+    ruangLingkup: string[];
+    deskripsi: string;
+    emailPengusul: string;
+    whatsappPengusul: string;
+  };
+  hasDownloadedTemplate: boolean;
+};
 
 const defaultDisplaySettings: FormDisplaySettings = {
   pageTitle: 'Form Pengajuan Kerjasama Baru',
@@ -237,6 +256,33 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
         window.localStorage.removeItem(CUSTOM_RUANG_LINGKUP_KEY);
       }
     }
+
+    const storedDraft = window.localStorage.getItem(FORM_DRAFT_KEY);
+    if (storedDraft) {
+      try {
+        const parsed = JSON.parse(storedDraft) as Partial<AjukanFormDraft>;
+
+        if (parsed.asal === 'Jurusan' || parsed.asal === 'Unit') {
+          setAsal(parsed.asal);
+        }
+
+        if (parsed.formData) {
+          setFormData((prev) => ({
+            ...prev,
+            ...parsed.formData,
+            ruangLingkup: Array.isArray(parsed.formData.ruangLingkup)
+              ? parsed.formData.ruangLingkup
+              : prev.ruangLingkup,
+          }));
+        }
+
+        if (typeof parsed.hasDownloadedTemplate === 'boolean') {
+          setHasDownloadedTemplate(parsed.hasDownloadedTemplate);
+        }
+      } catch {
+        window.localStorage.removeItem(FORM_DRAFT_KEY);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -262,6 +308,20 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
 
     window.localStorage.setItem(CUSTOM_RUANG_LINGKUP_KEY, JSON.stringify(customRuangLingkupOptions));
   }, [customRuangLingkupOptions]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const draft: AjukanFormDraft = {
+      asal,
+      formData,
+      hasDownloadedTemplate,
+    };
+
+    window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+  }, [asal, formData, hasDownloadedTemplate]);
 
   function closeFormView() {
     if (onClose) {
@@ -449,6 +509,10 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
       ruangLingkup: formData.ruangLingkup,
       fileName: selectedFile?.name || '',
     });
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(FORM_DRAFT_KEY);
+    }
 
     setDialog({
       title: 'Pengajuan Berhasil',

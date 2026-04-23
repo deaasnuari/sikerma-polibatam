@@ -25,6 +25,8 @@ import {
   type RenewalRecord,
   type TabKey,
 } from '@/services/adminMonitoringService';
+import { addAdminNotification } from '@/services/adminService';
+import { addRenewalRequest } from '@/services/adminRenewalRequestService';
 
 
 export default function MonitoringdanstatusPage() {
@@ -371,6 +373,25 @@ export default function MonitoringdanstatusPage() {
             ...prev,
             [renewalModal.kerjasamaId]: [...(prev[renewalModal.kerjasamaId] || []), newRecord],
           }));
+
+          if (selectedRenewalItem) {
+            addRenewalRequest({
+              kerjasamaId: selectedRenewalItem.id,
+              namaMitra: selectedRenewalItem.namaMitra,
+              noDokumen: selectedRenewalItem.noDokumen,
+              tanggalMulaiBaru,
+              tanggalBerakhirBaru,
+              catatan,
+            });
+
+            addAdminNotification({
+              title: 'Permintaan Perpanjangan Baru',
+              message: `Mitra ${selectedRenewalItem.namaMitra} mengajukan perpanjangan untuk dokumen ${selectedRenewalItem.noDokumen} (${tanggalMulaiBaru} s/d ${tanggalBerakhirBaru}).`,
+              from: 'Monitoring Kerjasama',
+              href: '/admin/monitoring/perpanjangan',
+              category: 'reminder',
+            });
+          }
         }}
         onMarkInactive={() => {
           alert('Kerjasama telah ditandai sebagai nonaktif.');

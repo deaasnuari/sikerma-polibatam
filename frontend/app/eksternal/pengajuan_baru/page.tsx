@@ -1,11 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar, Plus, Upload, X } from 'lucide-react';
 
 const jenisMitraOptions = ['Pilih jenis mitra', 'Perusahaan Swasta', 'BUMN', 'Instansi Pemerintah', 'Lembaga Pendidikan', 'Organisasi Non-Profit', 'Lembaga Internasional'];
 const jenisKerjasamaOptions = ['Pilih jenis kerjasama (MOA/MOU/IA)', 'MoA', 'MoU', 'IA'];
 const unitPelaksanaOptions = ['Pilih unit pelaksana', 'Teknik Informatika', 'Teknik Elektro', 'Teknik Mesin', 'Manajemen Bisnis'];
+
+const EKSTERNAL_PENGAJUAN_DRAFT_KEY = 'eksternal-pengajuan-draft-v1';
+
+type EksternalPengajuanDraft = {
+  namaMitra: string;
+  jenisMitra: string;
+  teleponMitra: string;
+  emailMitra: string;
+  alamatLengkap: string;
+  jenisKerjasama: string;
+  unitPelaksana: string;
+  tanggalMulai: string;
+  tanggalBerakhir: string;
+  judulKerjasama: string;
+  deskripsi: string;
+  ruangLingkup: string;
+  kontakNama: string;
+  kontakJabatan: string;
+  kontakEmail: string;
+  kontakTelepon: string;
+};
 
 export default function PengajuanBaruEksternalPage() {
   const [namaMitra, setNamaMitra] = useState('');
@@ -28,6 +49,84 @@ export default function PengajuanBaruEksternalPage() {
   const [kontakTelepon, setKontakTelepon] = useState('');
 
   const [dokumen, setDokumen] = useState<File[]>([]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const storedRaw = window.localStorage.getItem(EKSTERNAL_PENGAJUAN_DRAFT_KEY);
+      if (!storedRaw) {
+        return;
+      }
+
+      const draft = JSON.parse(storedRaw) as Partial<EksternalPengajuanDraft>;
+
+      setNamaMitra(draft.namaMitra ?? '');
+      setJenisMitra(draft.jenisMitra ?? '');
+      setTeleponMitra(draft.teleponMitra ?? '');
+      setEmailMitra(draft.emailMitra ?? '');
+      setAlamatLengkap(draft.alamatLengkap ?? '');
+      setJenisKerjasama(draft.jenisKerjasama ?? '');
+      setUnitPelaksana(draft.unitPelaksana ?? '');
+      setTanggalMulai(draft.tanggalMulai ?? '');
+      setTanggalBerakhir(draft.tanggalBerakhir ?? '');
+      setJudulKerjasama(draft.judulKerjasama ?? '');
+      setDeskripsi(draft.deskripsi ?? '');
+      setRuangLingkup(draft.ruangLingkup ?? '');
+      setKontakNama(draft.kontakNama ?? '');
+      setKontakJabatan(draft.kontakJabatan ?? '');
+      setKontakEmail(draft.kontakEmail ?? '');
+      setKontakTelepon(draft.kontakTelepon ?? '');
+    } catch {
+      // Abaikan draft yang tidak valid.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const draft: EksternalPengajuanDraft = {
+      namaMitra,
+      jenisMitra,
+      teleponMitra,
+      emailMitra,
+      alamatLengkap,
+      jenisKerjasama,
+      unitPelaksana,
+      tanggalMulai,
+      tanggalBerakhir,
+      judulKerjasama,
+      deskripsi,
+      ruangLingkup,
+      kontakNama,
+      kontakJabatan,
+      kontakEmail,
+      kontakTelepon,
+    };
+
+    window.localStorage.setItem(EKSTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    namaMitra,
+    jenisMitra,
+    teleponMitra,
+    emailMitra,
+    alamatLengkap,
+    jenisKerjasama,
+    unitPelaksana,
+    tanggalMulai,
+    tanggalBerakhir,
+    judulKerjasama,
+    deskripsi,
+    ruangLingkup,
+    kontakNama,
+    kontakJabatan,
+    kontakEmail,
+    kontakTelepon,
+  ]);
 
   function handleAddDokumen() {
     const input = document.createElement('input');
@@ -62,6 +161,10 @@ export default function PengajuanBaruEksternalPage() {
     if (!kontakJabatan.trim()) { alert('Jabatan kontak person wajib diisi.'); return; }
     if (!kontakEmail.trim()) { alert('Email kontak person wajib diisi.'); return; }
     if (!kontakTelepon.trim()) { alert('Telepon kontak person wajib diisi.'); return; }
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(EKSTERNAL_PENGAJUAN_DRAFT_KEY);
+    }
 
     alert('Pengajuan kerjasama berhasil dikirim! Silahkan tunggu verifikasi dari pihak Polibatam.');
   }
