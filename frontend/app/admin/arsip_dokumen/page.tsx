@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Archive,
   Search,
@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
+import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface ArsipDokumen {
   id: number;
@@ -22,58 +23,42 @@ interface ArsipDokumen {
   buktiFollowUp: string | null;
 }
 
-const initialData: ArsipDokumen[] = [
-  {
-    id: 1,
-    noDokumen: 'MoA/001/2026',
-    namaMitra: 'PT. Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    statusFollowUp: 'Tidak Direspon',
+function toDisplayDate(value?: string): string {
+  if (!value) {
+    return '-';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '-';
+  }
+
+  return parsed.toLocaleDateString('en-GB');
+}
+
+function toDocumentType(value: string): ArsipDokumen['jenis'] {
+  if (value === 'MoA' || value === 'MoU' || value === 'IA') {
+    return value;
+  }
+
+  return 'MoU';
+}
+
+function mapPengajuanToArsip(item: PengajuanItem): ArsipDokumen {
+  const tahun = Number(item.tanggal?.slice(0, 4)) || new Date().getFullYear();
+  const jenis = toDocumentType(item.jenisDokumen);
+
+  return {
+    id: item.id,
+    noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    namaMitra: item.mitra,
+    jenis,
+    tanggalMulai: toDisplayDate(item.tanggalMulai),
+    berlakuHingga: toDisplayDate(item.tanggalBerakhir),
+    statusFollowUp: item.status === 'Disetujui' ? 'Menunggu' : 'Tidak Direspon',
     buktiFollowUp: null,
-  },
-  {
-    id: 2,
-    noDokumen: 'MoU/002/2026',
-    namaMitra: 'Universitas Negeri Jakarta',
-    jenis: 'MoU',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    statusFollowUp: 'Direspon',
-    buktiFollowUp: 'bukti_followup_unjkt.pdf',
-  },
-  {
-    id: 3,
-    noDokumen: 'IA/002/2026',
-    namaMitra: 'PT. Digital Solutions',
-    jenis: 'IA',
-    tanggalMulai: '28 Feb 2026',
-    berlakuHingga: '28 Feb 2029',
-    statusFollowUp: 'Menunggu',
-    buktiFollowUp: null,
-  },
-  {
-    id: 4,
-    noDokumen: 'MoU/003/2025',
-    namaMitra: 'Universitas Teknologi Malaysia',
-    jenis: 'MoU',
-    tanggalMulai: '01 Mar 2024',
-    berlakuHingga: '01 Mar 2026',
-    statusFollowUp: 'Direspon',
-    buktiFollowUp: 'bukti_followup_utm.pdf',
-  },
-  {
-    id: 5,
-    noDokumen: 'MoA/004/2025',
-    namaMitra: 'PT. Batamindo Investment Cakrawala',
-    jenis: 'MoA',
-    tanggalMulai: '15 Jun 2023',
-    berlakuHingga: '15 Jun 2025',
-    statusFollowUp: 'Tidak Direspon',
-    buktiFollowUp: null,
-  },
-];
+  };
+}
 
 const followUpColor: Record<string, { bg: string; text: string }> = {
   Direspon: { bg: 'bg-green-100', text: 'text-green-700' },
@@ -89,7 +74,18 @@ const jenisColor: Record<string, string> = {
 
 export default function ArsipDokumenPage() {
   const [search, setSearch] = useState('');
-  const [data, setData] = useState<ArsipDokumen[]>(initialData);
+  const [data, setData] = useState<ArsipDokumen[]>([]);
+
+  useEffect(() => {
+    const syncArsip = () => {
+      setData(getPengajuanData().map(mapPengajuanToArsip));
+    };
+
+    syncArsip();
+    window.addEventListener('pengajuan-data-updated', syncArsip);
+
+    return () => window.removeEventListener('pengajuan-data-updated', syncArsip);
+  }, []);
 
   const handleDelete = (id: number) => {
     const item = data.find((d) => d.id === id);
@@ -105,9 +101,10 @@ export default function ArsipDokumenPage() {
   );
 
   const totalArsip = data.length;
+  const tahunIni = new Date().getFullYear();
   const kadaluarsaTahunIni = data.filter((item) => {
-    const tahun = item.berlakuHingga.split(' ').pop();
-    return tahun === '2026';
+    const parsed = new Date(item.berlakuHingga.split('/').reverse().join('-'));
+    return !Number.isNaN(parsed.getTime()) && parsed.getFullYear() === tahunIni;
   }).length;
   const tidakDirespon = data.filter(
     (item) => item.statusFollowUp === 'Tidak Direspon'

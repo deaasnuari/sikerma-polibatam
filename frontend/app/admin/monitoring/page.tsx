@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw } from 'lucide-react';
+import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, X } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
 import RenewalHistoryModal from './RenewalHistoryModal';
 import NotificationHistoryModal from './NotificationHistoryModal';
@@ -29,6 +29,8 @@ import {
 
 export default function MonitoringdanstatusPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('Semua');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedLaporan, setSelectedLaporan] = useState<Kerjasama | null>(null);
   const [renewalModal, setRenewalModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [renewalHistories, setRenewalHistories] = useState<Record<number, RenewalRecord[]>>({});
@@ -49,7 +51,25 @@ export default function MonitoringdanstatusPage() {
     return () => window.removeEventListener('monitoring-data-updated', syncMonitoringData);
   }, []);
   const { totalAktif, totalAkanBerakhir, totalKadaluarsa } = getMonitoringStats(monitoringData);
-  const filtered = getFilteredMonitoringData(monitoringData, activeTab);
+  const filteredByTab = getFilteredMonitoringData(monitoringData, activeTab);
+  const normalizedKeyword = searchKeyword.trim().toLowerCase();
+  const filtered = normalizedKeyword
+    ? filteredByTab.filter((item) => {
+        const searchText = [
+          item.namaMitra,
+          item.noDokumen,
+          item.jenis,
+          item.status,
+          item.tanggalMulai,
+          item.tanggalBerakhir,
+          ...item.ruangLingkup,
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return searchText.includes(normalizedKeyword);
+      })
+    : filteredByTab;
   const tabs = getMonitoringTabs(monitoringData);
   const selectedRenewalItem = findKerjasamaById(monitoringData, renewalModal.kerjasamaId);
   const selectedNotificationItem = findKerjasamaById(monitoringData, notificationModal.kerjasamaId);
@@ -156,6 +176,54 @@ export default function MonitoringdanstatusPage() {
           </button>
         ))}
       </div>
+
+      {/* Search */}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSearchKeyword(searchInput);
+        }}
+        className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 md:flex-row md:items-center"
+      >
+        <div className="relative flex-1">
+          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Cari mitra, nomor dokumen, jenis, atau ruang lingkup"
+            className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-[#1E376C]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#162c56]"
+          >
+            <Search size={14} />
+            Cari
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput('');
+              setSearchKeyword('');
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+          >
+            <X size={14} />
+            Reset
+          </button>
+        </div>
+      </form>
+
+      {searchKeyword.trim() !== '' && (
+        <p className="text-sm text-gray-600">
+          Hasil pencarian untuk <span className="font-semibold">&quot;{searchKeyword}&quot;</span>: {filtered.length} record ditemukan.
+        </p>
+      )}
 
       {/* Cards List */}
       <div className="space-y-4">

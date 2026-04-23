@@ -21,6 +21,7 @@ import {
   Calendar,
   ChevronDown,
 } from 'lucide-react';
+import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface AktivitasItem {
   id: number;
@@ -376,12 +377,80 @@ const jenisAktivitasOptions = [
   'Lainnya',
 ];
 
+function parseDateString(value?: string): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toDisplayDate(value?: string): string {
+  const parsed = parseDateString(value);
+  if (!parsed) {
+    return '-';
+  }
+
+  return parsed.toLocaleDateString('en-GB');
+}
+
+function getKerjasamaStatus(tanggalBerakhir?: string): DetailKerjasama['status'] {
+  const endDate = parseDateString(tanggalBerakhir);
+
+  if (!endDate) {
+    return 'Aktif';
+  }
+
+  const now = new Date();
+  const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return 'Kadaluarsa';
+  }
+
+  if (diffDays <= 120) {
+    return 'Akan Berakhir';
+  }
+
+  return 'Aktif';
+}
+
+function mapPengajuanToDetail(item: PengajuanItem): DetailKerjasama {
+  const jenisDokumen = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen)
+    ? item.jenisDokumen
+    : 'MoU') as DetailKerjasama['jenisDokumen'];
+
+  return {
+    id: item.id,
+    nama: item.mitra,
+    nomorDokumen: `${jenisDokumen}/${String(item.id).padStart(3, '0')}/${new Date().getFullYear()}`,
+    jenisDokumen,
+    kategoriMitra: item.kategoriMitra,
+    tanggalMulai: toDisplayDate(item.tanggalMulai),
+    tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
+    status: getKerjasamaStatus(item.tanggalBerakhir),
+    alamat: '-',
+    email: '-',
+    telepon: '-',
+    masaBerlaku: '-',
+    ruangLingkup: [...item.ruangLingkup],
+    jurusanTerlibat: item.jurusan ? [item.jurusan] : [],
+    totalAktivitas: 0,
+    selesai: 0,
+    berlangsung: 0,
+    direncanakan: 0,
+    aktivitas: [],
+  };
+}
+
 export default function DetailStoryPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const data = dummyDetail[id];
+  const dataFromPengajuan = getPengajuanData().find((item) => item.id === Number(id));
+  const data = dataFromPengajuan ? mapPengajuanToDetail(dataFromPengajuan) : dummyDetail[id];
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({

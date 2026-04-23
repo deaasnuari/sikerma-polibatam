@@ -15,6 +15,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { getHiddenStoryIds } from '@/services/adminStoryAktivitasService';
+import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface Kerjasama {
   id: number;
@@ -30,73 +31,63 @@ interface Kerjasama {
   jurusan: string[];
 }
 
-const dummyData: Kerjasama[] = [
-  {
-    id: 1,
-    nama: 'BADAN PENGUSAHAAN BATAM',
-    nomorDokumen: '000/MOA.PL.29/2025',
-    jenis: 'MoA',
-    berakhir: '15/09/2028',
-    tahun: 2025,
-    status: 'Aktif',
+function parseDateString(value?: string): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toDisplayDate(value?: string): string {
+  const parsed = parseDateString(value);
+  if (!parsed) {
+    return '-';
+  }
+
+  return parsed.toLocaleDateString('en-GB');
+}
+
+function getKerjasamaStatus(tanggalBerakhir?: string): Kerjasama['status'] {
+  const endDate = parseDateString(tanggalBerakhir);
+
+  if (!endDate) {
+    return 'Aktif';
+  }
+
+  const now = new Date();
+  const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return 'Kadaluarsa';
+  }
+
+  if (diffDays <= 120) {
+    return 'Akan Berakhir';
+  }
+
+  return 'Aktif';
+}
+
+function mapPengajuanToKerjasama(item: PengajuanItem): Kerjasama {
+  const tahun = Number(item.tanggal?.slice(0, 4)) || new Date().getFullYear();
+  const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as Kerjasama['jenis'];
+
+  return {
+    id: item.id,
+    nama: item.mitra,
+    nomorDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    jenis,
+    berakhir: toDisplayDate(item.tanggalBerakhir),
+    tahun,
+    status: getKerjasamaStatus(item.tanggalBerakhir),
     aktivitas: 0,
-    jurusanTerlibat: 2,
-    ruangLingkup: 2,
-    jurusan: ['Teknik Informatika', 'Manajemen Bisnis'],
-  },
-  {
-    id: 2,
-    nama: 'BADAN PENGUSAHAAN BATAM',
-    nomorDokumen: '000/MOA.PL.29/2025',
-    jenis: 'MoU',
-    berakhir: '15/09/2028',
-    tahun: 2025,
-    status: 'Akan Berakhir',
-    aktivitas: 0,
-    jurusanTerlibat: 2,
-    ruangLingkup: 2,
-    jurusan: ['Teknik Informatika', 'Manajemen Bisnis'],
-  },
-  {
-    id: 3,
-    nama: 'PT. BATAMINDO INVESTMENT CAKRAWALA',
-    nomorDokumen: '001/MOA.PL.30/2025',
-    jenis: 'MoA',
-    berakhir: '20/12/2027',
-    tahun: 2025,
-    status: 'Aktif',
-    aktivitas: 3,
-    jurusanTerlibat: 3,
-    ruangLingkup: 4,
-    jurusan: ['Teknik Informatika', 'Teknik Elektro', 'Manajemen Bisnis'],
-  },
-  {
-    id: 4,
-    nama: 'UNIVERSITAS TEKNOLOGI MALAYSIA',
-    nomorDokumen: '002/MOU.PL.10/2024',
-    jenis: 'MoU',
-    berakhir: '01/03/2026',
-    tahun: 2024,
-    status: 'Akan Berakhir',
-    aktivitas: 5,
-    jurusanTerlibat: 1,
-    ruangLingkup: 2,
-    jurusan: ['Teknik Informatika'],
-  },
-  {
-    id: 5,
-    nama: 'CITY GLASGOW COLLEGE',
-    nomorDokumen: '003/IA.PL.05/2024',
-    jenis: 'IA',
-    berakhir: '10/06/2027',
-    tahun: 2024,
-    status: 'Aktif',
-    aktivitas: 2,
-    jurusanTerlibat: 2,
-    ruangLingkup: 3,
-    jurusan: ['Teknik Informatika', 'Teknik Elektro'],
-  },
-];
+    jurusanTerlibat: item.jurusan ? 1 : 0,
+    ruangLingkup: item.ruangLingkup.length,
+    jurusan: item.jurusan ? [item.jurusan] : [],
+  };
+}
 
 const statusColor: Record<string, { dot: string; text: string }> = {
   Aktif: { dot: 'bg-green-500', text: 'text-green-700' },
@@ -116,10 +107,6 @@ const accentColor: Record<string, string> = {
   Kadaluarsa: 'from-red-400 to-red-500',
 };
 
-const tahunOptions = Array.from(
-  new Set(dummyData.map((d) => d.tahun))
-).sort((a, b) => b - a);
-
 export default function StoryAktivitasPage() {
   const router = useRouter();
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
@@ -127,19 +114,34 @@ export default function StoryAktivitasPage() {
   const [filterTahun, setFilterTahun] = useState('Semua Tahun');
   const [search, setSearch] = useState('');
   const [hiddenStoryIds, setHiddenStoryIds] = useState<number[]>([]);
+  const [sourceData, setSourceData] = useState<Kerjasama[]>([]);
 
   useEffect(() => {
+    const syncData = () => {
+      setSourceData(getPengajuanData().map(mapPengajuanToKerjasama));
+    };
+
     const syncHiddenStoryIds = () => {
       setHiddenStoryIds(getHiddenStoryIds());
     };
 
+    syncData();
     syncHiddenStoryIds();
+
+    window.addEventListener('pengajuan-data-updated', syncData);
     window.addEventListener('story-data-updated', syncHiddenStoryIds);
 
-    return () => window.removeEventListener('story-data-updated', syncHiddenStoryIds);
+    return () => {
+      window.removeEventListener('pengajuan-data-updated', syncData);
+      window.removeEventListener('story-data-updated', syncHiddenStoryIds);
+    };
   }, []);
 
-  const visibleData = dummyData.filter((item) => !hiddenStoryIds.includes(item.id));
+  const visibleData = sourceData.filter((item) => !hiddenStoryIds.includes(item.id));
+
+  const tahunOptions = Array.from(
+    new Set(visibleData.map((d) => d.tahun))
+  ).sort((a, b) => b - a);
 
   const filtered = visibleData.filter((item) => {
     const matchJenis =
@@ -156,7 +158,11 @@ export default function StoryAktivitasPage() {
 
   const totalAktivitas = visibleData.reduce((s, i) => s + i.aktivitas, 0);
   const kerjasamaAktif = visibleData.filter((i) => i.status === 'Aktif').length;
-  const bulanIni = 2;
+  const now = new Date();
+  const bulanIni = sourceData.filter((item) => {
+    const year = Number(item.tahun);
+    return year === now.getFullYear();
+  }).length;
   const rataRata =
     visibleData.length > 0
       ? Math.round(totalAktivitas / visibleData.length)
