@@ -415,3 +415,29 @@ export function removeRekapByPengajuanId(pengajuanId: number): RekapDokumen[] {
   saveRekapData(updated);
   return updated;
 }
+
+// Terapkan tanggal perpanjangan yang telah disetujui ke dokumen rekap terkait.
+export function applyApprovedRenewalToRekap(
+  noDokumen: string,
+  tanggalMulaiBaru: string,
+  tanggalBerakhirBaru: string
+): RekapDokumen[] {
+  const updated = getRekapData().map((item) => {
+    if (item.noDokumen !== noDokumen) {
+      return item;
+    }
+
+    const nextTahun = new Date(tanggalMulaiBaru).getFullYear();
+
+    return {
+      ...item,
+      tanggalMulai: formatDisplayDate(tanggalMulaiBaru),
+      berlakuHingga: formatDisplayDate(tanggalBerakhirBaru),
+      tahun: Number.isNaN(nextTahun) ? item.tahun : String(nextTahun),
+      status: resolveRekapStatusFromTanggalBerakhir(tanggalBerakhirBaru),
+    };
+  });
+
+  saveRekapData(updated);
+  return updated;
+}

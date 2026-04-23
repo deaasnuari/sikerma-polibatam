@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, XCircle } from 'lucide-react';
+import { applyApprovedRenewalToMonitoring } from '@/services/adminMonitoringService';
+import { applyApprovedRenewalToRekap } from '@/services/adminRekapDataService';
+import { applyApprovedRenewalToPengajuan } from '@/services/adminPengajuanService';
 import {
   getRenewalRequests,
   updateRenewalRequestStatus,
@@ -53,6 +56,12 @@ export default function MonitoringPerpanjanganPage() {
   const handleDecision = (item: RenewalRequestItem, status: 'disetujui' | 'ditolak') => {
     const updated = updateRenewalRequestStatus(item.id, status);
     setItems(updated);
+
+    if (status === 'disetujui') {
+      applyApprovedRenewalToMonitoring(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+      applyApprovedRenewalToRekap(item.noDokumen, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+      applyApprovedRenewalToPengajuan(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+    }
 
     addAdminNotification({
       title: status === 'disetujui' ? 'Perpanjangan Disetujui' : 'Perpanjangan Ditolak',

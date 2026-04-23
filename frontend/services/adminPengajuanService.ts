@@ -1,7 +1,7 @@
 import { addAdminNotification } from '@/services/adminService';
 import { removeMonitoringByPengajuanId, upsertMonitoringFromPengajuan } from '@/services/adminMonitoringService';
 import { removeRekapByPengajuanId, upsertRekapFromPengajuan } from '@/services/adminRekapDataService';
-import { hideStoryByPengajuanId } from '@/services/adminStoryAktivitasService';
+import { hideStoryByPengajuanId, initAktivitasOnApproval } from '@/services/adminStoryAktivitasService';
 
 export type PengajuanStatus = 'Menunggu' | 'Diproses' | 'Disetujui' | 'Ditolak';
 
@@ -19,6 +19,7 @@ export interface PengajuanItem {
   tanggalBerakhir?: string;
   emailPengusul?: string;
   whatsappPengusul?: string;
+  alamatMitra?: string;
   emailTerverifikasi?: boolean;
   ruangLingkup: string[];
   status: PengajuanStatus;
@@ -323,6 +324,14 @@ export function updatePengajuanStatus(
 
   savePengajuanData(updated);
 
+  if (updatedItem && status === 'Disetujui') {
+    initAktivitasOnApproval(
+      updatedItem.id,
+      updatedItem.mitra,
+      updatedItem.reviewedAt ?? new Date().toISOString().slice(0, 10)
+    );
+  }
+
   if (updatedItem) {
     addAdminNotification({
       title: status === 'Disetujui' ? 'Pengajuan Disetujui' : status === 'Ditolak' ? 'Pengajuan Ditolak' : 'Status Pengajuan Diperbarui',
@@ -407,6 +416,30 @@ export function updatePengajuanItem(
     });
   }
 
+  return updated;
+}
+
+// Terapkan tanggal perpanjangan yang telah disetujui ke item pengajuan terkait.
+// Fungsi ini hanya update localStorage pengajuan tanpa cascade ke monitoring/rekap
+// karena keduanya sudah ditangani secara terpisah di halaman perpanjangan.
+export function applyApprovedRenewalToPengajuan(
+  kerjasamaId: number,
+  tanggalMulaiBaru: string,
+  tanggalBerakhirBaru: string
+): PengajuanItem[] {
+  const updated = getPengajuanData().map((item) => {
+    if (item.id !== kerjasamaId) {
+      return item;
+    }
+
+    return {
+      ...item,
+      tanggalMulai: tanggalMulaiBaru,
+      tanggalBerakhir: tanggalBerakhirBaru,
+    };
+  });
+
+  savePengajuanData(updated);
   return updated;
 }
 

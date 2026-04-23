@@ -483,3 +483,29 @@ export function removeMonitoringByPengajuanId(pengajuanId: number): Kerjasama[] 
   saveMonitoringData(updated);
   return updated;
 }
+
+// Terapkan tanggal perpanjangan yang sudah disetujui ke data monitoring.
+export function applyApprovedRenewalToMonitoring(
+  kerjasamaId: number,
+  tanggalMulaiBaru: string,
+  tanggalBerakhirBaru: string
+): Kerjasama[] {
+  const { status, sisaMasaBerlaku } = resolveStatusAndSisa(tanggalBerakhirBaru);
+
+  const updated = getMonitoringData().map((item) => {
+    if (item.id !== kerjasamaId) {
+      return item;
+    }
+
+    return {
+      ...item,
+      tanggalMulai: formatDisplayDate(tanggalMulaiBaru),
+      tanggalBerakhir: formatDisplayDate(tanggalBerakhirBaru),
+      status,
+      sisaMasaBerlaku,
+    };
+  });
+
+  saveMonitoringData(updated);
+  return updated;
+}

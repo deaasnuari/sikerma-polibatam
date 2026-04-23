@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -22,18 +22,12 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import {
+  getAktivitasByKerjasamaId,
+  saveAktivitasByKerjasamaId,
+  type AktivitasItem,
+} from '@/services/adminStoryAktivitasService';
 
-interface AktivitasItem {
-  id: number;
-  judul: string;
-  jenisAktivitas: string;
-  tanggal: string;
-  peserta: number;
-  deskripsi: string;
-  picPolibatam: string;
-  picMitra: string;
-  status: 'direncanakan' | 'berlangsung' | 'selesai';
-}
 
 interface DetailKerjasama {
   id: number;
@@ -395,6 +389,34 @@ function toDisplayDate(value?: string): string {
   return parsed.toLocaleDateString('en-GB');
 }
 
+function computeMasaBerlaku(tanggalBerakhir?: string): string {
+  const endDate = parseDateString(tanggalBerakhir);
+  if (!endDate) {
+    return '-';
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return 'Kadaluarsa';
+  }
+
+  if (diffDays === 0) {
+    return 'Hari ini';
+  }
+
+  const months = Math.floor(diffDays / 30);
+  const days = diffDays % 30;
+
+  if (months > 0) {
+    return days > 0 ? `${months} Bulan ${days} Hari` : `${months} Bulan`;
+  }
+
+  return `${diffDays} Hari`;
+}
+
 function getKerjasamaStatus(tanggalBerakhir?: string): DetailKerjasama['status'] {
   const endDate = parseDateString(tanggalBerakhir);
 
@@ -426,14 +448,14 @@ function mapPengajuanToDetail(item: PengajuanItem): DetailKerjasama {
     nama: item.mitra,
     nomorDokumen: `${jenisDokumen}/${String(item.id).padStart(3, '0')}/${new Date().getFullYear()}`,
     jenisDokumen,
-    kategoriMitra: item.kategoriMitra,
+    kategoriMitra: item.kategori || '-',
     tanggalMulai: toDisplayDate(item.tanggalMulai),
     tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
     status: getKerjasamaStatus(item.tanggalBerakhir),
-    alamat: '-',
-    email: '-',
-    telepon: '-',
-    masaBerlaku: '-',
+    alamat: item.alamatMitra || '-',
+    email: item.emailPengusul || '-',
+    telepon: item.whatsappPengusul || '-',
+    masaBerlaku: computeMasaBerlaku(item.tanggalBerakhir),
     ruangLingkup: [...item.ruangLingkup],
     jurusanTerlibat: item.jurusan ? [item.jurusan] : [],
     totalAktivitas: 0,
@@ -464,9 +486,23 @@ export default function DetailStoryPage() {
     deskripsi: '',
   });
 
-  const [aktivitasList, setAktivitasList] = useState<AktivitasItem[]>(data?.aktivitas ?? []);
+  const isFromPengajuan = Boolean(dataFromPengajuan);
+
+  const [aktivitasList, setAktivitasList] = useState<AktivitasItem[]>(() => {
+    if (isFromPengajuan) {
+      return getAktivitasByKerjasamaId(Number(id));
+    }
+    return data?.aktivitas ?? [];
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showEditDokumen, setShowEditDokumen] = useState(false);
+
+  // Persist aktivitas ke localStorage setiap kali daftar berubah (hanya untuk data dari pengajuan)
+  useEffect(() => {
+    if (isFromPengajuan) {
+      saveAktivitasByKerjasamaId(Number(id), aktivitasList);
+    }
+  }, [aktivitasList, id, isFromPengajuan]);
   const [dokInfo, setDokInfo] = useState({
     nama: data?.nama ?? '',
     nomorDokumen: data?.nomorDokumen ?? '',
@@ -1012,6 +1048,92 @@ export default function DetailStoryPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Log Aktivitas */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-6">
+          🕒 Log Aktivitas
+        </h2>
+
+        {aktivitasList.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-6">Belum ada log aktivitas</p>
+        ) : (
+          <ol className="relative border-l-2 border-gray-200 ml-3 space-y-0">
+            {[...aktivitasList]
+              .sort((a, b) => {
+                const da = new Date(a.tanggal).getTime();
+                const db = new Date(b.tanggal).getTime();
+                return Number.isNaN(da) || Number.isNaN(db) ? 0 : db - da;
+              })
+              .map((item) => {
+                const sc = statusAktivitasColor[item.status];
+                const iconEl =
+                  item.status === 'selesai' ? (
+                    <CheckCircle size={16} className="text-blue-500" />
+                  ) : item.status === 'berlangsung' ? (
+                    <Timer size={16} className="text-green-500" />
+                  ) : (
+                    <CalendarClock size={16} className="text-orange-500" />
+                  );
+                return (
+                  <li key={item.id} className="mb-8 ml-6">
+                    {/* dot */}
+                    <span
+                      className={`absolute -left-[1.1rem] flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white ${sc.icon}`}
+                    >
+                      {iconEl}
+                    </span>
+
+                    <div className="border border-gray-100 rounded-xl p-4">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{item.judul}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                            <Calendar size={11} />
+                            {item.tanggal}
+                            {item.peserta > 0 && (
+                              <>
+                                <span className="mx-1">·</span>
+                                <Users size={11} />
+                                {item.peserta} peserta
+                              </>
+                            )}
+                            <span className="mx-1">·</span>
+                            <span className="italic text-gray-400">{item.jenisAktivitas}</span>
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${sc.bg} ${sc.text}`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+
+                      {item.deskripsi && (
+                        <p className="text-sm text-gray-600 mt-2">{item.deskripsi}</p>
+                      )}
+
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+                        {item.picPolibatam && (
+                          <span>
+                            <span className="font-medium text-gray-700">PIC Polibatam:</span>{' '}
+                            {item.picPolibatam}
+                          </span>
+                        )}
+                        {item.picMitra && (
+                          <span>
+                            <span className="font-medium text-gray-700">PIC Mitra:</span>{' '}
+                            {item.picMitra}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+          </ol>
+        )}
       </div>
 
       {/* Edit Dokumen Modal */}

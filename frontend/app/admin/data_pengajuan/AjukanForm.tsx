@@ -156,6 +156,7 @@ type AjukanFormDraft = {
     deskripsi: string;
     emailPengusul: string;
     whatsappPengusul: string;
+    alamatMitra: string;
   };
   hasDownloadedTemplate: boolean;
 };
@@ -196,6 +197,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
     deskripsi: '',
     emailPengusul: '',
     whatsappPengusul: '',
+    alamatMitra: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
@@ -506,6 +508,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
       tanggalBerakhir: formData.tanggalBerakhir,
       emailPengusul: formData.emailPengusul,
       whatsappPengusul: formData.whatsappPengusul,
+      alamatMitra: formData.alamatMitra,
       ruangLingkup: formData.ruangLingkup,
       fileName: selectedFile?.name || '',
     });
@@ -1020,6 +1023,18 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               {errors.whatsappPengusul && <p className="text-xs text-red-600 mt-1.5">{errors.whatsappPengusul}</p>}
               <p className="text-xs text-gray-400 mt-2">Nomor Whatsapp aktif untuk komunikasi</p>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Alamat Mitra</label>
+            <input
+              type="text"
+              placeholder="Contoh: Jl. Industri No. 1, Batam, Kepulauan Riau"
+              value={formData.alamatMitra}
+              onChange={(e) => handleInputChange('alamatMitra', e.target.value)}
+              className="w-full border border-gray-300 rounded-xl px-4 h-11 text-base text-gray-700 outline-none focus:border-[#1E376C]"
+            />
+            <p className="text-xs text-gray-400 mt-2">Alamat lengkap instansi/perusahaan mitra</p>
           </div>
         </section>
 

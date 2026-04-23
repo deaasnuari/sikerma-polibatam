@@ -14,7 +14,7 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
-import { getHiddenStoryIds } from '@/services/adminStoryAktivitasService';
+import { getHiddenStoryIds, getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface Kerjasama {
@@ -82,7 +82,7 @@ function mapPengajuanToKerjasama(item: PengajuanItem): Kerjasama {
     berakhir: toDisplayDate(item.tanggalBerakhir),
     tahun,
     status: getKerjasamaStatus(item.tanggalBerakhir),
-    aktivitas: 0,
+    aktivitas: getAktivitasByKerjasamaId(item.id).length,
     jurusanTerlibat: item.jurusan ? 1 : 0,
     ruangLingkup: item.ruangLingkup.length,
     jurusan: item.jurusan ? [item.jurusan] : [],
