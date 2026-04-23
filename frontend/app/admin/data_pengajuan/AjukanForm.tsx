@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, X } from 'lucide-react';
+import { Download, Pencil, Plus, Upload, X } from 'lucide-react';
 import { submitPengajuan } from '@/services/adminPengajuanService';
 
 const ruangLingkupOptions = [
@@ -14,7 +14,6 @@ const ruangLingkupOptions = [
   'Workshop',
   'Sertifikasi',
   'Joint Program',
-  'Lainnya',
 ];
 
 const jurusanOptions = [
@@ -117,10 +116,55 @@ type DialogState = {
   onConfirm?: () => void;
 };
 
+type TemplateKey = 'MoU' | 'MoA' | 'IA';
+
+type FormDisplaySettings = {
+  pageTitle: string;
+  sectionInformasiDasar: string;
+  sectionKontak: string;
+  labelJudulPengajuan: string;
+  labelNamaPengusul: string;
+  labelNamaMitra: string;
+  labelDari: string;
+  labelJenisDokumen: string;
+  labelTanggalMulai: string;
+  labelTanggalBerakhir: string;
+  labelRuangLingkup: string;
+  labelDeskripsi: string;
+  labelEmailPengusul: string;
+  labelWhatsappPengusul: string;
+  templateSectionTitle: string;
+  templateSectionSubtitle: string;
+};
+
+const DISPLAY_SETTINGS_KEY = 'admin-ajukan-form-display-settings';
+const TEMPLATE_SETTINGS_KEY = 'admin-ajukan-form-template-settings';
+const CUSTOM_RUANG_LINGKUP_KEY = 'admin-ajukan-custom-ruang-lingkup';
+
+const defaultDisplaySettings: FormDisplaySettings = {
+  pageTitle: 'Form Pengajuan Kerjasama Baru',
+  sectionInformasiDasar: 'Informasi Dasar',
+  sectionKontak: 'Kontak Pengusul',
+  labelJudulPengajuan: 'Judul Pengajuan *',
+  labelNamaPengusul: 'Nama Pengusul *',
+  labelNamaMitra: 'Nama Mitra Tujuan *',
+  labelDari: 'Dari *',
+  labelJenisDokumen: 'Jenis Dokumen *',
+  labelTanggalMulai: 'Tanggal Mulai *',
+  labelTanggalBerakhir: 'Tanggal Berakhir *',
+  labelRuangLingkup: 'Ruang Lingkup Kerjasama *',
+  labelDeskripsi: 'Deskripsi & Tujuan Kerjasama',
+  labelEmailPengusul: 'Email Pengusul',
+  labelWhatsappPengusul: 'Whatsapp Pengusul',
+  templateSectionTitle: 'Template Dokumen',
+  templateSectionSubtitle: 'Alurnya sederhana: download template, isi dokumen, lalu upload kembali.',
+};
+
 export default function AjukanForm({ onClose }: AjukanFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const asalOptions = asal === 'Jurusan' ? jurusanOptions : unitOptions;
+  const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [formData, setFormData] = useState({
     judulPengajuan: '',
     namaPengusul: '',
@@ -138,6 +182,86 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
   const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [displaySettings, setDisplaySettings] = useState<FormDisplaySettings>(defaultDisplaySettings);
+  const [templateDokumenMap, setTemplateDokumenMap] = useState(defaultTemplateDokumenMap);
+  const [customRuangLingkupOptions, setCustomRuangLingkupOptions] = useState<string[]>([]);
+  const [newRuangLingkupOption, setNewRuangLingkupOption] = useState('');
+  const [newRuangLingkupError, setNewRuangLingkupError] = useState('');
+  const [showAddRuangLingkupForm, setShowAddRuangLingkupForm] = useState(false);
+
+  const allRuangLingkupOptions = [...ruangLingkupOptions, ...customRuangLingkupOptions];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const storedDisplaySettings = window.localStorage.getItem(DISPLAY_SETTINGS_KEY);
+    const storedTemplateSettings = window.localStorage.getItem(TEMPLATE_SETTINGS_KEY);
+
+    if (storedDisplaySettings) {
+      try {
+        setDisplaySettings({
+          ...defaultDisplaySettings,
+          ...(JSON.parse(storedDisplaySettings) as Partial<FormDisplaySettings>),
+        });
+      } catch {
+        window.localStorage.removeItem(DISPLAY_SETTINGS_KEY);
+      }
+    }
+
+    if (storedTemplateSettings) {
+      try {
+        const parsed = JSON.parse(storedTemplateSettings) as Partial<typeof defaultTemplateDokumenMap>;
+        setTemplateDokumenMap({
+          ...defaultTemplateDokumenMap,
+          ...parsed,
+        });
+      } catch {
+        window.localStorage.removeItem(TEMPLATE_SETTINGS_KEY);
+      }
+    }
+
+    const storedCustomRuangLingkup = window.localStorage.getItem(CUSTOM_RUANG_LINGKUP_KEY);
+    if (storedCustomRuangLingkup) {
+      try {
+        const parsed = JSON.parse(storedCustomRuangLingkup) as string[];
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed
+            .filter((item) => Boolean(item?.trim()))
+            .filter((item) => item.trim().toLowerCase() !== 'tes');
+
+          setCustomRuangLingkupOptions(cleaned);
+        }
+      } catch {
+        window.localStorage.removeItem(CUSTOM_RUANG_LINGKUP_KEY);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify(displaySettings));
+  }, [displaySettings]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(TEMPLATE_SETTINGS_KEY, JSON.stringify(templateDokumenMap));
+  }, [templateDokumenMap]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(CUSTOM_RUANG_LINGKUP_KEY, JSON.stringify(customRuangLingkupOptions));
+  }, [customRuangLingkupOptions]);
 
   function closeFormView() {
     if (onClose) {
@@ -161,9 +285,9 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
   }
 
   function handleDownloadTemplate() {
-    if (!formData.jenisDokumen || !defaultTemplateDokumenMap[formData.jenisDokumen]) return;
+    if (!formData.jenisDokumen || !templateDokumenMap[formData.jenisDokumen]) return;
 
-    const doc = defaultTemplateDokumenMap[formData.jenisDokumen];
+    const doc = templateDokumenMap[formData.jenisDokumen];
     const link = document.createElement('a');
     link.href = doc.downloadUrl;
     link.download = doc.fileName;
@@ -195,8 +319,43 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
     setErrors((prev) => ({ ...prev, fileDokumen: '' }));
   }
 
-  function updateTemplateField(_field: 'title' | 'subtitle' | 'note', _value: string) {}
-  function updateTemplateStruktur(_rawText: string) {}
+  function updateDisplaySetting(field: keyof FormDisplaySettings, value: string) {
+    setDisplaySettings((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function updateTemplateField(field: 'title' | 'subtitle' | 'note', value: string) {
+    const jenisDokumen = formData.jenisDokumen as TemplateKey;
+    if (!jenisDokumen || !templateDokumenMap[jenisDokumen]) return;
+
+    setTemplateDokumenMap((prev) => ({
+      ...prev,
+      [jenisDokumen]: {
+        ...prev[jenisDokumen],
+        [field]: value,
+      },
+    }));
+  }
+
+  function updateTemplateStruktur(rawText: string) {
+    const jenisDokumen = formData.jenisDokumen as TemplateKey;
+    if (!jenisDokumen || !templateDokumenMap[jenisDokumen]) return;
+
+    setTemplateDokumenMap((prev) => ({
+      ...prev,
+      [jenisDokumen]: {
+        ...prev[jenisDokumen],
+        struktur: rawText
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      },
+    }));
+  }
+
+  function resetFormAppearance() {
+    setDisplaySettings(defaultDisplaySettings);
+    setTemplateDokumenMap(defaultTemplateDokumenMap);
+  }
 
   function handleRuangLingkupChange(option: string) {
     setFormData((prev) => {
@@ -207,6 +366,37 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
       return { ...prev, ruangLingkup: next };
     });
     setErrors((prev) => ({ ...prev, ruangLingkup: '' }));
+  }
+
+  function handleAddRuangLingkupOption() {
+    const cleaned = newRuangLingkupOption.trim();
+
+    if (!cleaned) {
+      setNewRuangLingkupError('Nama ruang lingkup tidak boleh kosong.');
+      return;
+    }
+
+    const isDuplicate = allRuangLingkupOptions.some(
+      (option) => option.toLowerCase() === cleaned.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setNewRuangLingkupError('Ruang lingkup sudah ada.');
+      return;
+    }
+
+    setCustomRuangLingkupOptions((prev) => [...prev, cleaned]);
+    setNewRuangLingkupOption('');
+    setNewRuangLingkupError('');
+    setShowAddRuangLingkupForm(false);
+  }
+
+  function handleRemoveRuangLingkupOption(option: string) {
+    setCustomRuangLingkupOptions((prev) => prev.filter((item) => item !== option));
+    setFormData((prev) => ({
+      ...prev,
+      ruangLingkup: prev.ruangLingkup.filter((item) => item !== option),
+    }));
   }
 
   function validateForm() {
@@ -301,26 +491,91 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
     <div className="card mx-auto max-w-[1100px]">
       <div className="px-7 py-6 flex items-start justify-between gap-4 border-b border-slate-200">
         <div>
-          <h1 className="page-title">Form Pengajuan Kerjasama Baru</h1>
+          <h1 className="page-title">{displaySettings.pageTitle}</h1>
         </div>
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="text-gray-400 hover:text-gray-600 transition-colors mt-1"
-          aria-label="Kembali ke daftar pengajuan"
-        >
-          <X size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsAppearanceEditMode((prev) => !prev)}
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${isAppearanceEditMode ? 'border-[#1E376C] bg-[#1E376C] text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-[#1E376C] hover:text-[#1E376C]'}`}
+          >
+            <Pencil size={15} />
+            {isAppearanceEditMode ? 'Tutup Ubah Nama Form' : 'Ubah Nama Form'}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="text-gray-400 hover:text-gray-600 transition-colors mt-1"
+            aria-label="Kembali ke daftar pengajuan"
+          >
+            <X size={24} />
+          </button>
+        </div>
       </div>
 
       <form className="px-7 pb-7 space-y-6" onSubmit={handleSubmit}>
+        {isAppearanceEditMode && (
+          <section className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-5 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-[#173B82]">Ubah Nama Form</h2>
+                <p className="text-sm text-gray-600 mt-1">Cukup ganti nama yang ingin ditampilkan di form. Ini hanya mengubah tulisan di layar admin.</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetFormAppearance}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1E376C] hover:text-[#1E376C]"
+              >
+                Reset Default
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Judul halaman</label>
+                <input value={displaySettings.pageTitle} onChange={(e) => updateDisplaySetting('pageTitle', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Judul bagian atas form</label>
+                <input value={displaySettings.sectionInformasiDasar} onChange={(e) => updateDisplaySetting('sectionInformasiDasar', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field judul pengajuan</label>
+                <input value={displaySettings.labelJudulPengajuan} onChange={(e) => updateDisplaySetting('labelJudulPengajuan', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field pengusul</label>
+                <input value={displaySettings.labelNamaPengusul} onChange={(e) => updateDisplaySetting('labelNamaPengusul', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field mitra</label>
+                <input value={displaySettings.labelNamaMitra} onChange={(e) => updateDisplaySetting('labelNamaMitra', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field jenis dokumen</label>
+                <input value={displaySettings.labelJenisDokumen} onChange={(e) => updateDisplaySetting('labelJenisDokumen', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field ruang lingkup</label>
+                <input value={displaySettings.labelRuangLingkup} onChange={(e) => updateDisplaySetting('labelRuangLingkup', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Nama field email pengusul</label>
+                <input value={displaySettings.labelEmailPengusul} onChange={(e) => updateDisplaySetting('labelEmailPengusul', e.target.value)} className="input-field w-full h-10 px-3 text-sm" />
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500">Kalau belum perlu ubah yang lain, cukup pakai 4-5 field di atas. Sisanya tetap mengikuti tampilan default.</p>
+          </section>
+        )}
+
         <section className="space-y-5">
-          <h2 className="text-2xl leading-none font-bold text-gray-900">Informasi Dasar</h2>
+          <h2 className="text-2xl leading-none font-bold text-gray-900">{displaySettings.sectionInformasiDasar}</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-5">
               <div>
-                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Judul Pengajuan *</label>
+                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelJudulPengajuan}</label>
                 <input
                   type="text"
                   value={formData.judulPengajuan}
@@ -331,7 +586,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               </div>
 
               <div>
-                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Nama Pengusul*</label>
+                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelNamaPengusul}</label>
                 <input
                   type="text"
                   value={formData.namaPengusul}
@@ -342,7 +597,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               </div>
 
               <div>
-                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Nama Mitra Tujuan *</label>
+                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelNamaMitra}</label>
                 <input
                   type="text"
                   value={formData.namaMitraTujuan}
@@ -354,7 +609,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Tanggal Mulai *</label>
+                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelTanggalMulai}</label>
                   <input
                     type="date"
                     value={formData.tanggalMulai}
@@ -365,7 +620,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Tanggal Berakhir *</label>
+                  <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelTanggalBerakhir}</label>
                   <input
                     type="date"
                     value={formData.tanggalBerakhir}
@@ -380,7 +635,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
 
             <div className="space-y-5">
               <div>
-                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Dari *</label>
+                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelDari}</label>
                 <div className="flex items-center gap-8 mb-3">
                   <label className="inline-flex items-center gap-2 text-base text-gray-700">
                     <input
@@ -427,7 +682,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               </div>
 
               <div>
-                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Jenis Dokumen *</label>
+                <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelJenisDokumen}</label>
                 <select
                   value={formData.jenisDokumen}
                   onChange={(e) => handleJenisDokumenChange(e.target.value)}
@@ -446,8 +701,8 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
           {formData.jenisDokumen && defaultTemplateDokumenMap[formData.jenisDokumen] && (
             <div className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-4 sm:p-5 space-y-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Template Dokumen</h3>
-                <p className="text-sm text-gray-600 mt-1">Alurnya sederhana: download template, isi dokumen, lalu upload kembali.</p>
+                <h3 className="text-xl font-bold text-gray-900">{displaySettings.templateSectionTitle}</h3>
+                <p className="text-sm text-gray-600 mt-1">{displaySettings.templateSectionSubtitle}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -477,12 +732,12 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-xl font-bold text-[#173B82]">{defaultTemplateDokumenMap[formData.jenisDokumen].title}</p>
-                    <p className="text-sm text-gray-600">{defaultTemplateDokumenMap[formData.jenisDokumen].subtitle}</p>
+                    <p className="text-xl font-bold text-[#173B82]">{templateDokumenMap[formData.jenisDokumen as TemplateKey].title}</p>
+                    <p className="text-sm text-gray-600">{templateDokumenMap[formData.jenisDokumen as TemplateKey].subtitle}</p>
                     <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#C9D8F5] bg-[#EEF4FF] px-3 py-1.5">
                       <span className="text-[11px] font-semibold text-[#173B82]">Template aktif:</span>
                       <span className="text-xs font-bold text-[#0F2F6B]">
-                        {defaultTemplateDokumenMap[formData.jenisDokumen].fileName}
+                        {templateDokumenMap[formData.jenisDokumen as TemplateKey].fileName}
                       </span>
                     </div>
                   </div>
@@ -499,7 +754,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <p className="text-sm font-semibold text-[#173B82] mb-2">Isi utama dokumen:</p>
                   <div className="flex flex-wrap gap-2">
-                    {defaultTemplateDokumenMap[formData.jenisDokumen].struktur.map((item) => (
+                    {templateDokumenMap[formData.jenisDokumen as TemplateKey].struktur.map((item) => (
                       <span key={item} className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-gray-700">
                         {item}
                       </span>
@@ -508,7 +763,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
                 </div>
 
                 <p className="mt-3 text-xs text-[#173B82] bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                  Catatan: {defaultTemplateDokumenMap[formData.jenisDokumen].note}
+                  Catatan: {templateDokumenMap[formData.jenisDokumen as TemplateKey].note}
                 </p>
               </div>
 
@@ -570,25 +825,98 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
           )}
 
           <div>
-            <label className="block text-lg leading-none font-semibold text-gray-900 mb-4">Ruang Lingkup Kerjasama *</label>
+            <label className="block text-lg leading-none font-semibold text-gray-900 mb-4">{displaySettings.labelRuangLingkup}</label>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-3 gap-x-5">
-              {ruangLingkupOptions.map((option) => (
-                <label key={option} className="inline-flex items-start gap-2 text-sm leading-tight text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.ruangLingkup.includes(option)}
-                    onChange={() => handleRuangLingkupChange(option)}
-                    className="mt-1 accent-[#1E376C] h-4 w-4"
-                  />
-                  <span className="max-w-[120px]">{option}</span>
-                </label>
-              ))}
+              {allRuangLingkupOptions.map((option) => {
+                const isCustomOption = customRuangLingkupOptions.includes(option);
+
+                return (
+                  <div key={option} className="flex items-start gap-2">
+                    <label className="inline-flex items-start gap-2 text-sm leading-tight text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={formData.ruangLingkup.includes(option)}
+                        onChange={() => handleRuangLingkupChange(option)}
+                        className="mt-1 accent-[#1E376C] h-4 w-4"
+                      />
+                      <span className="max-w-[120px]">{option}</span>
+                    </label>
+
+                    {isCustomOption && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRuangLingkupOption(option)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Hapus ruang lingkup buatan admin"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+
+            {!showAddRuangLingkupForm ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRuangLingkupForm(true)}
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#1E376C] px-3 text-sm font-semibold text-[#1E376C] hover:bg-[#EEF3FF]"
+                >
+                  <Plus size={15} />
+                  Tambah Ruang Lingkup Baru
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-700 mb-2">Tambah ruang lingkup baru (khusus admin)</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newRuangLingkupOption}
+                    onChange={(e) => {
+                      setNewRuangLingkupOption(e.target.value);
+                      setNewRuangLingkupError('');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddRuangLingkupOption();
+                      }
+                    }}
+                    placeholder="Contoh: Inkubasi Bisnis"
+                    className="input-field h-10 flex-1 rounded-lg px-3 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddRuangLingkupOption}
+                    className="inline-flex h-10 items-center gap-1 rounded-lg bg-[#1E376C] px-3 text-sm font-semibold text-white hover:bg-[#2A4A8F]"
+                  >
+                    <Plus size={15} />
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddRuangLingkupForm(false);
+                      setNewRuangLingkupOption('');
+                      setNewRuangLingkupError('');
+                    }}
+                    className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Batal
+                  </button>
+                </div>
+                {newRuangLingkupError && <p className="text-xs text-red-600 mt-1.5">{newRuangLingkupError}</p>}
+              </div>
+            )}
+
             {errors.ruangLingkup && <p className="text-xs text-red-600 mt-1.5">{errors.ruangLingkup}</p>}
           </div>
 
           <div>
-            <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Deskripsi & Tujuan Kerjasama</label>
+            <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelDeskripsi}</label>
             <textarea
               rows={4}
               placeholder="Jelaskan tujuan dan manfaat kerjasama..."
@@ -601,11 +929,11 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
         </section>
 
         <section className="pt-5 border-t border-gray-300 -mx-7 px-7 space-y-5">
-          <h2 className="text-3xl leading-none font-bold text-gray-900">Kontak Pengusul</h2>
+          <h2 className="text-3xl leading-none font-bold text-gray-900">{displaySettings.sectionKontak}</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
-              <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Email Pengusul</label>
+              <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelEmailPengusul}</label>
               <input
                 type="email"
                 placeholder="email@mitra.com"
@@ -617,7 +945,7 @@ export default function AjukanForm({ onClose }: AjukanFormProps) {
               <p className="text-xs text-gray-400 mt-2">Email untuk notifikasi status pengajuan</p>
             </div>
             <div>
-              <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">Whatsapp Pengusul</label>
+              <label className="block text-lg leading-none font-semibold text-gray-900 mb-3">{displaySettings.labelWhatsappPengusul}</label>
               <input
                 type="text"
                 placeholder="+628 ..."
