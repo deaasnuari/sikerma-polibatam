@@ -12,12 +12,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 export default function PimpinanLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { logout } = useAuth();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,10 +42,6 @@ export default function PimpinanLayout({ children }: { children: React.ReactNode
       icon: FileText,
     },
   ];
-
-  if (!isHydrated) {
-    return null;
-  }
 
   return (
     <ProtectedRoute requiredRole="pimpinan">

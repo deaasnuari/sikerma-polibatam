@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { X, AlertTriangle, Clock, CheckCircle2, Upload, FileText, Trash2 } from 'lucide-react';
+import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 interface NonactiveRecord {
   id: string;
@@ -44,18 +45,22 @@ export default function NonactiveConfirmationModal({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file maksimal 5MB');
-        return;
-      }
-      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Tipe file yang diizinkan: PDF, Word, JPG, PNG');
-        return;
-      }
-      setSelectedFile(file);
+    if (!file) {
+      return;
     }
+
+    const validationError = validateSelectedFile(file, {
+      accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+      maxSizeBytes: 5 * 1024 * 1024,
+    });
+
+    if (validationError) {
+      alert(validationError);
+      e.target.value = '';
+      return;
+    }
+
+    setSelectedFile(file);
   };
 
   const formatFileSize = (bytes: number): string => {

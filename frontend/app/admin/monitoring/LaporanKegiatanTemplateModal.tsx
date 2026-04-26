@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Download, FileText, Save, Upload, X } from 'lucide-react';
+import { compressImageFileIfNeeded, validateSelectedFile } from '@/lib/fileUploadUtils';
 
 interface LaporanKegiatanTemplateModalProps {
   isOpen: boolean;
@@ -206,24 +207,47 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
     return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  function handleUploadLaporan(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleUploadLaporan(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateSelectedFile(file, {
+      accept: '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png',
+      maxSizeBytes: 10 * 1024 * 1024,
+    });
+
+    if (validationError) {
+      alert(validationError);
+      event.target.value = '';
+      return;
+    }
+
+    const processedFile = await compressImageFileIfNeeded(file, {
+      maxDimension: 1920,
+      quality: 0.8,
+      minBytesToCompress: 400 * 1024,
+    });
 
     if (uploadedPreviewUrl) {
       URL.revokeObjectURL(uploadedPreviewUrl);
     }
 
-    const nextPreviewUrl = URL.createObjectURL(file);
+    const nextPreviewUrl = URL.createObjectURL(processedFile);
     setUploadedPreviewUrl(nextPreviewUrl);
 
     setUploadLaporan({
-      nama: file.name,
-      ukuran: formatFileSize(file.size),
+      nama: processedFile.name,
+      ukuran: formatFileSize(processedFile.size),
       uploadedAt: new Date().toLocaleString('id-ID'),
-      tipe: file.type,
+      tipe: processedFile.type,
     });
-    setSaveMessage('File laporan dipilih. Klik Simpan untuk menyimpan data.');
+
+    const isCompressed = processedFile.size < file.size;
+    setSaveMessage(
+      isCompressed
+        ? 'File gambar dikompres sebelum disimpan. Klik Simpan untuk menyimpan data.'
+        : 'File laporan dipilih. Klik Simpan untuk menyimpan data.'
+    );
     window.setTimeout(() => setSaveMessage(''), 2200);
   }
 
@@ -500,6 +524,9 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
                       <p className="text-sm font-semibold text-gray-900">Upload Laporan Pelaksanaan</p>
                       <p className="mt-1 text-xs text-gray-600">
                         Upload file yang sudah Anda isi setelah mengunduh template.
+                      </p>
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        Format: PDF, Word, Excel, JPG, PNG | Maksimal ukuran: 10MB
                       </p>
                     </div>
                   </div>

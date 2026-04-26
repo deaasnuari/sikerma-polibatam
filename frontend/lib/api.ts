@@ -1,13 +1,27 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api';
+const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api';
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const requestUrl = `${API_BASE_URL}${normalizedEndpoint}`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(requestUrl, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error('Gagal terhubung ke server API. Pastikan backend aktif dan URL API benar.');
+    }
+
+    throw error;
+  }
 
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('application/json')

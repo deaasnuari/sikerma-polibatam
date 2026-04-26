@@ -20,6 +20,7 @@ import {
   Users,
   Calendar,
   ChevronDown,
+  TableProperties,
 } from 'lucide-react';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 import {
@@ -639,6 +640,15 @@ export default function DetailStoryPage() {
           Kembali
         </button>
         <div className="flex items-center gap-3">
+          {isFromPengajuan && (
+            <button
+              onClick={() => router.push('/admin/rekap_data')}
+              className="flex items-center gap-2 border border-[#1E376C] text-[#1E376C] px-4 py-2 rounded-lg hover:bg-[#1E376C]/5 text-sm font-medium"
+            >
+              <TableProperties size={15} />
+              Lihat Rekap Data
+            </button>
+          )}
           <button
             onClick={handleOpenEditDokumen}
             className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium"

@@ -10,21 +10,50 @@ import {
   FileText,
   Filter,
   MessageSquareText,
+  Pencil,
   Plus,
   Search,
+  Trash2,
+  X,
   XCircle,
 } from 'lucide-react';
 import {
+  deletePengajuanItem,
   getFilteredPengajuanData,
   getPengajuanData,
   getPengajuanStats,
   pengajuanDokumenBadge,
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
+  updatePengajuanItem,
   type PengajuanItem,
   type PengajuanStatus,
 } from '@/services/adminPengajuanService';
 import AjukanKerjasamaForm from './AjukanKerjasamaForm';
+import DetailPengajuanModal from './DetailPengajuanModal';
+
+type EditFormState = {
+  id: number;
+  judul: string;
+  mitra: string;
+  jurusan: string;
+  jenisDokumen: string;
+  tanggalMulai: string;
+  tanggalBerakhir: string;
+  ruangLingkup: string[];
+};
+
+const ruangLingkupOptions = [
+  'Penelitian',
+  'Pengabdian Masyarakat',
+  'Magang',
+  'Pertukaran Mahasiswa',
+  'Pelatihan',
+  'Workshop',
+  'Sertifikasi',
+  'Joint Program',
+  'Lainnya',
+];
 
 const statusConfig: Record<PengajuanStatus, { className: string; icon: React.ReactNode }> = {
   Menunggu: {
@@ -68,6 +97,11 @@ export default function InternalDataPengajuanPage() {
   const [filterKategori, setFilterKategori] = useState<'Semua' | 'Jurusan' | 'Unit'>('Semua');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan/unit');
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
+  const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
+  const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
+  const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const syncPengajuan = () => {
@@ -114,6 +148,55 @@ export default function InternalDataPengajuanPage() {
   }, [pengajuanData, filterStatus, filterJurusan, search, filterKategori]);
 
   const stats = getPengajuanStats(pengajuanData);
+
+  function openEdit(item: PengajuanItem) {
+    setEditForm({
+      id: item.id,
+      judul: item.judul,
+      mitra: item.mitra,
+      jurusan: item.jurusan,
+      jenisDokumen: item.jenisDokumen,
+      tanggalMulai: item.tanggalMulai || '',
+      tanggalBerakhir: item.tanggalBerakhir || '',
+      ruangLingkup: item.ruangLingkup,
+    });
+  }
+
+  function saveEdit() {
+    if (!editForm) return;
+    if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
+      setInfoModalMessage('Judul, mitra, dan jurusan wajib diisi.');
+      return;
+    }
+    if (editForm.ruangLingkup.length === 0) {
+      setInfoModalMessage('Pilih minimal 1 ruang lingkup.');
+      return;
+    }
+    const next = updatePengajuanItem(editForm.id, {
+      judul: editForm.judul.trim(),
+      mitra: editForm.mitra.trim(),
+      jurusan: editForm.jurusan.trim(),
+      jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
+      tanggalMulai: editForm.tanggalMulai || undefined,
+      tanggalBerakhir: editForm.tanggalBerakhir || undefined,
+      ruangLingkup: editForm.ruangLingkup,
+    });
+    const internalOnly = next.filter((i) => i.kategori === 'Internal');
+    setPengajuanData(internalOnly);
+    setEditForm(null);
+    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+  }
+
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    const deletedId = deleteTarget.id;
+    const next = deletePengajuanItem(deletedId);
+    setPengajuanData(next.filter((i) => i.kategori === 'Internal'));
+    setDeleteTarget(null);
+    if (detailItem?.id === deletedId) setDetailItem(null);
+    if (reviewItem?.id === deletedId) setReviewItem(null);
+    setInfoModalMessage('Data pengajuan berhasil dihapus.');
+  }
 
   if (isAjukanView) {
     return (
@@ -295,13 +378,21 @@ export default function InternalDataPengajuanPage() {
                   </div>
 
                   <div className="flex items-center gap-5 text-sm">
-                    <button type="button" className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900">
+                    <button type="button" onClick={() => setDetailItem(item)} className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900">
                       <Eye size={16} />
                       <span className="underline underline-offset-2">Lihat Detail</span>
                     </button>
-                    <button type="button" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
+                    <button type="button" onClick={() => setReviewItem(item)} className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
                       <MessageSquareText size={16} />
                       <span>Review</span>
+                    </button>
+                    <button type="button" onClick={() => openEdit(item)} className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700">
+                      <Pencil size={16} />
+                      <span>Edit</span>
+                    </button>
+                    <button type="button" onClick={() => setDeleteTarget(item)} className="inline-flex items-center gap-2 text-red-500 hover:text-red-700">
+                      <Trash2 size={16} />
+                      <span>Hapus</span>
                     </button>
                   </div>
                 </div>
@@ -323,6 +414,106 @@ export default function InternalDataPengajuanPage() {
           })
         )}
       </div>
+      {detailItem && (
+        <DetailPengajuanModal item={detailItem} onClose={() => setDetailItem(null)} />
+      )}
+
+      {reviewItem && (
+        <DetailPengajuanModal item={reviewItem} onClose={() => setReviewItem(null)} scrollToReview />
+      )}
+
+      {/* Edit Modal */}
+      {editForm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h3 className="text-lg font-bold text-slate-900">Edit Pengajuan</h3>
+              <button type="button" onClick={() => setEditForm(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+            <div className="grid grid-cols-1 gap-4 px-5 py-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
+                <input type="text" value={editForm.judul} onChange={(e) => setEditForm((p) => p ? { ...p, judul: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Mitra Tujuan</label>
+                <input type="text" value={editForm.mitra} onChange={(e) => setEditForm((p) => p ? { ...p, mitra: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
+                <input type="text" value={editForm.jurusan} onChange={(e) => setEditForm((p) => p ? { ...p, jurusan: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
+                <select value={editForm.jenisDokumen} onChange={(e) => setEditForm((p) => p ? { ...p, jenisDokumen: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700">
+                  <option>MoU</option><option>MoA</option><option>IA</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
+                <input type="date" value={editForm.tanggalMulai} onChange={(e) => setEditForm((p) => p ? { ...p, tanggalMulai: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700">Tanggal Berakhir</label>
+                <input type="date" value={editForm.tanggalBerakhir} onChange={(e) => setEditForm((p) => p ? { ...p, tanggalBerakhir: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-slate-700">Ruang Lingkup</label>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {ruangLingkupOptions.map((opt) => {
+                    const checked = editForm.ruangLingkup.includes(opt);
+                    return (
+                      <label key={opt} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${checked ? 'border-[#173B82] bg-[#EEF2FF] text-[#173B82]' : 'border-slate-300 bg-white text-slate-700 hover:border-[#173B82]'}`}>
+                        <input type="checkbox" checked={checked} onChange={() => setEditForm((p) => { if (!p) return p; const exists = p.ruangLingkup.includes(opt); return { ...p, ruangLingkup: exists ? p.ruangLingkup.filter((r) => r !== opt) : [...p.ruangLingkup, opt] }; })} className="h-4 w-4 accent-[#173B82]" />
+                        {opt}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+              <button type="button" onClick={() => setEditForm(null)} className="h-9 rounded-lg bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200">Batal</button>
+              <button type="button" onClick={saveEdit} className="h-9 rounded-lg bg-[#173B82] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F]">Simpan Perubahan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <h3 className="text-lg font-bold text-slate-900">Hapus Pengajuan</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-700">Yakin ingin menghapus pengajuan <span className="font-semibold">{deleteTarget.judul}</span>? Tindakan ini tidak bisa dibatalkan.</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+              <button type="button" onClick={() => setDeleteTarget(null)} className="h-9 rounded-lg bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200">Batal</button>
+              <button type="button" onClick={confirmDelete} className="h-9 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700">Ya, Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal */}
+      {infoModalMessage && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <h3 className="text-lg font-bold text-slate-900">Informasi</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-700">{infoModalMessage}</p>
+            </div>
+            <div className="flex justify-end border-t border-slate-200 px-5 py-4">
+              <button type="button" onClick={() => setInfoModalMessage(null)} className="h-9 rounded-lg bg-[#173B82] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F]">OK</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

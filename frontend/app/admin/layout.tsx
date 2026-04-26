@@ -7,20 +7,12 @@ import AdminFooter from '@/components/admin/AdminFooter';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isMobile, setIsMobile] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Handle hydration to prevent mismatch between server and client
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Handle responsive sidebar behavior
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
       // Auto close sidebar on mobile, auto open on desktop
       if (mobile) {
         setSidebarOpen(false);
@@ -33,11 +25,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Don't render until hydrated to prevent hydration mismatch
-  if (!isHydrated) {
-    return null;
-  }
 
   return (
     <ProtectedRoute>

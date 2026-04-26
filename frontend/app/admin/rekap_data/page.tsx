@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
 import {
   addRekapDokumen,
@@ -22,6 +23,7 @@ import {
 } from '@/services/adminRekapDataService';
 
 export default function RekapDataPage() {
+  const router = useRouter();
   const [rekapData, setRekapData] = useState<RekapDokumen[]>([]);
   const [search, setSearch] = useState('');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
@@ -304,6 +306,16 @@ export default function RekapDataPage() {
                         >
                           <Pencil size={16} />
                         </button>
+                        {row.sourcePengajuanId && (
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/admin/story_aktivitas/${row.sourcePengajuanId}`)}
+                            className="text-purple-600 transition-colors hover:text-purple-700"
+                            title="Lihat Story Aktivitas"
+                          >
+                            <Activity size={16} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDelete(row)}
@@ -351,6 +363,22 @@ export default function RekapDataPage() {
               <InfoItem label="Status" value={detailItem.status} />
               <InfoItem label="WhatsApp" value={detailItem.whatsappNumber || '-'} />
             </div>
+
+            {detailItem.sourcePengajuanId && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailItem(null);
+                    router.push(`/admin/story_aktivitas/${detailItem.sourcePengajuanId}`);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                >
+                  <Activity size={15} />
+                  Lihat Story Aktivitas
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

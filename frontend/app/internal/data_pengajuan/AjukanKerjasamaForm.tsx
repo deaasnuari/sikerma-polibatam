@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Download, Paperclip, Upload, X } from 'lucide-react';
+import { CalendarDays, Download, Paperclip, Pencil, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
   submitPengajuan,
 } from '@/services/adminPengajuanService';
+import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 type TemplateDokumenConfig = {
   title: string;
@@ -69,6 +70,7 @@ const initialForm = {
 };
 
 const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
@@ -85,11 +87,77 @@ function formatFileSize(bytes: number) {
 type InternalAjukanKerjasamaFormProps = {
   onCancel?: () => void;
   onSubmitted?: () => void;
+  enableAppearanceEdit?: boolean;
+  appearanceStorageKey?: string;
 };
+
+type FormAppearanceSettings = {
+  topBadgeText: string;
+  pageTitle: string;
+  pageSubtitle: string;
+  sectionInformasiMitraTitle: string;
+  sectionInformasiMitraSubtitle: string;
+  sectionDetailKerjasamaTitle: string;
+  sectionDetailKerjasamaSubtitle: string;
+  sectionKontakTitle: string;
+  sectionKontakSubtitle: string;
+  sectionDokumenTitle: string;
+  sectionDokumenSubtitle: string;
+  labelNamaMitra: string;
+  labelJenisMitra: string;
+  labelTeleponMitra: string;
+  labelEmailMitra: string;
+  labelAlamatMitra: string;
+  labelJenisKerjasama: string;
+  labelDari: string;
+  labelTanggalMulai: string;
+  labelTanggalBerakhir: string;
+  labelJudulKerjasama: string;
+  labelDeskripsi: string;
+  labelRuangLingkup: string;
+  labelNamaKontak: string;
+  labelJabatanKontak: string;
+  labelEmailKontak: string;
+  labelTeleponKontak: string;
+};
+
+const defaultAppearanceSettings: FormAppearanceSettings = {
+  topBadgeText: 'Pengajuan Kerjasama Baru',
+  pageTitle: 'Form Pengajuan Kerjasama',
+  pageSubtitle: 'Isi formulir untuk mengajukan kerja sama baru dari unit internal.',
+  sectionInformasiMitraTitle: 'Informasi Mitra',
+  sectionInformasiMitraSubtitle: 'Data lengkap mitra kerja sama',
+  sectionDetailKerjasamaTitle: 'Detail Kerjasama',
+  sectionDetailKerjasamaSubtitle: 'Informasi dasar kerja sama yang akan diajukan',
+  sectionKontakTitle: 'Kontak Person Mitra',
+  sectionKontakSubtitle: 'Informasi kontak person dari pihak mitra',
+  sectionDokumenTitle: 'Dokumen Pendukung',
+  sectionDokumenSubtitle: 'Silakan pilih template resmi lebih dulu. Saya tampilkan opsinya langsung seperti alur admin.',
+  labelNamaMitra: 'Nama Mitra',
+  labelJenisMitra: 'Jenis Mitra',
+  labelTeleponMitra: 'Telepon',
+  labelEmailMitra: 'Email Mitra',
+  labelAlamatMitra: 'Alamat Lengkap',
+  labelJenisKerjasama: 'Jenis Kerjasama',
+  labelDari: 'Dari',
+  labelTanggalMulai: 'Tanggal Mulai',
+  labelTanggalBerakhir: 'Tanggal Berakhir',
+  labelJudulKerjasama: 'Judul Kerjasama',
+  labelDeskripsi: 'Deskripsi',
+  labelRuangLingkup: 'Ruang Lingkup',
+  labelNamaKontak: 'Nama Lengkap',
+  labelJabatanKontak: 'Jabatan',
+  labelEmailKontak: 'Email',
+  labelTeleponKontak: 'Telepon',
+};
+
+const DEFAULT_APPEARANCE_STORAGE_KEY = 'internal-pengajuan-appearance-v1';
 
 export default function InternalAjukanKerjasamaForm({
   onCancel,
   onSubmitted,
+  enableAppearanceEdit = false,
+  appearanceStorageKey = DEFAULT_APPEARANCE_STORAGE_KEY,
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
@@ -97,6 +165,8 @@ export default function InternalAjukanKerjasamaForm({
   const [dokumen, setDokumen] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
+  const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
+  const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -128,6 +198,24 @@ export default function InternalAjukanKerjasamaForm({
   }, []);
 
   useEffect(() => {
+    if (!enableAppearanceEdit || typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const storedRaw = window.localStorage.getItem(appearanceStorageKey);
+      if (!storedRaw) {
+        return;
+      }
+
+      const parsed = JSON.parse(storedRaw) as Partial<FormAppearanceSettings>;
+      setAppearanceSettings((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      window.localStorage.removeItem(appearanceStorageKey);
+    }
+  }, [appearanceStorageKey, enableAppearanceEdit]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -140,6 +228,22 @@ export default function InternalAjukanKerjasamaForm({
 
     window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
   }, [asal, formData, hasDownloadedTemplate]);
+
+  useEffect(() => {
+    if (!enableAppearanceEdit || typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(appearanceStorageKey, JSON.stringify(appearanceSettings));
+  }, [appearanceSettings, appearanceStorageKey, enableAppearanceEdit]);
+
+  const updateAppearance = (field: keyof FormAppearanceSettings, value: string) => {
+    setAppearanceSettings((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetAppearance = () => {
+    setAppearanceSettings(defaultAppearanceSettings);
+  };
 
   const handleJenisDokumenChange = (value: string) => {
     setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
@@ -165,6 +269,19 @@ export default function InternalAjukanKerjasamaForm({
 
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
+
+    for (const file of files) {
+      const validationError = validateSelectedFile(file, {
+        accept: '.pdf,.doc,.docx',
+        maxSizeBytes: MAX_FILE_SIZE,
+      });
+
+      if (validationError) {
+        alert(`${file.name}: ${validationError}`);
+        event.target.value = '';
+        return;
+      }
+    }
 
     setDokumen((prev) => [...prev, ...files]);
     event.target.value = '';
@@ -217,40 +334,96 @@ export default function InternalAjukanKerjasamaForm({
     <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
         <div>
-          <p className="text-sm font-semibold text-[#173B82]">Pengajuan Kerjasama Baru</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">Form Pengajuan Kerjasama</h1>
-          <p className="mt-1 text-sm text-slate-500">Isi formulir untuk mengajukan kerja sama baru dari unit internal.</p>
+          <p className="text-sm font-semibold text-[#173B82]">{appearanceSettings.topBadgeText}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">{appearanceSettings.pageTitle}</h1>
+          <p className="mt-1 text-sm text-slate-500">{appearanceSettings.pageSubtitle}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (onCancel) {
-              onCancel();
-              return;
-            }
+        <div className="flex items-center gap-2">
+          {enableAppearanceEdit && (
+            <button
+              type="button"
+              onClick={() => setIsAppearanceEditMode((prev) => !prev)}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${isAppearanceEditMode ? 'border-[#1E376C] bg-[#1E376C] text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-[#1E376C] hover:text-[#1E376C]'}`}
+            >
+              <Pencil size={15} />
+              {isAppearanceEditMode ? 'Tutup Ubah Nama Form' : 'Ubah Nama Form'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (onCancel) {
+                onCancel();
+                return;
+              }
 
-            router.push('/internal/data_pengajuan');
-          }}
-          className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-          aria-label="Tutup"
-        >
-          <X size={20} />
-        </button>
+              router.push('/internal/data_pengajuan');
+            }}
+            className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Tutup"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+        {enableAppearanceEdit && isAppearanceEditMode && (
+          <section className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-5 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-[#173B82]">Ubah Nama Form</h2>
+                <p className="text-sm text-gray-600 mt-1">Sesuaikan label form tanpa mengubah alur submit atau validasi data.</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetAppearance}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1E376C] hover:text-[#1E376C]"
+              >
+                Reset Default
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Judul halaman</label>
+                <input value={appearanceSettings.pageTitle} onChange={(e) => updateAppearance('pageTitle', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Subjudul halaman</label>
+                <input value={appearanceSettings.pageSubtitle} onChange={(e) => updateAppearance('pageSubtitle', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Nama field jenis kerjasama</label>
+                <input value={appearanceSettings.labelJenisKerjasama} onChange={(e) => updateAppearance('labelJenisKerjasama', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Nama field ruang lingkup</label>
+                <input value={appearanceSettings.labelRuangLingkup} onChange={(e) => updateAppearance('labelRuangLingkup', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Nama field nama mitra</label>
+                <input value={appearanceSettings.labelNamaMitra} onChange={(e) => updateAppearance('labelNamaMitra', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-900">Nama field email kontak</label>
+                <input value={appearanceSettings.labelEmailKontak} onChange={(e) => updateAppearance('labelEmailKontak', e.target.value)} className="input-field h-10 w-full px-3 text-sm" />
+              </div>
+            </div>
+          </section>
+        )}
         <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-base font-bold text-slate-900">Informasi Mitra</h2>
-          <p className="mb-4 text-xs text-slate-500">Data lengkap mitra kerja sama</p>
+          <h2 className="text-base font-bold text-slate-900">{appearanceSettings.sectionInformasiMitraTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500">{appearanceSettings.sectionInformasiMitraSubtitle}</p>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Nama Mitra</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelNamaMitra}</label>
               <input value={formData.namaMitra} onChange={(e) => handleChange('namaMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="PT. Mitra Perusahaan" required />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Jenis Mitra</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJenisMitra}</label>
               <select value={formData.jenisMitra} onChange={(e) => handleChange('jenisMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
                 <option value="">Pilih jenis mitra</option>
                 <option>Industri</option>
@@ -260,27 +433,27 @@ export default function InternalAjukanKerjasamaForm({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Telepon</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTeleponMitra}</label>
               <input value={formData.teleponMitra} onChange={(e) => handleChange('teleponMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="+62 812 3456 7890" required />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Email Mitra</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelEmailMitra}</label>
               <input type="email" value={formData.emailMitra} onChange={(e) => handleChange('emailMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="mitra@email.com" required />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Alamat Lengkap</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelAlamatMitra}</label>
               <textarea value={formData.alamatMitra} onChange={(e) => handleChange('alamatMitra', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Masukkan alamat lengkap mitra" required />
             </div>
           </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-base font-bold text-slate-900">Detail Kerjasama</h2>
-          <p className="mb-4 text-xs text-slate-500">Informasi dasar kerja sama yang akan diajukan</p>
+          <h2 className="text-base font-bold text-slate-900">{appearanceSettings.sectionDetailKerjasamaTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500">{appearanceSettings.sectionDetailKerjasamaSubtitle}</p>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Jenis Kerjasama</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJenisKerjasama}</label>
               <select value={formData.jenisKerjasama} onChange={(e) => handleJenisDokumenChange(e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
                 <option value="">Pilih jenis kerjasama</option>
                 <option>MoU</option>
@@ -289,7 +462,7 @@ export default function InternalAjukanKerjasamaForm({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Dari</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelDari}</label>
               <div className="mb-3 grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -330,61 +503,61 @@ export default function InternalAjukanKerjasamaForm({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Tanggal Mulai</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalMulai}</label>
               <div className="relative">
                 <input type="date" value={formData.tanggalMulai} onChange={(e) => handleChange('tanggalMulai', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" required />
                 <CalendarDays size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Tanggal Berakhir</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalBerakhir}</label>
               <div className="relative">
                 <input type="date" value={formData.tanggalBerakhir} onChange={(e) => handleChange('tanggalBerakhir', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" required />
                 <CalendarDays size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Judul Kerjasama</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJudulKerjasama}</label>
               <input value={formData.judulKerjasama} onChange={(e) => handleChange('judulKerjasama', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="Judul atau nama kerjasama" required />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Deskripsi</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelDeskripsi}</label>
               <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Jelaskan detail kerjasama yang diajukan" required />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Ruang Lingkup</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelRuangLingkup}</label>
               <textarea value={formData.ruangLingkup} onChange={(e) => handleChange('ruangLingkup', e.target.value)} className="input-field min-h-[80px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Pisahkan dengan koma, misalnya: Penelitian, Magang, Pelatihan" required />
             </div>
           </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-base font-bold text-slate-900">Kontak Person Mitra</h2>
-          <p className="mb-4 text-xs text-slate-500">Informasi kontak person dari pihak mitra</p>
+          <h2 className="text-base font-bold text-slate-900">{appearanceSettings.sectionKontakTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500">{appearanceSettings.sectionKontakSubtitle}</p>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Nama Lengkap</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelNamaKontak}</label>
               <input value={formData.namaKontak} onChange={(e) => handleChange('namaKontak', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="Nama kontak person" required />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Jabatan</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJabatanKontak}</label>
               <input value={formData.jabatanKontak} onChange={(e) => handleChange('jabatanKontak', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="Jabatan di perusahaan" required />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Email</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelEmailKontak}</label>
               <input type="email" value={formData.emailKontak} onChange={(e) => handleChange('emailKontak', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="email@contoh.com" required />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Telepon</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTeleponKontak}</label>
               <input value={formData.teleponKontak} onChange={(e) => handleChange('teleponKontak', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" placeholder="+62 812 3457 6789" required />
             </div>
           </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-base font-bold text-slate-900">Dokumen Pendukung</h2>
-          <p className="mb-4 text-xs text-slate-500">Silakan pilih template resmi lebih dulu. Saya tampilkan opsinya langsung seperti alur admin.</p>
+          <h2 className="text-base font-bold text-slate-900">{appearanceSettings.sectionDokumenTitle}</h2>
+          <p className="mb-4 text-xs text-slate-500">{appearanceSettings.sectionDokumenSubtitle}</p>
 
           <div className="mb-4 grid gap-3 md:grid-cols-3">
             {Object.entries(defaultTemplateDokumenMap).map(([key, template]) => {
@@ -474,6 +647,7 @@ export default function InternalAjukanKerjasamaForm({
                   {hasDownloadedTemplate ? 'Klik untuk upload dokumen pendukung' : 'Download template dulu sebelum upload'}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">Format yang didukung: PDF, DOC, DOCX</p>
+                <p className="mt-1 text-xs text-slate-500">Ukuran maksimal per file: 10 MB</p>
               </div>
             </label>
 

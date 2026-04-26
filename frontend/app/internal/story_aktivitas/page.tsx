@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   BookOpen,
@@ -13,6 +13,8 @@ import {
   Users,
 } from 'lucide-react';
 import DetailStoryModal from './DetailStoryModal';
+import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -49,75 +51,71 @@ export interface KerjasamaStory {
   aktivitas: Aktivitas[];
 }
 
-// ── Data ───────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────
 
-const kerjasamaData: KerjasamaStory[] = [
-  {
-    id: '1',
-    namaMitra: 'BADAN PENGUSAHAAN BATAM',
-    noDokumen: '000/MOA.PL29/2025',
-    jenis: 'MoA',
-    status: 'Aktif',
-    tanggalMulai: '01/01/2025',
-    tanggalBerakhir: '01/01/2028',
-    kategoriMitra: 'Dalam Negeri',
-    alamat: 'Batam, Kepulauan Riau',
-    email: 'info@bp-batam.go.id',
-    telepon: '+6281234578',
-    sisaWaktu: '20 Bulan',
-    ruangLingkup: ['Penelitian', 'Pengabdian Masyarakat'],
-    jurusanTerlibat: ['Teknik Informatika', 'Manajemen Bisnis'],
-    aktivitas: [
-      {
-        id: 'a1',
-        judul: 'Pengabdian Masyarakat - Pelatihan UMKM',
-        tanggal: '20/05/2025',
-        peserta: 80,
-        deskripsi: 'Pelatihan digitalisasi UMKM untuk pelaku usaha di Batam',
-        picPolibatam: 'Drs. Bambang Suryono',
-        picMitra: 'Bapak Hendi (BP Batam)',
-        status: 'direncanakan',
-      },
-      {
-        id: 'a2',
-        judul: 'Penelitian Smart City Batam',
-        tanggal: '01/03/2025',
-        peserta: 12,
-        deskripsi: 'Penelitian kolaboratif tentang implementasi teknologi smart city di Batam',
-        picPolibatam: 'Prof. Siti Nurhaliza',
-        picMitra: 'Ibu Rina Kartika (BP Batam)',
-        status: 'berlangsung',
-      },
-      {
-        id: 'a3',
-        judul: 'Workshop Kewirausahaan Digital',
-        tanggal: '15/02/2025',
-        peserta: 45,
-        deskripsi: 'Workshop tentang pengembangan bisnis digital untuk mahasiswa Manajemen Bisnis',
-        picPolibatam: 'Dr. Ahmad Wijaya',
-        picMitra: 'Bapak Suryanto (BP Batam)',
-        status: 'selesai',
-      },
-    ],
-  },
-  {
-    id: '2',
-    namaMitra: 'PT Feen Marine',
-    noDokumen: '000/MOU.PL27/2025',
-    jenis: 'MoU',
-    status: 'Akan Berakhir',
-    tanggalMulai: '01/01/2025',
-    tanggalBerakhir: '10/05/2026',
-    kategoriMitra: 'Dalam Negeri',
-    alamat: 'Batam, Kepulauan Riau',
-    email: 'info@feenmarine.com',
-    telepon: '+6281298765432',
-    sisaWaktu: '1 Bulan',
-    ruangLingkup: ['Magang', 'Rekrutmen'],
-    jurusanTerlibat: ['Teknik Mesin'],
-    aktivitas: [],
-  },
-];
+function computeStatus(tanggalBerakhir?: string): StatusKerjasama {
+  if (!tanggalBerakhir) return 'Aktif';
+  const end = new Date(tanggalBerakhir);
+  if (Number.isNaN(end.getTime())) return 'Aktif';
+  const diffDays = Math.ceil((end.getTime() - Date.now()) / 86400000);
+  if (diffDays < 0) return 'Kadaluarsa';
+  if (diffDays <= 120) return 'Akan Berakhir';
+  return 'Aktif';
+}
+
+function computeSisaWaktu(tanggalBerakhir?: string): string {
+  if (!tanggalBerakhir) return '-';
+  const end = new Date(tanggalBerakhir);
+  if (Number.isNaN(end.getTime())) return '-';
+  const diffDays = Math.ceil((end.getTime() - Date.now()) / 86400000);
+  if (diffDays < 0) return 'Kadaluarsa';
+  const months = Math.floor(diffDays / 30);
+  const days = diffDays % 30;
+  if (months > 0) return days > 0 ? `${months} Bulan ${days} Hari` : `${months} Bulan`;
+  return `${diffDays} Hari`;
+}
+
+function toDisplayDate(value?: string): string {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('en-GB');
+}
+
+function mapPengajuanToStory(item: PengajuanItem): KerjasamaStory {
+  const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as Jenis;
+  const tahun = item.tanggal?.slice(0, 4) || String(new Date().getFullYear());
+  const activities = getAktivitasByKerjasamaId(item.id).map((a) => ({
+    id: String(a.id),
+    judul: a.judul,
+    tanggal: a.tanggal,
+    peserta: a.peserta,
+    deskripsi: a.deskripsi,
+    picPolibatam: a.picPolibatam,
+    picMitra: a.picMitra,
+    status: a.status as StatusAktivitas,
+  }));
+
+  return {
+    id: String(item.id),
+    namaMitra: item.mitra,
+    noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    jenis,
+    status: computeStatus(item.tanggalBerakhir),
+    tanggalMulai: toDisplayDate(item.tanggalMulai),
+    tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
+    kategoriMitra: item.kategori || '-',
+    alamat: item.alamatMitra || '-',
+    email: item.emailPengusul || '-',
+    telepon: item.whatsappPengusul || '-',
+    sisaWaktu: computeSisaWaktu(item.tanggalBerakhir),
+    ruangLingkup: [...item.ruangLingkup],
+    jurusanTerlibat: item.jurusan ? [item.jurusan] : [],
+    aktivitas: activities,
+  };
+}
+
+// ── Badges ─────────────────────────────────────────────
 
 const jenisBadgeMap: Record<Jenis, string> = {
   MoA: 'bg-cyan-100 text-cyan-700',
@@ -137,19 +135,34 @@ const statusOptions = ['Semua Status', 'Aktif', 'Akan Berakhir', 'Kadaluarsa'];
 // ── Component ──────────────────────────────────────────
 
 export default function InternalStoryAktivitasPage() {
+  const [kerjasamaData, setKerjasamaData] = useState<KerjasamaStory[]>([]);
   const [search, setSearch] = useState('');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [selectedStory, setSelectedStory] = useState<KerjasamaStory | null>(null);
 
+  useEffect(() => {
+    const sync = () => {
+      const disetujui = getPengajuanData().filter((item) => item.status === 'Disetujui');
+      setKerjasamaData(disetujui.map(mapPengajuanToStory));
+    };
+    sync();
+    window.addEventListener('pengajuan-data-updated', sync);
+    window.addEventListener('story-data-updated', sync);
+    return () => {
+      window.removeEventListener('pengajuan-data-updated', sync);
+      window.removeEventListener('story-data-updated', sync);
+    };
+  }, []);
+
   const allAktivitas = kerjasamaData.flatMap((k) => k.aktivitas);
   const totalAktivitas = allAktivitas.length;
   const kerjasamaAktif = kerjasamaData.filter((k) => k.status === 'Aktif').length;
+  const now = new Date();
   const bulanIni = allAktivitas.filter((a) => {
     const parts = a.tanggal.split('/');
     const month = Number(parts[1]);
     const year = Number(parts[2]);
-    const now = new Date();
     return month === now.getMonth() + 1 && year === now.getFullYear();
   }).length;
   const rataRata = kerjasamaData.length > 0 ? Math.round(totalAktivitas / kerjasamaData.length) : 0;
@@ -162,7 +175,7 @@ export default function InternalStoryAktivitasPage() {
       const matchStatus = filterStatus === 'Semua Status' || k.status === filterStatus;
       return matchSearch && matchJenis && matchStatus;
     });
-  }, [search, filterJenis, filterStatus]);
+  }, [kerjasamaData, search, filterJenis, filterStatus]);
 
   if (selectedStory) {
     return <DetailStoryModal story={selectedStory} onBack={() => setSelectedStory(null)} />;

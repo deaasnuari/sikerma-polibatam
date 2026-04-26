@@ -12,12 +12,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 export default function EksternalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { logout } = useAuth();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -52,10 +47,6 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
       icon: SquarePen,
     },
   ];
-
-  if (!isHydrated) {
-    return null;
-  }
 
   return (
     <ProtectedRoute requiredRole="external">

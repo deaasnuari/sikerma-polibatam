@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
+import { deleteRekapDokumen, getRekapData, type RekapDokumen } from '@/services/adminRekapDataService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -18,16 +19,22 @@ interface KerjasamaItem {
   status: ApprovalStatus;
 }
 
-const initialData: KerjasamaItem[] = [
-  { noDokumen: 'MoU/001/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoU', unit: 'Teknik Informatika', tanggalMulai: '28 Feb 2026', berlakuHingga: '28 Feb 2029', status: 'Menunggu' },
-  { noDokumen: 'MoA/002/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoA', unit: 'Jurusan Teknik', tanggalMulai: '27 Feb 2026', berlakuHingga: '28 Feb 2028', status: 'Disetujui' },
-  { noDokumen: 'IA/003/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'IA', unit: 'Teknik Elektro', tanggalMulai: '26 Feb 2026', berlakuHingga: '26 Feb 2027', status: 'Menunggu' },
-  { noDokumen: 'MoU/004/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoU', unit: 'Teknik Multimedia', tanggalMulai: '25 Feb 2026', berlakuHingga: '-', status: 'Ditolak' },
-  { noDokumen: 'MoA/005/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoA', unit: 'Teknik Mesin', tanggalMulai: '24 Feb 2026', berlakuHingga: '24 Feb 2029', status: 'Disetujui' },
-  { noDokumen: 'MoA/006/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoA', unit: 'Teknik Informatika', tanggalMulai: '23 Feb 2026', berlakuHingga: '28 Feb 2027', status: 'Disetujui' },
-  { noDokumen: 'IA/007/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'IA', unit: 'Jurusan Teknik', tanggalMulai: '22 Feb 2026', berlakuHingga: '22 Feb 2029', status: 'Disetujui' },
-  { noDokumen: 'MoU/008/2026', namaMitra: 'PT. Teknologi Maju Indonesia', jenis: 'MoU', unit: 'Teknik Mesin', tanggalMulai: '21 Feb 2026', berlakuHingga: '21 Feb 2028', status: 'Menunggu' },
-];
+function mapRekapToItem(d: RekapDokumen): KerjasamaItem {
+  const statusMap: Record<string, ApprovalStatus> = {
+    Aktif: 'Disetujui',
+    'Akan Berakhir': 'Disetujui',
+    Kadaluarsa: 'Ditolak',
+  };
+  return {
+    noDokumen: d.noDokumen,
+    namaMitra: d.namaMitra,
+    jenis: d.jenis as Jenis,
+    unit: d.unit,
+    tanggalMulai: d.tanggalMulai,
+    berlakuHingga: d.berlakuHingga,
+    status: statusMap[d.status] ?? 'Menunggu',
+  };
+}
 
 const jenisBadgeMap: Record<Jenis, string> = {
   MoU: 'bg-violet-100 text-violet-700',
@@ -48,7 +55,7 @@ const statusOptions = ['Semua Status', 'Menunggu', 'Disetujui', 'Ditolak'];
 const ITEMS_PER_PAGE = 10;
 
 export default function InternalRekapDataPage() {
-  const [data, setData] = useState<KerjasamaItem[]>(initialData);
+  const [data, setData] = useState<KerjasamaItem[]>([]);
   const [search, setSearch] = useState('');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
@@ -57,9 +64,16 @@ export default function InternalRekapDataPage() {
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
 
+  useEffect(() => {
+    const sync = () => setData(getRekapData().map(mapRekapToItem));
+    sync();
+    window.addEventListener('rekap-data-updated', sync);
+    return () => window.removeEventListener('rekap-data-updated', sync);
+  }, []);
+
   function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
-    setData((prev) => prev.filter((d) => d.noDokumen !== item.noDokumen));
+    deleteRekapDokumen(item.noDokumen);
   }
 
   const filteredData = useMemo(() => {

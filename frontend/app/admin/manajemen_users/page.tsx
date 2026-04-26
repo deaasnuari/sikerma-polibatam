@@ -117,8 +117,8 @@ export default function ManajemenUserPage() {
         if (mounted) {
           setUsers(result);
         }
-      } catch (error) {
-        console.error('Gagal memuat data user dari backend, menggunakan data fallback.', error);
+      } catch {
+        console.warn('Gagal memuat data user dari backend, menggunakan data fallback lokal.');
         if (mounted) {
           setUsers(fallbackUsers);
         }

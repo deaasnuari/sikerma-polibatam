@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
 
@@ -134,12 +135,16 @@ export default function Home() {
       <section
         id="beranda"
         className="relative overflow-hidden"
-        style={{
-          backgroundImage: "url('/polibatam.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
+        <Image
+          src="/polibatam.jpg"
+          alt="Kampus Politeknik Negeri Batam"
+          fill
+          priority
+          quality={65}
+          sizes="100vw"
+          className="object-cover"
+        />
         <div className="absolute inset-0 bg-[#091222]/70" />
         <div
           className="absolute inset-0"

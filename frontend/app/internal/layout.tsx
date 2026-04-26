@@ -40,12 +40,7 @@ const menuItems: SidebarMenuItem[] = [
 export default function InternalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { logout } = useAuth();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -62,10 +57,6 @@ export default function InternalLayout({ children }: { children: React.ReactNode
     logout();
     router.push('/login');
   };
-
-  if (!isHydrated) {
-    return null;
-  }
 
   return (
     <ProtectedRoute requiredRole="internal">

@@ -47,6 +47,17 @@ export interface RekapFilterOptions {
 
 // Key localStorage untuk menyimpan data rekap dokumen di browser.
 const STORAGE_KEY = 'adminRekapDokumenData';
+const PENGAJUAN_STORAGE_KEY = 'pengajuanKerjasamaData';
+
+type StoredPengajuanItem = {
+  id: number;
+  mitra?: string;
+  jenisDokumen?: string;
+  jurusan?: string;
+  tanggalMulai?: string;
+  tanggalBerakhir?: string;
+  whatsappPengusul?: string;
+};
 
 // Daftar jurusan dan unit mengikuti opsi detail pada form Data Pengajuan.
 export const rekapJurusanOptions = [
@@ -238,6 +249,71 @@ function resolveRekapStatusFromTanggalBerakhir(tanggalBerakhir?: string): RekapS
   return 'Aktif';
 }
 
+function normalizeJenisDokumen(jenisDokumen?: string): RekapJenis {
+  if (jenisDokumen === 'MoA' || jenisDokumen === 'MoU' || jenisDokumen === 'IA') {
+    return jenisDokumen;
+  }
+
+  return 'MoU';
+}
+
+function mergeMissingPengajuanIntoRekap(current: RekapDokumen[]): RekapDokumen[] {
+  if (!canUseStorage()) {
+    return current;
+  }
+
+  const pengajuanRaw = window.localStorage.getItem(PENGAJUAN_STORAGE_KEY);
+
+  if (!pengajuanRaw) {
+    return current;
+  }
+
+  try {
+    const parsed = JSON.parse(pengajuanRaw) as StoredPengajuanItem[];
+
+    if (!Array.isArray(parsed)) {
+      return current;
+    }
+
+    const sortedPengajuan = [...parsed]
+      .filter((item) => Number.isFinite(item.id))
+      .sort((a, b) => a.id - b.id);
+
+    let merged = [...current];
+
+    for (const item of sortedPengajuan) {
+      const exists = merged.some((rekap) => rekap.sourcePengajuanId === item.id);
+
+      if (exists) {
+        continue;
+      }
+
+      const jenis = normalizeJenisDokumen(item.jenisDokumen);
+      const tahun = (item.tanggalMulai || new Date().toISOString().slice(0, 10)).slice(0, 4);
+      const seqCount = merged.filter((rekap) => rekap.sourcePengajuanId != null).length + 1;
+
+      const nextItem: RekapDokumen = {
+        sourcePengajuanId: item.id,
+        noDokumen: `${jenis}/${tahun}/P${String(seqCount).padStart(3, '0')}`,
+        namaMitra: item.mitra || '-',
+        jenis,
+        unit: item.jurusan || '-',
+        tanggalMulai: formatDisplayDate(item.tanggalMulai || ''),
+        berlakuHingga: formatDisplayDate(item.tanggalBerakhir || ''),
+        tahun,
+        status: resolveRekapStatusFromTanggalBerakhir(item.tanggalBerakhir),
+        whatsappNumber: item.whatsappPengusul,
+      };
+
+      merged = [nextItem, ...merged];
+    }
+
+    return merged;
+  } catch {
+    return current;
+  }
+}
+
 // Ambil seluruh data rekap dan gabungkan dengan data default jika perlu.
 export function getRekapData(): RekapDokumen[] {
   if (!canUseStorage()) {
@@ -247,20 +323,31 @@ export function getRekapData(): RekapDokumen[] {
   const storedRaw = window.localStorage.getItem(STORAGE_KEY);
 
   if (!storedRaw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultRekapData));
-    return defaultRekapData;
+    const seeded = mergeMissingPengajuanIntoRekap(defaultRekapData);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+    return seeded;
   }
 
   try {
     const stored = JSON.parse(storedRaw) as RekapDokumen[];
 
     if (!Array.isArray(stored)) {
-      return defaultRekapData;
+      const seeded = mergeMissingPengajuanIntoRekap(defaultRekapData);
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+      return seeded;
     }
 
-    return stored;
+    const merged = mergeMissingPengajuanIntoRekap(stored);
+
+    if (merged.length !== stored.length) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    }
+
+    return merged;
   } catch {
-    return defaultRekapData;
+    const seeded = mergeMissingPengajuanIntoRekap(defaultRekapData);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+    return seeded;
   }
 }
 
@@ -382,26 +469,36 @@ export function deleteRekapDokumen(noDokumen: string): RekapDokumen[] {
 
 // Sinkronisasi satu data pengajuan menjadi baris rekap data.
 export function upsertRekapFromPengajuan(payload: PengajuanSyncPayload): RekapDokumen[] {
-  const jenis = (payload.jenisDokumen === 'MoA' || payload.jenisDokumen === 'MoU' || payload.jenisDokumen === 'IA')
-    ? payload.jenisDokumen
-    : 'MoU';
+  const jenis = normalizeJenisDokumen(payload.jenisDokumen);
+
+  const tahun = (payload.tanggalMulai || new Date().toISOString().slice(0, 10)).slice(0, 4);
+
+  const current = getRekapData();
+  const existingItem = current.find((item) => item.sourcePengajuanId === payload.id);
+
+  // Preserve existing noDokumen on update; generate a human-readable one for new items
+  let noDokumen: string;
+  if (existingItem) {
+    noDokumen = existingItem.noDokumen;
+  } else {
+    const seqCount = current.filter((item) => item.sourcePengajuanId != null).length + 1;
+    noDokumen = `${jenis}/${tahun}/P${String(seqCount).padStart(3, '0')}`;
+  }
 
   const nextItem: RekapDokumen = {
     sourcePengajuanId: payload.id,
-    noDokumen: `PGJ/${payload.id}`,
+    noDokumen,
     namaMitra: payload.mitra,
     jenis,
     unit: payload.jurusan,
     tanggalMulai: formatDisplayDate(payload.tanggalMulai || ''),
     berlakuHingga: formatDisplayDate(payload.tanggalBerakhir || ''),
-    tahun: (payload.tanggalMulai || new Date().toISOString().slice(0, 10)).slice(0, 4),
+    tahun,
     status: resolveRekapStatusFromTanggalBerakhir(payload.tanggalBerakhir),
     whatsappNumber: payload.whatsappPengusul,
   };
 
-  const current = getRekapData();
-  const hasExisting = current.some((item) => item.sourcePengajuanId === payload.id);
-  const updated = hasExisting
+  const updated = existingItem
     ? current.map((item) => (item.sourcePengajuanId === payload.id ? nextItem : item))
     : [nextItem, ...current];
 

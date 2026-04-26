@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search, X } from 'lucide-react';
+import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface KerjasamaItem {
   id: number;
@@ -15,85 +16,34 @@ interface KerjasamaItem {
   status: 'Menunggu' | 'Diproses' | 'Aktif' | 'Berakhir';
 }
 
-const kerjasamaItems: KerjasamaItem[] = [
-  {
-    id: 1,
-    noDokumen: 'MoU/001/2026',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Informatika',
-    tanggalMulai: '20 Feb 2026',
-    berlakuHingga: '20 Feb 2028',
-    tahun: '2026',
-    status: 'Menunggu',
-  },
-  {
-    id: 2,
-    noDokumen: 'MoA/002/2026',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    unit: 'Jurusan Teknik',
-    tanggalMulai: '27 Feb 2026',
-    berlakuHingga: '27 Feb 2028',
-    tahun: '2026',
-    status: 'Aktif',
-  },
-  {
-    id: 3,
-    noDokumen: 'IA/003/2026',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'IA',
-    unit: 'Teknik Elektro',
-    tanggalMulai: '26 Feb 2026',
-    berlakuHingga: '26 Feb 2027',
-    tahun: '2026',
-    status: 'Diproses',
-  },
-  {
-    id: 4,
-    noDokumen: 'MoU/004/2025',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Mesin',
-    tanggalMulai: '25 Feb 2026',
-    berlakuHingga: '25 Feb 2028',
-    tahun: '2025',
-    status: 'Berakhir',
-  },
-  {
-    id: 5,
-    noDokumen: 'MoA/005/2025',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    unit: 'Teknik Industri',
-    tanggalMulai: '24 Feb 2026',
-    berlakuHingga: '24 Feb 2029',
-    tahun: '2025',
-    status: 'Aktif',
-  },
-  {
-    id: 6,
-    noDokumen: 'IA/006/2025',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'IA',
-    unit: 'Jurusan Teknik',
-    tanggalMulai: '23 Feb 2026',
-    berlakuHingga: '23 Feb 2027',
-    tahun: '2025',
-    status: 'Aktif',
-  },
-  {
-    id: 7,
-    noDokumen: 'MoU/007/2024',
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Elektro',
-    tanggalMulai: '22 Feb 2026',
-    berlakuHingga: '22 Feb 2029',
-    tahun: '2024',
-    status: 'Menunggu',
-  },
-];
+function toDisplayDate(value?: string): string {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
+  const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as KerjasamaItem['jenis'];
+  const tahun = (item.tanggalMulai || item.tanggal || new Date().toISOString()).slice(0, 4);
+  const statusMap: Record<string, KerjasamaItem['status']> = {
+    Menunggu: 'Menunggu',
+    Diproses: 'Diproses',
+    Disetujui: 'Aktif',
+    Ditolak: 'Berakhir',
+  };
+  return {
+    id: item.id,
+    noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    namaMitra: item.mitra,
+    jenis,
+    unit: item.jurusan,
+    tanggalMulai: toDisplayDate(item.tanggalMulai),
+    berlakuHingga: toDisplayDate(item.tanggalBerakhir),
+    tahun,
+    status: statusMap[item.status] ?? 'Menunggu',
+  };
+}
 
 const statusStyle: Record<KerjasamaItem['status'], string> = {
   Menunggu: 'bg-amber-100 text-amber-700',
@@ -103,6 +53,8 @@ const statusStyle: Record<KerjasamaItem['status'], string> = {
 };
 
 export default function DaftarKerjasamaEksternalPage() {
+  const [data, setData] = useState<KerjasamaItem[]>([]);
+  const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
@@ -111,10 +63,22 @@ export default function DaftarKerjasamaEksternalPage() {
   const [yearRangeStart, setYearRangeStart] = useState(currentYear - 4);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
+  useEffect(() => {
+    const sync = () => {
+      const eksternalItems = getPengajuanData()
+        .filter((item) => item.kategori === 'Eksternal')
+        .map(mapPengajuanToItem);
+      setData(eksternalItems);
+    };
+    sync();
+    window.addEventListener('pengajuan-data-updated', sync);
+    return () => window.removeEventListener('pengajuan-data-updated', sync);
+  }, []);
+
   const filteredItems = useMemo(() => {
     const keyword = search.toLowerCase().trim();
 
-    return kerjasamaItems.filter((item) => {
+    return data.filter((item) => {
       const matchesSearch =
         keyword === '' ||
         item.noDokumen.toLowerCase().includes(keyword) ||
@@ -126,7 +90,7 @@ export default function DaftarKerjasamaEksternalPage() {
 
       return matchesSearch && matchesStatus && matchesTahun;
     });
-  }, [search, filterStatus, filterTahun]);
+  }, [data, search, filterStatus, filterTahun]);
 
   return (
     <div className="space-y-5">
@@ -292,13 +256,14 @@ export default function DaftarKerjasamaEksternalPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button type="button" className="text-slate-500 hover:text-slate-800">
+                      <button type="button" onClick={() => setDetailItem(item)} className="text-slate-500 hover:text-slate-800">
                         <Eye size={16} />
                       </button>
                     </td>
                     <td className="px-4 py-3">
                       <button
                         type="button"
+                        onClick={() => setDetailItem(item)}
                         className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         Detail
@@ -312,7 +277,7 @@ export default function DaftarKerjasamaEksternalPage() {
         </div>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Menampilkan {filteredItems.length} dari {kerjasamaItems.length} data</p>
+          <p>Menampilkan {filteredItems.length} dari {data.length} data</p>
           <div className="flex items-center gap-2">
             <button type="button" className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 hover:bg-slate-50">
               Sebelumnya
@@ -323,6 +288,62 @@ export default function DaftarKerjasamaEksternalPage() {
           </div>
         </div>
       </section>
+
+      {/* Detail Modal */}
+      {detailItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Detail Kerjasama</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{detailItem.noDokumen}</p>
+              </div>
+              <button type="button" onClick={() => setDetailItem(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs text-slate-500 mb-0.5">Status</p>
+                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${statusStyle[detailItem.status]}`}>
+                  {detailItem.status}
+                </span>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs text-slate-500 mb-0.5">Nama Mitra</p>
+                <p className="text-sm font-semibold text-slate-900">{detailItem.namaMitra}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs text-slate-500 mb-0.5">Jenis Dokumen</p>
+                  <span className="inline-block rounded-md bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">{detailItem.jenis}</span>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs text-slate-500 mb-0.5">Unit Pelaksana</p>
+                  <p className="text-sm font-medium text-slate-800">{detailItem.unit}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs text-slate-500 mb-0.5">Tanggal Mulai</p>
+                  <p className="text-sm font-medium text-slate-800">{detailItem.tanggalMulai}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs text-slate-500 mb-0.5">Berlaku Hingga</p>
+                  <p className="text-sm font-medium text-slate-800">{detailItem.berlakuHingga}</p>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setDetailItem(null)}
+                className="w-full rounded-lg bg-[#071B3C] py-2.5 text-sm font-semibold text-white hover:bg-[#0d2b5b]"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
