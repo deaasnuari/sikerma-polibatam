@@ -1,26 +1,59 @@
-const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api';
-const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
+
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function buildApiBaseUrlCandidates(): string[] {
+  const configured = normalizeBaseUrl(rawApiBaseUrl);
+  const candidates = [
+    configured,
+    configured.startsWith('/')
+      ? configured
+      : configured.endsWith('/api')
+        ? configured
+        : `${configured}/api`,
+    'http://127.0.0.1:8000/api',
+    'http://localhost:8000/api',
+  ];
+
+  return Array.from(new Set(candidates.map(normalizeBaseUrl)));
+}
+
+const API_BASE_URL = normalizeBaseUrl(rawApiBaseUrl);
+const API_BASE_URL_CANDIDATES = buildApiBaseUrlCandidates();
 
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const requestUrl = `${API_BASE_URL}${normalizedEndpoint}`;
+  let response: Response | null = null;
+  let lastError: unknown = null;
 
-  let response: Response;
+  for (const baseUrl of API_BASE_URL_CANDIDATES) {
+    try {
+      response = await fetch(`${baseUrl}${normalizedEndpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
 
-  try {
-    response = await fetch(requestUrl, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
-    });
-  } catch (error) {
-    if (error instanceof TypeError) {
+      break;
+    } catch (error) {
+      lastError = error;
+
+      if (!(error instanceof TypeError)) {
+        throw error;
+      }
+    }
+  }
+
+  if (!response) {
+    if (lastError instanceof TypeError) {
       throw new Error('Gagal terhubung ke server API. Pastikan backend aktif dan URL API benar.');
     }
 
-    throw error;
+    throw lastError;
   }
 
   const contentType = response.headers.get('content-type') || '';
