@@ -56,6 +56,7 @@ const initialForm = {
   teleponMitra: '',
   emailMitra: '',
   alamatMitra: '',
+  negara: 'Indonesia',
   jenisKerjasama: '',
   unitPelaksana: '',
   tanggalMulai: '',
@@ -305,6 +306,7 @@ export default function InternalAjukanKerjasamaForm({
       jenisDokumen: formData.jenisKerjasama,
       jurusan: formData.unitPelaksana,
       kategori: 'Internal',
+      negara: formData.negara,
       tanggalMulai: formData.tanggalMulai,
       tanggalBerakhir: formData.tanggalBerakhir,
       emailPengusul: formData.emailKontak,
@@ -443,6 +445,26 @@ export default function InternalAjukanKerjasamaForm({
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelAlamatMitra}</label>
               <textarea value={formData.alamatMitra} onChange={(e) => handleChange('alamatMitra', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Masukkan alamat lengkap mitra" required />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Negara Mitra</label>
+              <select value={formData.negara} onChange={(e) => handleChange('negara', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm">
+                <option value="Indonesia">Indonesia (Dalam Negeri)</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Singapura">Singapura</option>
+                <option value="Amerika Serikat">Amerika Serikat</option>
+                <option value="Jepang">Jepang</option>
+                <option value="Korea Selatan">Korea Selatan</option>
+                <option value="Australia">Australia</option>
+                <option value="Jerman">Jerman</option>
+                <option value="Belanda">Belanda</option>
+                <option value="Inggris">Inggris</option>
+                <option value="Tiongkok">Tiongkok</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                {formData.negara && formData.negara !== 'Indonesia' ? '🌐 Luar Negeri' : '🇮🇩 Dalam Negeri'}
+              </p>
             </div>
           </div>
         </section>

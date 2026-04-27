@@ -17,6 +17,7 @@ type EksternalPengajuanDraft = {
   teleponMitra: string;
   emailMitra: string;
   alamatLengkap: string;
+  negara: string;
   jenisKerjasama: string;
   unitPelaksana: string;
   tanggalMulai: string;
@@ -36,6 +37,7 @@ export default function PengajuanBaruEksternalPage() {
   const [teleponMitra, setTeleponMitra] = useState('');
   const [emailMitra, setEmailMitra] = useState('');
   const [alamatLengkap, setAlamatLengkap] = useState('');
+  const [negara, setNegara] = useState('Indonesia');
 
   const [jenisKerjasama, setJenisKerjasama] = useState('');
   const [unitPelaksana, setUnitPelaksana] = useState('');
@@ -74,6 +76,7 @@ export default function PengajuanBaruEksternalPage() {
       setTeleponMitra(draft.teleponMitra ?? '');
       setEmailMitra(draft.emailMitra ?? '');
       setAlamatLengkap(draft.alamatLengkap ?? '');
+      setNegara(draft.negara ?? 'Indonesia');
       setJenisKerjasama(draft.jenisKerjasama ?? '');
       setUnitPelaksana(draft.unitPelaksana ?? '');
       setTanggalMulai(draft.tanggalMulai ?? '');
@@ -101,6 +104,7 @@ export default function PengajuanBaruEksternalPage() {
       teleponMitra,
       emailMitra,
       alamatLengkap,
+      negara,
       jenisKerjasama,
       unitPelaksana,
       tanggalMulai,
@@ -121,6 +125,7 @@ export default function PengajuanBaruEksternalPage() {
     teleponMitra,
     emailMitra,
     alamatLengkap,
+    negara,
     jenisKerjasama,
     unitPelaksana,
     tanggalMulai,
@@ -205,6 +210,7 @@ export default function PengajuanBaruEksternalPage() {
       jenisDokumen: jenisKerjasama,
       jurusan: unitPelaksana,
       kategori: 'Eksternal',
+      negara,
       tanggalMulai,
       tanggalBerakhir,
       emailPengusul: kontakEmail,
@@ -312,6 +318,31 @@ export default function PengajuanBaruEksternalPage() {
             className={`input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400 ${errors.alamatLengkap ? 'border-red-400' : ''}`}
           />
           {errors.alamatLengkap && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.alamatLengkap}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">Negara Mitra</label>
+          <select
+            value={negara}
+            onChange={(e) => setNegara(e.target.value)}
+            className="input-field h-10 w-full px-3 text-sm text-gray-700"
+          >
+            <option value="Indonesia">Indonesia (Dalam Negeri)</option>
+            <option value="Malaysia">Malaysia</option>
+            <option value="Singapura">Singapura</option>
+            <option value="Amerika Serikat">Amerika Serikat</option>
+            <option value="Jepang">Jepang</option>
+            <option value="Korea Selatan">Korea Selatan</option>
+            <option value="Australia">Australia</option>
+            <option value="Jerman">Jerman</option>
+            <option value="Belanda">Belanda</option>
+            <option value="Inggris">Inggris</option>
+            <option value="Tiongkok">Tiongkok</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            {negara && negara !== 'Indonesia' ? '🌐 Luar Negeri' : '🇮🇩 Dalam Negeri'}
+          </p>
         </div>
       </section>
 

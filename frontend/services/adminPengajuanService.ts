@@ -20,6 +20,7 @@ export interface PengajuanItem {
   emailPengusul?: string;
   whatsappPengusul?: string;
   alamatMitra?: string;
+  negara?: string;
   emailTerverifikasi?: boolean;
   ruangLingkup: string[];
   status: PengajuanStatus;
