@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
 import { deleteRekapDokumen, getRekapData, type RekapDokumen } from '@/services/adminRekapDataService';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -184,7 +185,7 @@ export default function InternalRekapDataPage() {
               ) : (
                 paginatedData.map((row) => (
                   <tr key={row.noDokumen} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
-                    <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: (currentPage - 1) * ITEMS_PER_PAGE + index + 1, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[row.jenis]}`}>

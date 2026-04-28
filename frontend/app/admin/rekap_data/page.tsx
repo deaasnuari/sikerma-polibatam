@@ -21,6 +21,7 @@ import {
   type DokumenData,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 export default function RekapDataPage() {
   const router = useRouter();
@@ -269,15 +270,15 @@ export default function RekapDataPage() {
             </thead>
             <tbody>
               {filteredRows.length === 0 ? (
-                <tr>
+                <tr key="empty">
                   <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
               ) : (
                 filteredRows.map((row) => (
-                  <tr key={row.noDokumen} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
-                    <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
+                  <tr key={row.id} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+                    <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: row.id, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${rekapJenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
@@ -300,22 +301,21 @@ export default function RekapDataPage() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleDelete(row)}
+                          className="text-red-500 transition-colors hover:text-red-700"
+                          title="Hapus dokumen"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setEditingItem(row)}
                           className="text-green-600 transition-colors hover:text-green-700"
                           title="Edit dokumen"
                         >
                           <Pencil size={16} />
                         </button>
-                        {row.sourcePengajuanId && (
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/admin/story_aktivitas/${row.sourcePengajuanId}`)}
-                            className="text-purple-600 transition-colors hover:text-purple-700"
-                            title="Lihat Story Aktivitas"
-                          >
-                            <Activity size={16} />
-                          </button>
-                        )}
+                        {/* Tombol story aktivitas dihapus sesuai permintaan */}
                         <button
                           type="button"
                           onClick={() => handleDelete(row)}

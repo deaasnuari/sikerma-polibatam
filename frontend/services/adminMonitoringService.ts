@@ -1,3 +1,41 @@
+// Utility untuk generate nomor dokumen sesuai format: urutan-JENIS.PL29-bulanRomawi-tahun
+export function generateNoDokumen({
+  urutan,
+  jenis,
+  tanggal,
+}: {
+  urutan: number;
+  jenis: 'MoU' | 'MoA' | 'IA';
+  tanggal: string; // format: 'dd/mm/yyyy' atau ISO string
+}): string {
+  // Konversi urutan ke 2 digit
+  const urutanStr = (typeof urutan === 'number' && !isNaN(urutan) ? urutan : 1).toString().padStart(2, '0');
+  // Jenis kapital
+  const jenisUpper = jenis.toUpperCase();
+  // Ambil bulan dan tahun
+  let bulan = 0;
+  let tahun = '';
+  if (!tanggal || typeof tanggal !== 'string') {
+    tanggal = new Date().toISOString();
+  }
+  if (tanggal.includes('/')) {
+    // format dd/mm/yyyy
+    const parts = tanggal.split('/');
+    bulan = parseInt(parts[1], 10);
+    tahun = parts[2];
+  } else {
+    // ISO string
+    const dateObj = new Date(tanggal);
+    bulan = dateObj.getMonth() + 1;
+    tahun = dateObj.getFullYear().toString();
+  }
+  // Bulan romawi
+  const bulanRomawiArr = [
+    '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII',
+  ];
+  const bulanRomawi = bulanRomawiArr[bulan] || '';
+  return `${urutanStr}-${jenisUpper}-PL29-${bulanRomawi}-${tahun}`;
+}
 // Service monitoring kerjasama untuk halaman admin.
 // File ini dipakai agar data, tipe, dan helper bisnis tidak bercampur dengan komponen UI Next.js.
 
@@ -39,6 +77,7 @@ export type TabKey = 'Semua' | 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
 export interface Kerjasama {
   id: number;
   sourcePengajuanId?: number;
+  judul?: string;
   namaMitra: string;
   noDokumen: string;
   jenis: 'MoU' | 'MoA' | 'IA';
@@ -377,7 +416,10 @@ export function findKerjasamaById(items: Kerjasama[], id: number | null): Kerjas
 
 // Buat tautan WhatsApp otomatis untuk menghubungi mitra.
 export function createWhatsAppLink(item: Kerjasama): string {
-  return `https://wa.me/${item.whatsappNumber}?text=Halo%20${encodeURIComponent(item.namaMitra)},%20saya%20ingin%20membahas%20tentang%20kerjasama%20${encodeURIComponent('No. ' + item.noDokumen)}`;
+  // Gunakan judul dokumen jika ada, jika tidak pakai nomor dokumen
+  // WAJIB hanya kirim judul dokumen, tanpa fallback ke nomor dokumen
+  const judul = (item as any).judul;
+  return `https://wa.me/${item.whatsappNumber}?text=Halo%20${encodeURIComponent(item.namaMitra)},%20saya%20ingin%20membahas%20tentang%20kerjasama%20${encodeURIComponent(judul || '')}`;
 }
 
 // Helper untuk membuat record perpanjangan baru.
@@ -435,6 +477,7 @@ export function createNonactiveRecord(
 
 type PengajuanSyncPayload = {
   id: number;
+  judul?: string;
   mitra: string;
   jenisDokumen: string;
   tanggalMulai?: string;
@@ -455,6 +498,7 @@ export function upsertMonitoringFromPengajuan(payload: PengajuanSyncPayload): Ke
   const nextItem: Kerjasama = {
     id: payload.id,
     sourcePengajuanId: payload.id,
+    judul: payload.judul,
     namaMitra: payload.mitra,
     noDokumen: `PGJ/${payload.id}`,
     jenis,
