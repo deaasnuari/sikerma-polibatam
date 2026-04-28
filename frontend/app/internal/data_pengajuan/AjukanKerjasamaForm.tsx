@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Download, Paperclip, Pencil, Upload, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
@@ -24,7 +24,7 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
     title: 'Memorandum of Understanding (MoU)',
     subtitle: 'Template untuk kesepahaman awal kerja sama',
     struktur: ['Pembukaan', 'Para Pihak', 'Tujuan Kerja Sama', 'Ruang Lingkup', 'Jangka Waktu', 'Penutup'],
-    note: 'Download template MoU terlebih dahulu, lalu unggah kembali dokumen yang sudah diisi.',
+    note: 'Template bisa diunduh sebagai acuan. Anda tetap bisa langsung mengunggah dokumen sendiri.',
     fileName: 'Draft MOU Industri.docx',
     downloadUrl: '/templates/Draft%20MOU%20Industri.docx',
   },
@@ -49,6 +49,17 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
 const jurusanOptions = pengajuanJurusanOptions;
 
 const unitOptions = pengajuanUnitOptions;
+
+const defaultRuangLingkupOptions = [
+  'Penelitian',
+  'Pengabdian Masyarakat',
+  'Magang / PKL',
+  'Pelatihan & Workshop',
+  'Pertukaran Pelajar',
+  'Rekrutmen',
+  'Riset Bersama',
+  'Pengembangan Kurikulum',
+];
 
 const initialForm = {
   namaMitra: '',
@@ -76,7 +87,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
   formData: typeof initialForm;
-  hasDownloadedTemplate: boolean;
+  selectedRuangLingkup?: string[];
+  customRuangLingkupOpts?: string[];
+  customJurusanOpts?: string[];
+  customUnitOpts?: string[];
 };
 
 function formatFileSize(bytes: number) {
@@ -133,10 +147,10 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   sectionKontakTitle: 'Kontak Person Mitra',
   sectionKontakSubtitle: 'Informasi kontak person dari pihak mitra',
   sectionDokumenTitle: 'Dokumen Pendukung',
-  sectionDokumenSubtitle: 'Silakan pilih template resmi lebih dulu. Saya tampilkan opsinya langsung seperti alur admin.',
+  sectionDokumenSubtitle: 'Pilih jenis template lalu langsung upload dokumen pendukung.',
   labelNamaMitra: 'Nama Mitra',
   labelJenisMitra: 'Jenis Mitra',
-  labelTeleponMitra: 'Telepon',
+  labelTeleponMitra: 'WhatsApp Aktif',
   labelEmailMitra: 'Email Mitra',
   labelAlamatMitra: 'Alamat Lengkap',
   labelJenisKerjasama: 'Jenis Kerjasama',
@@ -149,7 +163,7 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   labelNamaKontak: 'Nama Lengkap',
   labelJabatanKontak: 'Jabatan',
   labelEmailKontak: 'Email',
-  labelTeleponKontak: 'Telepon',
+  labelTeleponKontak: 'WhatsApp Aktif',
 };
 
 const DEFAULT_APPEARANCE_STORAGE_KEY = 'internal-pengajuan-appearance-v1';
@@ -162,12 +176,23 @@ export default function InternalAjukanKerjasamaForm({
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
-  const asalOptions = asal === 'Jurusan' ? jurusanOptions : unitOptions;
   const [dokumen, setDokumen] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
-  const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
+  const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
+  const [customRuangLingkupOpts, setCustomRuangLingkupOpts] = useState<string[]>([]);
+  const [rlOpen, setRlOpen] = useState(false);
+  const [rlInput, setRlInput] = useState('');
+  const [juOpen, setJuOpen] = useState(false);
+  const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
+  const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
+  const [jurusanUnitInput, setJurusanUnitInput] = useState('');
+
+  const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
+  const allUnitOptions = [...unitOptions, ...customUnitOpts];
+  const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
+  const allRlOptions = [...defaultRuangLingkupOptions, ...customRuangLingkupOpts];
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -189,10 +214,10 @@ export default function InternalAjukanKerjasamaForm({
       if (parsed.formData) {
         setFormData({ ...initialForm, ...parsed.formData });
       }
-
-      if (typeof parsed.hasDownloadedTemplate === 'boolean') {
-        setHasDownloadedTemplate(parsed.hasDownloadedTemplate);
-      }
+      if (parsed.selectedRuangLingkup) setSelectedRuangLingkup(parsed.selectedRuangLingkup);
+      if (parsed.customRuangLingkupOpts) setCustomRuangLingkupOpts(parsed.customRuangLingkupOpts);
+      if (parsed.customJurusanOpts) setCustomJurusanOpts(parsed.customJurusanOpts);
+      if (parsed.customUnitOpts) setCustomUnitOpts(parsed.customUnitOpts);
     } catch {
       // Abaikan draft rusak agar form tetap bisa dipakai normal.
     }
@@ -210,7 +235,19 @@ export default function InternalAjukanKerjasamaForm({
       }
 
       const parsed = JSON.parse(storedRaw) as Partial<FormAppearanceSettings>;
-      setAppearanceSettings((prev) => ({ ...prev, ...parsed }));
+      setAppearanceSettings((prev) => {
+        const next = { ...prev, ...parsed };
+
+        if (!next.labelTeleponMitra || next.labelTeleponMitra === 'Telepon') {
+          next.labelTeleponMitra = 'WhatsApp Aktif';
+        }
+
+        if (!next.labelTeleponKontak || next.labelTeleponKontak === 'Telepon') {
+          next.labelTeleponKontak = 'WhatsApp Aktif';
+        }
+
+        return next;
+      });
     } catch {
       window.localStorage.removeItem(appearanceStorageKey);
     }
@@ -224,11 +261,14 @@ export default function InternalAjukanKerjasamaForm({
     const draft: InternalPengajuanDraft = {
       asal,
       formData,
-      hasDownloadedTemplate,
+      selectedRuangLingkup,
+      customRuangLingkupOpts,
+      customJurusanOpts,
+      customUnitOpts,
     };
 
     window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
-  }, [asal, formData, hasDownloadedTemplate]);
+  }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -246,9 +286,46 @@ export default function InternalAjukanKerjasamaForm({
     setAppearanceSettings(defaultAppearanceSettings);
   };
 
+  const addRlOption = () => {
+    const trimmed = rlInput.trim();
+    if (!trimmed || allRlOptions.includes(trimmed)) return;
+    setCustomRuangLingkupOpts((prev) => [...prev, trimmed]);
+    setSelectedRuangLingkup((prev) => [...prev, trimmed]);
+    setRlInput('');
+  };
+
+  const removeRlCustomOption = (option: string) => {
+    setCustomRuangLingkupOpts((prev) => prev.filter((item) => item !== option));
+    setSelectedRuangLingkup((prev) => prev.filter((item) => item !== option));
+  };
+
+  const addJurusanUnitOption = () => {
+    const trimmed = jurusanUnitInput.trim();
+    if (!trimmed) return;
+    if (asal === 'Jurusan') {
+      if (!allJurusanOptions.includes(trimmed)) setCustomJurusanOpts((prev) => [...prev, trimmed]);
+    } else {
+      if (!allUnitOptions.includes(trimmed)) setCustomUnitOpts((prev) => [...prev, trimmed]);
+    }
+    handleChange('unitPelaksana', trimmed);
+    setJuOpen(false);
+    setJurusanUnitInput('');
+  };
+
+  const removeJurusanUnitCustomOption = (option: string) => {
+    if (asal === 'Jurusan') {
+      setCustomJurusanOpts((prev) => prev.filter((item) => item !== option));
+    } else {
+      setCustomUnitOpts((prev) => prev.filter((item) => item !== option));
+    }
+
+    if (formData.unitPelaksana === option) {
+      handleChange('unitPelaksana', '');
+    }
+  };
+
   const handleJenisDokumenChange = (value: string) => {
     setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
-    setHasDownloadedTemplate(false);
     setDokumen([]);
   };
 
@@ -262,12 +339,9 @@ export default function InternalAjukanKerjasamaForm({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setHasDownloadedTemplate(true);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!hasDownloadedTemplate) return;
-
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
@@ -296,6 +370,15 @@ export default function InternalAjukanKerjasamaForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const buildFileAttachments = () => {
+    return dokumen.map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: URL.createObjectURL(file),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -311,11 +394,9 @@ export default function InternalAjukanKerjasamaForm({
       tanggalBerakhir: formData.tanggalBerakhir,
       emailPengusul: formData.emailKontak,
       whatsappPengusul: formData.teleponKontak,
-      ruangLingkup: formData.ruangLingkup
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
+      ruangLingkup: selectedRuangLingkup,
       fileName: dokumen.map((file) => file.name).join(', ') || 'Dokumen pendukung internal',
+      fileAttachments: buildFileAttachments(),
     });
 
     if (typeof window !== 'undefined') {
@@ -490,6 +571,7 @@ export default function InternalAjukanKerjasamaForm({
                   type="button"
                   onClick={() => {
                     setAsal('Jurusan');
+                    setJuOpen(false);
                     handleChange('unitPelaksana', '');
                   }}
                   className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
@@ -504,6 +586,7 @@ export default function InternalAjukanKerjasamaForm({
                   type="button"
                   onClick={() => {
                     setAsal('Unit');
+                    setJuOpen(false);
                     handleChange('unitPelaksana', '');
                   }}
                   className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
@@ -515,14 +598,107 @@ export default function InternalAjukanKerjasamaForm({
                   Unit
                 </button>
               </div>
-              <select value={formData.unitPelaksana} onChange={(e) => handleChange('unitPelaksana', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
-                <option value="">-- Pilih {asal} --</option>
-                {asalOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setJuOpen(!juOpen)}
+                  className="input-field flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    {formData.unitPelaksana ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
+                        {formData.unitPelaksana}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChange('unitPelaksana', '');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleChange('unitPelaksana', '');
+                            }
+                          }}
+                          className="cursor-pointer hover:opacity-75"
+                          aria-label={`Hapus ${asal}`}
+                        >
+                          <X size={10} />
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">-- Pilih {asal} --</span>
+                    )}
+                  </div>
+                  <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${juOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {juOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setJuOpen(false)} />
+                    <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                      <div className="max-h-48 overflow-y-auto p-1">
+                        {asalOptions.map((option) => {
+                          const isCustom = asal === 'Jurusan' ? customJurusanOpts.includes(option) : customUnitOpts.includes(option);
+
+                          return (
+                            <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleChange('unitPelaksana', option);
+                                  setJuOpen(false);
+                                }}
+                                className={`flex flex-1 items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
+                                  formData.unitPelaksana === option ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'
+                                }`}
+                              >
+                                <span>{option}</span>
+                                {formData.unitPelaksana === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
+                              </button>
+                              {isCustom && (
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeJurusanUnitCustomOption(option);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeJurusanUnitCustomOption(option);
+                                    }
+                                  }}
+                                  className="mr-2 inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                  aria-label={`Hapus opsi ${option}`}
+                                >
+                                  <X size={12} />
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-2 border-t border-slate-100 p-2">
+                        <input
+                          type="text"
+                          value={jurusanUnitInput}
+                          onChange={(e) => setJurusanUnitInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addJurusanUnitOption(); } }}
+                          placeholder={`Tambah ${asal} baru...`}
+                          className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
+                        />
+                        <button type="button" onClick={addJurusanUnitOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
+                          <Plus size={12} />Tambah
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalMulai}</label>
@@ -548,7 +724,106 @@ export default function InternalAjukanKerjasamaForm({
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelRuangLingkup}</label>
-              <textarea value={formData.ruangLingkup} onChange={(e) => handleChange('ruangLingkup', e.target.value)} className="input-field min-h-[80px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Pisahkan dengan koma, misalnya: Penelitian, Magang, Pelatihan" required />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setRlOpen(!rlOpen)}
+                  className="input-field flex min-h-[40px] w-full items-start justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
+                >
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedRuangLingkup.length === 0 ? (
+                      <span className="text-slate-400">Pilih ruang lingkup kerjasama...</span>
+                    ) : (
+                      selectedRuangLingkup.map((rl) => (
+                        <span key={rl} className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
+                          {rl}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRuangLingkup((prev) => prev.filter((x) => x !== rl));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedRuangLingkup((prev) => prev.filter((x) => x !== rl));
+                              }
+                            }}
+                            className="cursor-pointer hover:opacity-75"
+                            aria-label={`Hapus ${rl}`}
+                          >
+                            <X size={10} />
+                          </span>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  <ChevronDown size={14} className={`mt-0.5 shrink-0 text-slate-400 transition-transform ${rlOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {rlOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setRlOpen(false)} />
+                    <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                      <div className="max-h-48 overflow-y-auto p-1">
+                        {allRlOptions.map((opt) => {
+                          const isCustom = customRuangLingkupOpts.includes(opt);
+
+                          return (
+                          <label key={opt} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
+                            <input
+                              type="checkbox"
+                              checked={selectedRuangLingkup.includes(opt)}
+                              onChange={() => setSelectedRuangLingkup((prev) => prev.includes(opt) ? prev.filter((x) => x !== opt) : [...prev, opt])}
+                              className="h-4 w-4 accent-[#173B82]"
+                            />
+                            <span className="flex flex-1 items-center justify-between gap-2 text-sm text-slate-800">
+                              <span>{opt}</span>
+                              {isCustom && (
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeRlCustomOption(opt);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeRlCustomOption(opt);
+                                    }
+                                  }}
+                                  className="inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                  aria-label={`Hapus opsi ${opt}`}
+                                >
+                                  <X size={12} />
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-2 border-t border-slate-100 p-2">
+                        <input
+                          type="text"
+                          value={rlInput}
+                          onChange={(e) => setRlInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRlOption(); } }}
+                          placeholder="Tambah opsi baru..."
+                          className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
+                        />
+                        <button type="button" onClick={addRlOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
+                          <Plus size={12} />Tambah
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -628,7 +903,7 @@ export default function InternalAjukanKerjasamaForm({
                   className="inline-flex items-center gap-2 rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
                 >
                   <Download size={16} />
-                  Download Template
+                  Download Template (Opsional)
                 </button>
               </div>
 
@@ -646,28 +921,21 @@ export default function InternalAjukanKerjasamaForm({
 
           <div className="space-y-3">
             <label
-              className={`block rounded-xl border-2 border-dashed p-5 transition ${
-                hasDownloadedTemplate
-                  ? 'cursor-pointer border-[#173B82]/30 bg-white hover:border-[#173B82] hover:bg-slate-50'
-                  : 'cursor-not-allowed border-slate-200 bg-slate-100'
-              }`}
+              className="block cursor-pointer rounded-xl border-2 border-dashed border-[#173B82]/30 bg-white p-5 transition hover:border-[#173B82] hover:bg-slate-50"
             >
               <input
                 type="file"
                 multiple
                 accept=".pdf,.doc,.docx"
                 onChange={handleFileUpload}
-                disabled={!hasDownloadedTemplate}
                 className="hidden"
               />
 
               <div className="flex flex-col items-center justify-center text-center">
-                <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${hasDownloadedTemplate ? 'bg-[#173B82]/10 text-[#173B82]' : 'bg-slate-200 text-slate-400'}`}>
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#173B82]/10 text-[#173B82]">
                   <Upload size={20} />
                 </div>
-                <p className="text-sm font-semibold text-slate-800">
-                  {hasDownloadedTemplate ? 'Klik untuk upload dokumen pendukung' : 'Download template dulu sebelum upload'}
-                </p>
+                <p className="text-sm font-semibold text-slate-800">Klik untuk upload dokumen pendukung</p>
                 <p className="mt-1 text-xs text-slate-500">Format yang didukung: PDF, DOC, DOCX</p>
                 <p className="mt-1 text-xs text-slate-500">Ukuran maksimal per file: 10 MB</p>
               </div>
