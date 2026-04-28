@@ -5,6 +5,13 @@ export type RekapStatus = 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
 export type RekapJenis = 'MoA' | 'MoU' | 'IA';
 
 // Tipe data utama untuk satu baris dokumen pada tabel rekap.
+export interface DokumenTerkait {
+  nama: string;
+  url: string;
+  ukuran: string;
+  tanggal: string;
+}
+
 export interface RekapDokumen {
   sourcePengajuanId?: number;
   noDokumen: string;
@@ -17,6 +24,7 @@ export interface RekapDokumen {
   tahun: string;
   status: RekapStatus;
   whatsappNumber?: string;
+  dokumenTerkait?: DokumenTerkait[];
 }
 
 // Data mentah dari modal tambah dokumen sebelum dikonversi ke format rekap.
