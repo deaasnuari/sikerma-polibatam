@@ -104,6 +104,19 @@ type InternalAjukanKerjasamaFormProps = {
   onSubmitted?: () => void;
   enableAppearanceEdit?: boolean;
   appearanceStorageKey?: string;
+  initialData?: Partial<typeof initialForm> & {
+    asal?: 'Jurusan' | 'Unit';
+    selectedRuangLingkup?: string[];
+  };
+  disableDraftPersistence?: boolean;
+  lockJenisKerjasama?: boolean;
+  submitButtonLabel?: string;
+  onSubmitOverride?: (payload: {
+    formData: typeof initialForm;
+    asal: 'Jurusan' | 'Unit';
+    selectedRuangLingkup: string[];
+    dokumen: File[];
+  }) => boolean | void;
 };
 
 type FormAppearanceSettings = {
@@ -173,6 +186,11 @@ export default function InternalAjukanKerjasamaForm({
   onSubmitted,
   enableAppearanceEdit = false,
   appearanceStorageKey = DEFAULT_APPEARANCE_STORAGE_KEY,
+  initialData,
+  disableDraftPersistence = false,
+  lockJenisKerjasama = false,
+  submitButtonLabel = 'Ajukan Kerjasama',
+  onSubmitOverride,
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
@@ -195,6 +213,21 @@ export default function InternalAjukanKerjasamaForm({
   const allRlOptions = [...defaultRuangLingkupOptions, ...customRuangLingkupOpts];
 
   useEffect(() => {
+    if (initialData) {
+      const nextAsal = initialData.asal;
+      if (nextAsal === 'Jurusan' || nextAsal === 'Unit') {
+        setAsal(nextAsal);
+      }
+
+      setFormData((prev) => ({ ...prev, ...initialData }));
+
+      if (Array.isArray(initialData.selectedRuangLingkup)) {
+        setSelectedRuangLingkup(initialData.selectedRuangLingkup.filter(Boolean));
+      }
+
+      return;
+    }
+
     if (typeof window === 'undefined') {
       return;
     }
@@ -221,7 +254,7 @@ export default function InternalAjukanKerjasamaForm({
     } catch {
       // Abaikan draft rusak agar form tetap bisa dipakai normal.
     }
-  }, []);
+  }, [initialData]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -254,6 +287,10 @@ export default function InternalAjukanKerjasamaForm({
   }, [appearanceStorageKey, enableAppearanceEdit]);
 
   useEffect(() => {
+    if (disableDraftPersistence || initialData) {
+      return;
+    }
+
     if (typeof window === 'undefined') {
       return;
     }
@@ -268,7 +305,7 @@ export default function InternalAjukanKerjasamaForm({
     };
 
     window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
-  }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts]);
+  }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -325,6 +362,10 @@ export default function InternalAjukanKerjasamaForm({
   };
 
   const handleJenisDokumenChange = (value: string) => {
+    if (lockJenisKerjasama) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
     setDokumen([]);
   };
@@ -381,6 +422,26 @@ export default function InternalAjukanKerjasamaForm({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (onSubmitOverride) {
+      const submitResult = onSubmitOverride({
+        formData,
+        asal,
+        selectedRuangLingkup,
+        dokumen,
+      });
+
+      if (submitResult === false) {
+        return;
+      }
+
+      if (onSubmitted) {
+        onSubmitted();
+        return;
+      }
+
+      return;
+    }
 
     submitPengajuan({
       judul: formData.judulKerjasama,
@@ -557,12 +618,21 @@ export default function InternalAjukanKerjasamaForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJenisKerjasama}</label>
-              <select value={formData.jenisKerjasama} onChange={(e) => handleJenisDokumenChange(e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
+              <select
+                value={formData.jenisKerjasama}
+                onChange={(e) => handleJenisDokumenChange(e.target.value)}
+                className={`input-field h-10 w-full rounded-lg px-3 text-sm ${lockJenisKerjasama ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
+                disabled={lockJenisKerjasama}
+                required
+              >
                 <option value="">Pilih jenis kerjasama</option>
                 <option>MoU</option>
                 <option>MoA</option>
                 <option>IA</option>
               </select>
+              {lockJenisKerjasama && (
+                <p className="mt-1 text-[11px] text-slate-500">Jenis dokumen tidak bisa diubah saat edit. Jika dokumen direvisi, silakan upload ulang file dokumen.</p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelDari}</label>
@@ -865,11 +935,12 @@ export default function InternalAjukanKerjasamaForm({
                   key={key}
                   type="button"
                   onClick={() => handleJenisDokumenChange(key)}
+                  disabled={lockJenisKerjasama}
                   className={`rounded-xl border p-4 text-left transition-all ${
                     active
                       ? 'border-[#173B82] bg-blue-50 shadow-sm'
                       : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
+                  } ${lockJenisKerjasama ? 'cursor-not-allowed opacity-80' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="rounded-full bg-[#173B82] px-2.5 py-1 text-xs font-bold text-white">{key}</span>
@@ -986,7 +1057,7 @@ export default function InternalAjukanKerjasamaForm({
             type="submit"
             className="rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
           >
-            Ajukan Kerjasama
+            {submitButtonLabel}
           </button>
         </div>
       </form>

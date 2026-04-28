@@ -35,7 +35,7 @@ const defaultTemplateDokumenMap: Record<TemplateKey, TemplateDokumenConfig> = {
     title: 'Memorandum of Understanding (MoU)',
     subtitle: 'Template untuk kesepahaman awal kerjasama',
     struktur: ['Pembukaan', 'Para Pihak', 'Latar Belakang', 'Tujuan Kerjasama', 'Ruang Lingkup', 'Jangka Waktu', 'Penutup'],
-    note: 'Gunakan template MOU asli ini, lalu edit dan upload kembali hasilnya.',
+    note: 'Template bersifat opsional. Kamu bisa langsung upload dokumen PDF tanpa download template.',
     fileName: 'Draft MOU Industri.docx',
     downloadUrl: '/templates/Draft%20MOU%20Industri.docx',
   },
@@ -43,7 +43,7 @@ const defaultTemplateDokumenMap: Record<TemplateKey, TemplateDokumenConfig> = {
     title: 'Memorandum of Agreement (MoA)',
     subtitle: 'Template untuk perjanjian teknis pelaksanaan kerjasama',
     struktur: ['Pembukaan', 'Dasar Pelaksanaan', 'Hak dan Kewajiban', 'Program Magang', 'Pendanaan', 'Monitoring dan Evaluasi', 'Penutup'],
-    note: 'Gunakan template MOA asli ini, lalu edit dan upload kembali hasilnya.',
+    note: 'Template bersifat opsional. Kamu bisa langsung upload dokumen PDF tanpa download template.',
     fileName: 'Draft MOA Magang.docx',
     downloadUrl: '/templates/Draft%20MOA%20Magang.docx',
   },
@@ -51,7 +51,7 @@ const defaultTemplateDokumenMap: Record<TemplateKey, TemplateDokumenConfig> = {
     title: 'Implementation Arrangement (IA)',
     subtitle: 'Template untuk rincian implementasi program/kegiatan',
     struktur: ['Informasi Program', 'Target dan Indikator', 'Peran Tim Pelaksana', 'Timeline', 'Output', 'Pelaporan', 'Penutup'],
-    note: 'Gunakan template IA asli ini, lalu edit dan upload kembali hasilnya.',
+    note: 'Template bersifat opsional. Kamu bisa langsung upload dokumen PDF tanpa download template.',
     fileName: 'DRAFT IA POLIBATAM.docx',
     downloadUrl: '/templates/DRAFT%20IA%20POLIBATAM.docx',
   },
@@ -84,8 +84,7 @@ export default function TambahDokumenModal({
 }: TambahDokumenModalProps) {
   const [formData, setFormData] = useState<DokumenData>(emptyFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof DokumenData, string>>>({});
-  const [uploadErrors, setUploadErrors] = useState<{ templateDownload?: string; fileDokumen?: string }>({});
-  const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<{ fileDokumen?: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const pilihanUnit = useMemo(
     () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...rekapJurusanOptions] : ['Pilih Unit', ...rekapUnitOptions]),
@@ -103,7 +102,6 @@ export default function TambahDokumenModal({
     setFormData(initialData ?? emptyFormData);
     setErrors({});
     setUploadErrors({});
-    setHasDownloadedTemplate(false);
     setSelectedFile(null);
   }, [initialData, isOpen]);
 
@@ -126,10 +124,7 @@ export default function TambahDokumenModal({
     if (!formData.tanggalBerakhir) newErrors.tanggalBerakhir = 'Tanggal berakhir wajib diisi';
     if (!formData.alamatMitra.trim()) newErrors.alamatMitra = 'Alamat mitra wajib diisi';
 
-    const nextUploadErrors: { templateDownload?: string; fileDokumen?: string } = {};
-    if (formData.jenisDokumen && !hasDownloadedTemplate) {
-      nextUploadErrors.templateDownload = 'Download template terlebih dahulu';
-    }
+    const nextUploadErrors: { fileDokumen?: string } = {};
     if (formData.jenisDokumen && !selectedFile) {
       nextUploadErrors.fileDokumen = 'Upload dokumen wajib diisi';
     }
@@ -146,7 +141,6 @@ export default function TambahDokumenModal({
       onSubmit(formData);
     }
     setFormData(emptyFormData);
-    setHasDownloadedTemplate(false);
     setSelectedFile(null);
     onClose();
   };
@@ -158,7 +152,6 @@ export default function TambahDokumenModal({
     }
 
     if (field === 'jenisDokumen') {
-      setHasDownloadedTemplate(false);
       setSelectedFile(null);
       setUploadErrors({});
     }
@@ -175,8 +168,6 @@ export default function TambahDokumenModal({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setHasDownloadedTemplate(true);
-    setUploadErrors((prev) => ({ ...prev, templateDownload: undefined }));
   };
 
   const handleFileChange = (file: File | null) => {
@@ -188,7 +179,7 @@ export default function TambahDokumenModal({
 
     const validationError = validateSelectedFile(file, {
       maxSizeBytes: MAX_FILE_SIZE,
-      accept: ['.doc', '.docx'],
+      accept: ['.pdf'],
     });
 
     if (validationError) {
@@ -202,10 +193,10 @@ export default function TambahDokumenModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
-      <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
-          <h2 className="text-[20px] font-bold text-[#1E376C]">{title}</h2>
+    <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-900/35 px-2 py-3 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-8">
+      <div className="relative max-h-[96vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-[24px]">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
+          <h2 className="text-lg font-bold text-[#1E376C] sm:text-[20px]">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -216,8 +207,8 @@ export default function TambahDokumenModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:gap-y-5 md:grid-cols-2">
             <Field label="Nomor Dokumen *" error={errors.nomorDokumen}>
               <TextInput
                 placeholder="Contoh: 001/MoU/2026"
@@ -237,41 +228,41 @@ export default function TambahDokumenModal({
             </Field>
 
             {selectedTemplate && (
-              <div className="md:col-span-2 rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-4 sm:p-5 space-y-4">
+              <div className="space-y-4 rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-3 sm:p-5 md:col-span-2">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Template Dokumen</h3>
-                  <p className="mt-1 text-sm text-gray-600">Alurnya sederhana: download template, isi dokumen, lalu upload kembali.</p>
+                  <h3 className="text-lg font-bold text-gray-900 sm:text-xl">Template Dokumen</h3>
+                  <p className="mt-1 text-xs text-gray-600 sm:text-sm">Template opsional. Kamu bisa download sebagai referensi atau langsung upload dokumen PDF.</p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-3">
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">1</span>
-                      <p className="text-sm font-semibold text-gray-900">Download Template</p>
+                      <p className="text-sm font-semibold text-gray-900">Opsional: Download Template</p>
                     </div>
-                    <p className="text-xs text-gray-600">Unduh file sesuai jenis dokumen yang dipilih.</p>
+                    <p className="text-xs text-gray-600">Unduh file sesuai jenis dokumen bila diperlukan.</p>
                   </div>
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">2</span>
-                      <p className="text-sm font-semibold text-gray-900">Isi Dokumen</p>
+                      <p className="text-sm font-semibold text-gray-900">Siapkan Dokumen</p>
                     </div>
-                    <p className="text-xs text-gray-600">Lengkapi template Word sesuai kebutuhan dokumen kerja sama.</p>
+                    <p className="text-xs text-gray-600">Siapkan dokumen final dalam format PDF.</p>
                   </div>
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">3</span>
-                      <p className="text-sm font-semibold text-gray-900">Upload Hasil</p>
+                      <p className="text-sm font-semibold text-gray-900">Upload PDF</p>
                     </div>
-                    <p className="text-xs text-gray-600">Upload kembali file yang sudah diedit.</p>
+                    <p className="text-xs text-gray-600">Upload dokumen langsung tanpa wajib download template.</p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xl font-bold text-[#173B82]">{selectedTemplate.title}</p>
-                      <p className="text-sm text-gray-600">{selectedTemplate.subtitle}</p>
+                      <p className="text-base font-bold text-[#173B82] sm:text-xl">{selectedTemplate.title}</p>
+                      <p className="text-xs text-gray-600 sm:text-sm">{selectedTemplate.subtitle}</p>
                       <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#C9D8F5] bg-[#EEF4FF] px-3 py-1.5">
                         <FileText size={14} className="text-[#173B82]" />
                         <span className="text-xs font-bold text-[#0F2F6B]">{selectedTemplate.fileName}</span>
@@ -280,7 +271,7 @@ export default function TambahDokumenModal({
                     <button
                       type="button"
                       onClick={handleDownloadTemplate}
-                      className="btn-primary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm font-semibold shadow-sm"
+                      className="btn-primary inline-flex h-10 w-full items-center justify-center gap-2 px-4 text-sm font-semibold shadow-sm sm:h-11 sm:w-auto"
                     >
                       <Download size={16} />
                       Download Template
@@ -302,45 +293,35 @@ export default function TambahDokumenModal({
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-lg font-semibold leading-none text-gray-900">Upload Dokumen *</label>
-
-                  {!hasDownloadedTemplate ? (
-                    <p className="mb-2 rounded-lg border border-[#D7E0F0] bg-[#EEF3FF] px-3 py-2 text-xs text-[#1E376C]">
-                      Download template terlebih dahulu, lalu isi dan upload file hasilnya di sini.
-                    </p>
-                  ) : (
-                    <p className="mb-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
-                      Template sudah diunduh. Sekarang kamu bisa upload file hasil editnya.
-                    </p>
-                  )}
+                  <label className="mb-3 block text-base font-semibold leading-none text-gray-900 sm:text-lg">Upload Dokumen *</label>
+                  <p className="mb-2 rounded-lg border border-[#D7E0F0] bg-[#EEF3FF] px-3 py-2 text-xs text-[#1E376C]">
+                    Upload dokumen langsung di sini. Download template tidak wajib.
+                  </p>
 
                   <label
-                    className={`block w-full rounded-2xl border-2 border-dashed p-5 text-center transition-all ${
-                      !hasDownloadedTemplate
-                        ? 'cursor-not-allowed border-gray-300 bg-gray-100'
-                        : selectedFile
-                          ? 'cursor-pointer border-green-400 bg-green-50 shadow-sm'
-                          : 'cursor-pointer border-[#BFD0EE] bg-[#F5F8FF]'
+                    className={`block w-full rounded-2xl border-2 border-dashed p-4 text-center transition-all sm:p-5 ${
+                      selectedFile
+                        ? 'cursor-pointer border-green-400 bg-green-50 shadow-sm'
+                        : 'cursor-pointer border-[#BFD0EE] bg-[#F5F8FF]'
                     }`}
                   >
                     <input
                       type="file"
-                      accept=".doc,.docx"
-                      disabled={!hasDownloadedTemplate}
+                      accept=".pdf"
                       onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                       className="hidden"
                     />
                     <Upload className={`mx-auto ${selectedFile ? 'text-green-600' : 'text-[#1E376C]'}`} size={22} />
                     <p className={`mt-2 text-base font-semibold ${selectedFile ? 'text-green-700' : 'text-[#1E376C]'}`}>
-                      {selectedFile ? 'Dokumen Berhasil Dipilih' : 'Upload Hasil Template yang Sudah Diisi'}
+                      {selectedFile ? 'Dokumen Berhasil Dipilih' : 'Upload Dokumen PDF'}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      {selectedFile ? 'File siap dikirim bersama data dokumen.' : 'Setelah download dan edit template, upload file Word-nya di sini'}
+                      {selectedFile ? 'File siap dikirim bersama data dokumen.' : 'Upload file PDF dokumen kerjasama di sini'}
                     </p>
                     <span className={`mt-3 inline-flex rounded-lg px-3 py-1 text-xs font-semibold ${selectedFile ? 'bg-green-600 text-white' : 'bg-[#1E376C] text-white'}`}>
-                      {selectedFile ? 'Ganti File' : 'Pilih File Word'}
+                      {selectedFile ? 'Ganti File' : 'Pilih File PDF'}
                     </span>
-                    <p className="mt-2 text-[11px] text-gray-500">Format: .doc, .docx</p>
+                    <p className="mt-2 text-[11px] text-gray-500">Format: .pdf</p>
                     <p className="text-[11px] text-gray-500">Ukuran maksimal 10 MB</p>
                     {selectedFile && (
                       <div className="mt-3 space-y-1">
@@ -352,7 +333,6 @@ export default function TambahDokumenModal({
                     )}
                   </label>
 
-                  {uploadErrors.templateDownload && <p className="mt-1 text-xs text-red-500">{uploadErrors.templateDownload}</p>}
                   {uploadErrors.fileDokumen && <p className="mt-1 text-xs text-red-500">{uploadErrors.fileDokumen}</p>}
                 </div>
               </div>
@@ -487,17 +467,17 @@ export default function TambahDokumenModal({
             </Field>
           </div>
 
-          <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <div className="mt-8 flex flex-col-reverse gap-2 sm:mt-10 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
+              className="btn-secondary inline-flex h-11 w-full items-center justify-center px-8 text-sm font-semibold sm:w-auto"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="btn-primary inline-flex h-11 items-center justify-center px-8 text-sm font-semibold"
+              className="btn-primary inline-flex h-11 w-full items-center justify-center px-8 text-sm font-semibold sm:w-auto"
             >
               {submitLabel}
             </button>
