@@ -11,6 +11,8 @@ import {
   getPengajuanStats,
   getPengajuanYearOptions,
   pengajuanDokumenBadge,
+  pengajuanJurusanOptions,
+  pengajuanUnitOptions,
   savePengajuanReview,
   updatePengajuanItem,
   type PengajuanItem,
@@ -31,13 +33,12 @@ type EditFormState = {
 const ruangLingkupOptions = [
   'Penelitian',
   'Pengabdian Masyarakat',
-  'Magang',
-  'Pertukaran Mahasiswa',
-  'Pelatihan',
-  'Workshop',
-  'Sertifikasi',
-  'Joint Program',
-  'Lainnya',
+  'Magang / PKL',
+  'Pelatihan & Workshop',
+  'Pertukaran Pelajar',
+  'Rekrutmen',
+  'Riset Bersama',
+  'Pengembangan Kurikulum',
 ];
 
 const statusConfig: Record<PengajuanStatus, { label: string; className: string; iconEl: React.ReactNode }> = {
@@ -87,6 +88,14 @@ export default function PengajuanKerjasama() {
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [editAsal, setEditAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
+  const [editJurusanOpen, setEditJurusanOpen] = useState(false);
+  const [editRlOpen, setEditRlOpen] = useState(false);
+  const [editJurusanInput, setEditJurusanInput] = useState('');
+  const [editRlInput, setEditRlInput] = useState('');
+  const [editCustomJurusanOpts, setEditCustomJurusanOpts] = useState<string[]>([]);
+  const [editCustomUnitOpts, setEditCustomUnitOpts] = useState<string[]>([]);
+  const [editCustomRlOpts, setEditCustomRlOpts] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
 
   useEffect(() => {
@@ -170,6 +179,10 @@ export default function PengajuanKerjasama() {
           .map((name) => ({ name, url: '' }))
     : [];
   const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
+  const editAllJurusanOptions = [...pengajuanJurusanOptions, ...editCustomJurusanOpts];
+  const editAllUnitOptions = [...pengajuanUnitOptions, ...editCustomUnitOpts];
+  const editAsalOptions = editAsal === 'Jurusan' ? editAllJurusanOptions : editAllUnitOptions;
+  const editAllRlOptions = [...ruangLingkupOptions, ...editCustomRlOpts];
 
   function openReview(item: PengajuanItem) {
     setReviewItem(item);
@@ -189,6 +202,8 @@ export default function PengajuanKerjasama() {
   }
 
   function openEdit(item: PengajuanItem) {
+    const asalDefault: 'Jurusan' | 'Unit' = pengajuanUnitOptions.includes(item.jurusan) ? 'Unit' : 'Jurusan';
+
     setEditForm({
       id: item.id,
       judul: item.judul,
@@ -199,6 +214,59 @@ export default function PengajuanKerjasama() {
       tanggalBerakhir: item.tanggalBerakhir || '',
       ruangLingkup: item.ruangLingkup,
     });
+    setEditAsal(asalDefault);
+    setEditJurusanOpen(false);
+    setEditRlOpen(false);
+    setEditJurusanInput('');
+    setEditRlInput('');
+    setEditCustomJurusanOpts([]);
+    setEditCustomUnitOpts([]);
+    setEditCustomRlOpts([]);
+  }
+
+  function addEditJurusanUnitOption() {
+    const trimmed = editJurusanInput.trim();
+    if (!trimmed) return;
+
+    if (editAsal === 'Jurusan') {
+      if (!editAllJurusanOptions.includes(trimmed)) setEditCustomJurusanOpts((prev) => [...prev, trimmed]);
+    } else {
+      if (!editAllUnitOptions.includes(trimmed)) setEditCustomUnitOpts((prev) => [...prev, trimmed]);
+    }
+
+    setEditForm((prev) => (prev ? { ...prev, jurusan: trimmed } : prev));
+    setEditJurusanInput('');
+    setEditJurusanOpen(false);
+  }
+
+  function removeEditJurusanUnitOption(option: string) {
+    if (editAsal === 'Jurusan') {
+      setEditCustomJurusanOpts((prev) => prev.filter((item) => item !== option));
+    } else {
+      setEditCustomUnitOpts((prev) => prev.filter((item) => item !== option));
+    }
+
+    setEditForm((prev) => {
+      if (!prev) return prev;
+      if (prev.jurusan === option) {
+        return { ...prev, jurusan: '' };
+      }
+      return prev;
+    });
+  }
+
+  function addEditRuangLingkupOption() {
+    const trimmed = editRlInput.trim();
+    if (!trimmed || editAllRlOptions.includes(trimmed)) return;
+
+    setEditCustomRlOpts((prev) => [...prev, trimmed]);
+    setEditForm((prev) => (prev ? { ...prev, ruangLingkup: [...prev.ruangLingkup, trimmed] } : prev));
+    setEditRlInput('');
+  }
+
+  function removeEditRuangLingkupOption(option: string) {
+    setEditCustomRlOpts((prev) => prev.filter((item) => item !== option));
+    setEditForm((prev) => (prev ? { ...prev, ruangLingkup: prev.ruangLingkup.filter((item) => item !== option) } : prev));
   }
 
   function saveEdit() {
@@ -749,6 +817,9 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                Dokumen pendukung tidak diubah dari form edit ini, jadi tidak perlu upload ulang saat mengedit data pengajuan.
+              </div>
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
                 <input
@@ -769,21 +840,148 @@ export default function PengajuanKerjasama() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
-                <input
-                  type="text"
-                  value={editForm.jurusan}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jurusan: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
-                />
+                <div className="mt-2 mb-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditAsal('Jurusan');
+                      setEditJurusanOpen(false);
+                      setEditForm((prev) => (prev ? { ...prev, jurusan: '' } : prev));
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                      editAsal === 'Jurusan'
+                        ? 'border-[#173B82] bg-[#173B82] text-white'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-[#173B82]'
+                    }`}
+                  >
+                    Jurusan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditAsal('Unit');
+                      setEditJurusanOpen(false);
+                      setEditForm((prev) => (prev ? { ...prev, jurusan: '' } : prev));
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                      editAsal === 'Unit'
+                        ? 'border-[#173B82] bg-[#173B82] text-white'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-[#173B82]'
+                    }`}
+                  >
+                    Unit
+                  </button>
+                </div>
+
+                <div className="relative mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditJurusanOpen((prev) => !prev)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-left text-sm text-slate-700"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      {editForm.jurusan ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
+                          {editForm.jurusan}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditForm((prev) => (prev ? { ...prev, jurusan: '' } : prev));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditForm((prev) => (prev ? { ...prev, jurusan: '' } : prev));
+                              }
+                            }}
+                            className="cursor-pointer hover:opacity-75"
+                            aria-label="Hapus pilihan jurusan atau unit"
+                          >
+                            <X size={10} />
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">-- Pilih {editAsal} --</span>
+                      )}
+                      <ChevronRight size={14} className={`text-slate-400 transition-transform ${editJurusanOpen ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
+
+                  {editJurusanOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setEditJurusanOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                        <div className="max-h-48 overflow-y-auto p-1">
+                          {editAsalOptions.map((option) => {
+                            const isCustom = editAsal === 'Jurusan' ? editCustomJurusanOpts.includes(option) : editCustomUnitOpts.includes(option);
+
+                            return (
+                              <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditForm((prev) => (prev ? { ...prev, jurusan: option } : prev));
+                                    setEditJurusanOpen(false);
+                                  }}
+                                  className={`flex flex-1 items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
+                                    editForm.jurusan === option ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'
+                                  }`}
+                                >
+                                  <span>{option}</span>
+                                  {editForm.jurusan === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
+                                </button>
+                                {isCustom && (
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeEditJurusanUnitOption(option);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        removeEditJurusanUnitOption(option);
+                                      }
+                                    }}
+                                    className="mr-2 inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                    aria-label={`Hapus opsi ${option}`}
+                                  >
+                                    <X size={12} />
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-2 border-t border-slate-100 p-2">
+                          <input
+                            type="text"
+                            value={editJurusanInput}
+                            onChange={(e) => setEditJurusanInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditJurusanUnitOption(); } }}
+                            placeholder={`Tambah ${editAsal} baru...`}
+                            className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                          />
+                          <button type="button" onClick={addEditJurusanUnitOption} className="inline-flex items-center gap-1 rounded-lg bg-[#173B82] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f2c61]">
+                            <Plus size={12} />Tambah
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
-                <input
-                  type="text"
-                  value={editForm.jenisDokumen}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jenisDokumen: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
-                />
+                <div className="mt-1 flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
+                  {editForm.jenisDokumen || '-'}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">Jenis dokumen tidak bisa diedit dari form ini.</p>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
@@ -805,42 +1003,118 @@ export default function PengajuanKerjasama() {
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Ruang Lingkup</label>
-                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {ruangLingkupOptions.map((option) => {
-                    const checked = editForm.ruangLingkup.includes(option);
+                <div className="relative mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditRlOpen((prev) => !prev)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-left text-sm text-slate-700"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {editForm.ruangLingkup.length === 0 ? (
+                          <span className="text-slate-400">Pilih ruang lingkup kerjasama...</span>
+                        ) : (
+                          editForm.ruangLingkup.map((rl) => (
+                            <span key={rl} className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
+                              {rl}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditForm((prev) => (prev ? { ...prev, ruangLingkup: prev.ruangLingkup.filter((item) => item !== rl) } : prev));
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setEditForm((prev) => (prev ? { ...prev, ruangLingkup: prev.ruangLingkup.filter((item) => item !== rl) } : prev));
+                                  }
+                                }}
+                                className="cursor-pointer hover:opacity-75"
+                                aria-label={`Hapus ${rl}`}
+                              >
+                                <X size={10} />
+                              </span>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                      <ChevronRight size={14} className={`mt-0.5 text-slate-400 transition-transform ${editRlOpen ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
 
-                    return (
-                      <label
-                        key={option}
-                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          checked
-                            ? 'border-[#1E376C] bg-[#EEF2FF] text-[#1E376C]'
-                            : 'border-slate-300 bg-white text-slate-700 hover:border-[#1E376C]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            setEditForm((prev) => {
-                              if (!prev) {
-                                return prev;
-                              }
+                  {editRlOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setEditRlOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                        <div className="max-h-48 overflow-y-auto p-1">
+                          {editAllRlOptions.map((option) => {
+                            const checked = editForm.ruangLingkup.includes(option);
+                            const isCustom = editCustomRlOpts.includes(option);
 
-                              const exists = prev.ruangLingkup.includes(option);
-                              const ruangLingkup = exists
-                                ? prev.ruangLingkup.filter((item) => item !== option)
-                                : [...prev.ruangLingkup, option];
-
-                              return { ...prev, ruangLingkup };
-                            });
-                          }}
-                          className="h-4 w-4 accent-[#1E376C]"
-                        />
-                        {option}
-                      </label>
-                    );
-                  })}
+                            return (
+                              <label key={option} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setEditForm((prev) => {
+                                      if (!prev) return prev;
+                                      const exists = prev.ruangLingkup.includes(option);
+                                      const ruangLingkup = exists
+                                        ? prev.ruangLingkup.filter((item) => item !== option)
+                                        : [...prev.ruangLingkup, option];
+                                      return { ...prev, ruangLingkup };
+                                    });
+                                  }}
+                                  className="h-4 w-4 accent-[#173B82]"
+                                />
+                                <span className="flex flex-1 items-center justify-between gap-2 text-sm text-slate-800">
+                                  <span>{option}</span>
+                                  {isCustom && (
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        removeEditRuangLingkupOption(option);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          removeEditRuangLingkupOption(option);
+                                        }
+                                      }}
+                                      className="inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                      aria-label={`Hapus opsi ${option}`}
+                                    >
+                                      <X size={12} />
+                                    </span>
+                                  )}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-2 border-t border-slate-100 p-2">
+                          <input
+                            type="text"
+                            value={editRlInput}
+                            onChange={(e) => setEditRlInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditRuangLingkupOption(); } }}
+                            placeholder="Tambah opsi baru..."
+                            className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                          />
+                          <button type="button" onClick={addEditRuangLingkupOption} className="inline-flex items-center gap-1 rounded-lg bg-[#173B82] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f2c61]">
+                            <Plus size={12} />Tambah
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
