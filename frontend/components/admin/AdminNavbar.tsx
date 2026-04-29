@@ -122,12 +122,14 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
             <nav className="hidden md:flex items-center gap-5 pr-2">
               {[
                 { label: 'Beranda', href: '/#beranda' },
-                { label: 'Info Kerjasama', href: '/#info-kerjasama' },
+                  { label: 'Kemitraan', href: '/#info-kerjasama' },
+                { label: 'Berita', href: 'https://www.polibatam.ac.id/category/kerja-sama/', external: true },
                 { label: 'Kontak', href: '/#kontak' },
               ].map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
+                  {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   className="text-sm font-medium text-slate-700 transition-colors hover:text-[#173B82]"
                   onClick={() => setShowPublicMenu(false)}
                 >
@@ -165,12 +167,14 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                 <div className="flex flex-col gap-1">
                   {[
                     { label: 'Beranda', href: '/#beranda' },
-                    { label: 'Info Kerjasama', href: '/#info-kerjasama' },
+                      { label: 'Kemitraan', href: '/#info-kerjasama' },
+                    { label: 'Berita', href: 'https://www.polibatam.ac.id/category/kerja-sama/', external: true },
                     { label: 'Kontak', href: '/#kontak' },
                   ].map((item) => (
                     <a
                       key={item.label}
                       href={item.href}
+                      {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                       onClick={() => setShowPublicMenu(false)}
                       className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-[#173B82]"
                     >

@@ -33,6 +33,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       response = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
         headers: {
+            Accept: 'application/json',
           'Content-Type': 'application/json',
           ...(options.headers || {}),
         },
