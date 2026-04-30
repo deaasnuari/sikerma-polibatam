@@ -94,14 +94,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
           <ArrowLeft size={16} />
           Kembali
         </button>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <Pencil size={14} />
-            Edit Dokumen
-          </button>
+<div className="flex items-center gap-2">
           <button
             type="button"
             className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
@@ -274,18 +267,10 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2">
+<div className="flex flex-col items-end gap-2">
                       <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.className}`}>
                         {badge.label}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="text-green-600 transition-colors hover:text-green-700" title="Edit">
-                          <Pencil size={14} />
-                        </button>
-                        <button type="button" onClick={() => handleDeleteAktivitas(a.id)} className="text-red-500 transition-colors hover:text-red-700" title="Hapus">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
