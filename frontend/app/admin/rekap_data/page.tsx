@@ -276,8 +276,8 @@ export default function RekapDataPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+                filteredRows.map((row, index) => (
+                  <tr key={row.id ?? index} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
                     <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: row.id, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
