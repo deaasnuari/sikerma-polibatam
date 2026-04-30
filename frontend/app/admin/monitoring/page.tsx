@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, X } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
-import RenewalHistoryModal from './RenewalHistoryModal';
+// import RenewalHistoryModal from './RenewalHistoryModal';
+import RenewalFullForm from './RenewalFullForm';
+import RenewalForm from './RenewalForm';
+// import RenewalForm from './RenewalForm';
 import NotificationHistoryModal from './NotificationHistoryModal';
 import NonactiveConfirmationModal from './NonactiveConfirmationModal';
 import {
@@ -41,6 +44,8 @@ export default function MonitoringdanstatusPage() {
   const [nonactiveModal, setNonactiveModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [nonactiveHistories, setNonactiveHistories] = useState<Record<number, NonactiveRecord[]>>({});
   const [monitoringData, setMonitoringData] = useState<Kerjasama[]>([]);
+  // State untuk toggle form sederhana/baru
+  const [showSimpleForm, setShowSimpleForm] = useState(false);
 
   useEffect(() => {
     const syncMonitoringData = () => {
@@ -98,7 +103,54 @@ export default function MonitoringdanstatusPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Export Button & Stat Cards */}
+      <div className="flex flex-wrap gap-2 items-center mb-2">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500 bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
+          onClick={() => {
+            // Export monitoringData to CSV
+            const csvRows = [
+              [
+                'Nama Mitra',
+                'No Dokumen',
+                'Jenis',
+                'Status',
+                'Tanggal Mulai',
+                'Tanggal Berakhir',
+                'Sisa Masa Berlaku',
+                'Email Mitra',
+                'WhatsApp',
+                'Ruang Lingkup'
+              ].join(','),
+              ...monitoringData.map(item => [
+                `"${item.namaMitra}"`,
+                `"${item.noDokumen}"`,
+                `"${item.jenis}"`,
+                `"${item.status}"`,
+                `"${item.tanggalMulai}"`,
+                `"${item.tanggalBerakhir}"`,
+                `"${item.sisaMasaBerlaku || ''}"`,
+                `"${item.emailMitra}"`,
+                `"${item.whatsappNumber}"`,
+                `"${item.ruangLingkup.join('; ')}"`
+              ].join(','))
+            ];
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'monitoring-kerjasama.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Export Data
+        </button>
+      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <button
           type="button"
@@ -358,50 +410,54 @@ export default function MonitoringdanstatusPage() {
         data={selectedLaporan}
       />
 
-      <RenewalHistoryModal
-        isOpen={renewalModal.open}
-        onClose={() => setRenewalModal({ open: false, kerjasamaId: null })}
-        namaMitra={selectedRenewalItem?.namaMitra || ''}
-        noDokumen={selectedRenewalItem?.noDokumen || ''}
-        tanggalMulaiSaatIni={selectedRenewalItem?.tanggalMulai || ''}
-        tanggalBerakhirSaatIni={selectedRenewalItem?.tanggalBerakhir || ''}
-        history={renewalHistories[renewalModal.kerjasamaId || 0] || []}
-        onAddRenewal={(catatan: string, tanggalMulaiBaru: string, tanggalBerakhirBaru: string) => {
-          if (!renewalModal.kerjasamaId) return;
-          const newRecord = createRenewalRecord(
-            renewalModal.kerjasamaId,
-            catatan,
-            tanggalMulaiBaru,
-            tanggalBerakhirBaru
-          );
-          setRenewalHistories((prev) => ({
-            ...prev,
-            [renewalModal.kerjasamaId]: [...(prev[renewalModal.kerjasamaId] || []), newRecord],
-          }));
 
-          if (selectedRenewalItem) {
-            addRenewalRequest({
-              kerjasamaId: selectedRenewalItem.id,
-              namaMitra: selectedRenewalItem.namaMitra,
-              noDokumen: selectedRenewalItem.noDokumen,
-              tanggalMulaiBaru,
-              tanggalBerakhirBaru,
-              catatan,
-            });
+      {renewalModal.open && selectedRenewalItem && (
+        <div className="fixed inset-0 z-40 flex items-start justify-center bg-slate-900/40 px-2 pt-32 pb-4">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl p-0 flex flex-col" style={{ maxHeight: 'calc(100vh - 9rem)' }}>
+            <div className="overflow-auto p-4" style={{ maxHeight: 'calc(100vh - 11rem)' }}>
+            <h2 className="text-lg font-bold text-[#1E376C] mb-2">Perpanjangan Kerjasama</h2>
+            {/* Form lengkap selalu tampil di atas */}
+            <RenewalFullForm
+              initialData={{
+                namaMitra: selectedRenewalItem.namaMitra || '',
+                jenisMitra: '',
+                teleponMitra: selectedRenewalItem.whatsappNumber || '',
+                emailMitra: selectedRenewalItem.emailMitra || '',
+                alamatLengkap: '',
+                negara: 'Indonesia',
+                jenisKerjasama: selectedRenewalItem.jenis || '',
+                unitPelaksana: '',
+                tanggalMulai: selectedRenewalItem.tanggalMulai || '',
+                tanggalBerakhir: selectedRenewalItem.tanggalBerakhir || '',
+                judulKerjasama: selectedRenewalItem.judul || '',
+                deskripsi: '',
+                ruangLingkup: selectedRenewalItem.ruangLingkup || [],
+                kontakNama: '',
+                kontakJabatan: '',
+                kontakEmail: '',
+                kontakTelepon: '',
+                dokumenTerakhir: undefined,
+                tanggalMulaiBaru: '',
+                tanggalBerakhirBaru: '',
+                catatanPerpanjangan: '',
+              }}
+              onSubmit={(data) => {
+                setRenewalModal({ open: false, kerjasamaId: null });
+                alert('Perpanjangan kerjasama berhasil diajukan!');
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => { setRenewalModal({ open: false, kerjasamaId: null }); }}
+              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Tutup
+            </button>
+          </div>
+          </div>
+        </div>
+      )}
 
-            addAdminNotification({
-              title: 'Permintaan Perpanjangan Baru',
-              message: `Mitra ${selectedRenewalItem.namaMitra} mengajukan perpanjangan untuk dokumen ${selectedRenewalItem.noDokumen} (${tanggalMulaiBaru} s/d ${tanggalBerakhirBaru}).`,
-              from: 'Monitoring Kerjasama',
-              href: '/admin/monitoring/perpanjangan',
-              category: 'reminder',
-            });
-          }
-        }}
-        onMarkInactive={() => {
-          alert('Kerjasama telah ditandai sebagai nonaktif.');
-        }}
-      />
 
       <NotificationHistoryModal
         isOpen={notificationModal.open}

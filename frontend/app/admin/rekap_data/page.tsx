@@ -276,8 +276,8 @@ export default function RekapDataPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+                filteredRows.map((row, index) => (
+                  <tr key={row.id ?? index} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
                     <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: row.id, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
@@ -351,6 +351,7 @@ export default function RekapDataPage() {
               </button>
             </div>
 
+
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
               <InfoItem label="No. Dokumen" value={detailItem.noDokumen} />
               <InfoItem label="Jenis Dokumen" value={detailItem.jenis} />
@@ -362,6 +363,108 @@ export default function RekapDataPage() {
               <InfoItem label="Tahun" value={detailItem.tahun} />
               <InfoItem label="Status" value={detailItem.status} />
               <InfoItem label="WhatsApp" value={detailItem.whatsappNumber || '-'} />
+            </div>
+
+            {/* Form Perpanjangan Kerjasama */}
+            <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-slate-50">
+              <h3 className="font-bold mb-2 text-gray-900 text-sm">Ajukan Perpanjangan Kerjasama</h3>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const tanggalMulai = form.tanggalMulai.value;
+                  const berlakuHingga = form.berlakuHingga.value;
+                  const catatan = form.catatan.value;
+                  const dokumenInput = form.dokumenBaru;
+                  let dokumenTerkait = detailItem.dokumenTerkait ? [...detailItem.dokumenTerkait] : [];
+                  if (dokumenInput && dokumenInput.files && dokumenInput.files[0]) {
+                    const file = dokumenInput.files[0];
+                    dokumenTerkait = [
+                      {
+                        nama: file.name,
+                        url: URL.createObjectURL(file),
+                        ukuran: (file.size / 1024 / 1024).toFixed(1) + ' MB',
+                        tanggal: new Date().toLocaleDateString('id-ID'),
+                      },
+                      ...dokumenTerkait.filter((d) => d.nama !== file.name),
+                    ];
+                  }
+                  updateRekapDokumen(detailItem.noDokumen, {
+                    ...detailItem,
+                    tanggalMulai,
+                    berlakuHingga,
+                    catatanPerpanjangan: catatan,
+                    dokumenTerkait,
+                  });
+                  alert('Perpanjangan kerjasama berhasil diajukan!');
+                  setDetailItem(null);
+                }}
+                className="flex flex-col gap-3"
+              >
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Mulai Baru</label>
+                    <input
+                      type="date"
+                      name="tanggalMulai"
+                      defaultValue={detailItem.tanggalMulai}
+                      className="input-field w-full"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Berakhir Baru</label>
+                    <input
+                      type="date"
+                      name="berlakuHingga"
+                      defaultValue={detailItem.berlakuHingga}
+                      className="input-field w-full"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Catatan Perpanjangan (opsional)</label>
+                  <textarea
+                    name="catatan"
+                    className="input-field w-full"
+                    rows={2}
+                    placeholder="Catatan tambahan..."
+                  />
+                </div>
+                {/* TODO: Tambahkan upload dokumen jika diperlukan */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Upload Dokumen Baru (MoU/MoA/IA)</label>
+                                  <input
+                                    type="file"
+                                    name="dokumenBaru"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                    className="input-field w-full"
+                                  />
+                                </div>
+                            {/* Tampilkan dokumen terbaru hasil perpanjangan */}
+                            {detailItem.dokumenTerkait && detailItem.dokumenTerkait.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="font-semibold text-xs text-gray-700 mb-1">Dokumen Terbaru</h4>
+                                <ul className="space-y-1">
+                                  {detailItem.dokumenTerkait.slice(0, 1).map((doc) => (
+                                    <li key={doc.nama}>
+                                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline text-xs">
+                                        {doc.nama} ({doc.ukuran})
+                                      </a>
+                                      <span className="ml-2 text-gray-400 text-xs">diunggah {doc.tanggal}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                <button
+                  type="submit"
+                  className="btn-primary mt-2 w-full"
+                >
+                  Ajukan Perpanjangan
+                </button>
+              </form>
             </div>
 
             {detailItem.sourcePengajuanId && (

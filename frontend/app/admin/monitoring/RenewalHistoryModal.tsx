@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import RenewalUploadForm from './RenewalUploadForm';
 import { Check, Clock, X } from 'lucide-react';
 import type { RenewalRecord } from '@/services/adminMonitoringService';
 
@@ -80,45 +81,13 @@ export default function RenewalHistoryModal({
             Masa berlaku saat ini: <span className="font-semibold">{tanggalMulaiSaatIni || '-'} s/d {tanggalBerakhirSaatIni || '-'}</span>
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <p className="mb-3 text-sm font-semibold text-gray-900">Ajukan Permintaan Perpanjangan Baru</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-700">Dari Tanggal</label>
-                <input
-                  type="date"
-                  value={tanggalMulaiBaru}
-                  onChange={(event) => setTanggalMulaiBaru(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-700">Sampai Tanggal</label>
-                <input
-                  type="date"
-                  value={tanggalBerakhirBaru}
-                  onChange={(event) => setTanggalBerakhirBaru(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-                />
-              </div>
-            </div>
-
-            <textarea
-              value={newCatatan}
-              onChange={(event) => setNewCatatan(event.target.value)}
-              placeholder="Catatan perpanjangan (opsional)..."
-              rows={2}
-              className="mt-3 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-            />
-
-            <button
-              type="button"
-              onClick={handleAddRenewal}
-              className="mt-3 inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              Ajukan Perpanjangan
-            </button>
-          </div>
+          <RenewalUploadForm
+            onSubmit={({ catatan, tanggalMulaiBaru, tanggalBerakhirBaru, dokumen }) => {
+              // Ganti dokumen lama dengan dokumen baru di record perpanjangan
+              onAddRenewal(catatan, tanggalMulaiBaru, tanggalBerakhirBaru);
+              // TODO: Simpan dokumen ke record renewal jika backend/localstorage support
+            }}
+          />
 
           <div className="space-y-3">
             <p className="text-sm font-semibold text-gray-700">Riwayat Permintaan ({history.length})</p>
