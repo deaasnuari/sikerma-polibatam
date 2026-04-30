@@ -15,16 +15,16 @@ const heroStats = [
 ];
 
 const tableData = [
-  { nama: 'Koperasi Politeknik Negeri Batam',                                    bidang: 'Pendidikan, layanan',                                                     unit: 'Unit Kerjasama' },
-  { nama: 'PT. Batamindo Investment Cakrawala',                                   bidang: 'Pendidikan',                                                              unit: 'Unit Kerjasama' },
-  { nama: 'Koperasi Polibatam',                                                   bidang: 'Pendidikan, layanan',                                                     unit: 'Unit Kerjasama' },
-  { nama: 'PT. Yogya Presisi Thenikatama Industri',                               bidang: 'Magang, pendidikan, penelitian',                                          unit: 'Unit Kerjasama' },
-  { nama: 'PT. Fast Precision Manufacturing Indonesia',                            bidang: 'Magang, pendidikan, penelitian',                                          unit: 'Unit Kerjasama' },
-  { nama: 'City Glasgow College',                                                  bidang: 'Pendidikan',                                                              unit: 'Unit Kerjasama' },
-  { nama: 'PT. Indina Industri Indonesia',                                         bidang: 'Magang, pendidikan',                                                     unit: 'Unit Kerjasama' },
-  { nama: 'Perpustakaan Kantor Perwakilan Bank Indonesia Provinsi Kepulauan Riau', bidang: 'Magang, pendidikan, penelitian pengembangan kelembagaan',                 unit: 'Unit Kerjasama' },
-  { nama: 'Badan Informasi Geospasial',                                            bidang: 'Penelitian, pengabdian kepada masyarakat, pengembangan kelembagaan',     unit: 'Unit Kerjasama' },
-  { nama: 'Aerocampus Aquitaine',                                                  bidang: 'Pendidikan, penelitian',                                                 unit: 'Unit Kerjasama' },
+  { nama: 'Koperasi Politeknik Negeri Batam', bidang: 'Pendidikan, layanan', unit: 'Manajemen dan Bisnis', wilayah: 'Dalam Negeri', jenis: 'MoU' },
+  { nama: 'PT. Batamindo Investment Cakrawala', bidang: 'Pendidikan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'MoA' },
+  { nama: 'Koperasi Polibatam', bidang: 'Pendidikan, layanan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'IA' },
+  { nama: 'PT. Yogya Presisi Thenikatama Industri', bidang: 'Magang, pendidikan, penelitian', unit: 'Teknik Mesin', wilayah: 'Dalam Negeri', jenis: 'MoA' },
+  { nama: 'PT. Fast Precision Manufacturing Indonesia', bidang: 'Magang, pendidikan, penelitian', unit: 'Teknik Elektro', wilayah: 'Dalam Negeri', jenis: 'MoU' },
+  { nama: 'City Glasgow College', bidang: 'Pendidikan', unit: 'Unit Kerjasama', wilayah: 'Luar Negeri', jenis: 'MoU' },
+  { nama: 'PT. Indina Industri Indonesia', bidang: 'Magang, pendidikan', unit: 'Teknik Informatika', wilayah: 'Dalam Negeri', jenis: 'IA' },
+  { nama: 'Perpustakaan Kantor Perwakilan Bank Indonesia Provinsi Kepulauan Riau', bidang: 'Magang, pendidikan, penelitian pengembangan kelembagaan', unit: 'Perpustakaan', wilayah: 'Dalam Negeri', jenis: 'MoA' },
+  { nama: 'Badan Informasi Geospasial', bidang: 'Penelitian, pengabdian kepada masyarakat, pengembangan kelembagaan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'MoU' },
+  { nama: 'Aerocampus Aquitaine', bidang: 'Pendidikan, penelitian', unit: 'Unit Kerjasama', wilayah: 'Luar Negeri', jenis: 'IA' },
 ];
 
 const TOTAL_ENTRIES = 478;
@@ -107,12 +107,19 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [selectedWilayah, setSelectedWilayah] = useState('Semua Wilayah');
+  const [selectedJenisDokumen, setSelectedJenisDokumen] = useState('Semua Jenis');
+  const [selectedUnit, setSelectedUnit] = useState('Semua Unit');
+
+  const unitOptions = ['Semua Unit', ...new Set(tableData.map((row) => row.unit))];
 
   // ── Table logic ──────────────────────────────────────────────────────────────
   const filtered = tableData.filter(
     (r) =>
-      r.nama.toLowerCase().includes(search.toLowerCase()) ||
-      r.bidang.toLowerCase().includes(search.toLowerCase()),
+      (r.nama.toLowerCase().includes(search.toLowerCase()) || r.bidang.toLowerCase().includes(search.toLowerCase())) &&
+      (selectedWilayah === 'Semua Wilayah' || r.wilayah === selectedWilayah) &&
+      (selectedJenisDokumen === 'Semua Jenis' || r.jenis === selectedJenisDokumen) &&
+      (selectedUnit === 'Semua Unit' || r.unit === selectedUnit),
   );
 
   const startIndex = (currentPage - 1) * PER_PAGE;
@@ -331,12 +338,44 @@ export default function Home() {
                 className="bg-transparent outline-none"
               />
             </div>
-            <select className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm">
-              <option>Jurusan</option>
-              <option>Manajemen dan Bisnis</option>
-              <option>Teknik Elektro</option>
-              <option>Teknik Informatika</option>
-              <option>Teknik Mesin</option>
+            <select
+              value={selectedWilayah}
+              onChange={(e) => {
+                setSelectedWilayah(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+            >
+              <option>Semua Wilayah</option>
+              <option>Dalam Negeri</option>
+              <option>Luar Negeri</option>
+            </select>
+            <select
+              value={selectedJenisDokumen}
+              onChange={(e) => {
+                setSelectedJenisDokumen(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+            >
+              <option>Semua Jenis</option>
+              <option>MoU</option>
+              <option>MoA</option>
+              <option>IA</option>
+            </select>
+            <select
+              value={selectedUnit}
+              onChange={(e) => {
+                setSelectedUnit(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+            >
+              {unitOptions.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
             </select>
             <input
               type="text"
@@ -357,6 +396,7 @@ export default function Home() {
                   <th className="w-10 px-4 py-3 text-left font-semibold">No</th>
                   <th className="px-4 py-3 text-left font-semibold">Nama Mitra</th>
                   <th className="px-4 py-3 text-left font-semibold">Bidang Kerjasama</th>
+                  <th className="px-4 py-3 text-left font-semibold">Jenis Dokumen</th>
                   <th className="px-4 py-3 text-left font-semibold">Unit Pengaju</th>
                   <th className="w-16 px-4 py-3 text-left font-semibold">Detail</th>
                 </tr>
@@ -367,6 +407,7 @@ export default function Home() {
                     <td className="px-4 py-3 align-top text-slate-600">{startIndex + i + 1}.</td>
                     <td className="px-4 py-3 align-top text-slate-700">{row.nama}</td>
                     <td className="px-4 py-3 align-top text-slate-600">{row.bidang}</td>
+                    <td className="px-4 py-3 align-top text-slate-600">{row.jenis}</td>
                     <td className="px-4 py-3 align-top text-slate-600">{row.unit}</td>
                     <td className="px-4 py-3 align-top">
                       <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#173B82] transition-colors hover:bg-[#091222]">

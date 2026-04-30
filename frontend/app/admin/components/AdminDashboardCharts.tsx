@@ -30,10 +30,43 @@ export default function AdminDashboardCharts({
   documentTypeDistribution,
   popularSchemes,
 }: Props) {
+  const handleExportRegionalDistribution = () => {
+    const header = ['Wilayah', 'Jumlah Kerjasama'];
+    const rows = regionalDistribution.map((item) => [item.name, String(item.value)]);
+
+    const content = [header, ...rows]
+      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff', content], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `distribusi-kerjasama-wilayah-${dateStamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <div className="card p-6 md:p-8">
-        <h2 className="text-center text-xl md:text-2xl font-bold text-gray-900 mb-8">STATISTIK KERJASAMA</h2>
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">STATISTIK KERJASAMA</h2>
+          <button
+            type="button"
+            onClick={handleExportRegionalDistribution}
+            className="inline-flex items-center justify-center rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#091222]"
+          >
+            Export Dalam/Luar Negeri
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="flex flex-col items-center justify-center">

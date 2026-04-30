@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   AlertCircle,
-  ArrowRight,
   CheckCircle2,
   Clock3,
   FileCheck,
@@ -62,12 +61,6 @@ const kpiCards = [
   { label: 'Kerjasama Baru (2026)', value: 12, icon: FileText, color: 'text-blue-500' },
   { label: 'Total Mitra Aktif', value: 10, icon: Users, color: 'text-amber-500' },
   { label: 'Mitra Internasional', value: 2, icon: Globe, color: 'text-purple-500' },
-];
-
-const quickActions = [
-  { label: 'Approval Pengajuan', desc: '3 pengajuan menunggu', icon: Shield, href: '/pimpinan/daftar_kerjasama' },
-  { label: 'Monitoring Status', desc: 'Review masa berlaku dokumen', icon: Clock3, href: '/pimpinan/daftar_kerjasama' },
-  { label: 'Lihat Semua Data', desc: 'Database kerjasama lengkap', icon: Search, href: '/pimpinan/daftar_kerjasama' },
 ];
 
 /* ───────── helpers ───────── */
@@ -321,32 +314,6 @@ export default function PimpinanPage() {
                   <p className="text-[11px] text-slate-500">{k.label}</p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Akses Cepat ── */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0B1D34] to-[#163B6E] p-5 text-white">
-        <h2 className="text-base font-bold">Akses Cepat</h2>
-        <p className="mb-4 text-xs text-blue-300">Menu utama untuk monitoring dan approval</p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {quickActions.map((a) => {
-            const Icon = a.icon;
-            return (
-              <Link
-                key={a.label}
-                href={a.href}
-                className="flex items-start gap-3 rounded-xl bg-white p-4 text-slate-800 transition-shadow hover:shadow-lg"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                  <Icon size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">{a.label}</p>
-                  <p className="text-xs text-slate-500">{a.desc}</p>
-                </div>
-              </Link>
             );
           })}
         </div>

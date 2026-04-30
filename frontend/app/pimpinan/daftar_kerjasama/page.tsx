@@ -13,7 +13,7 @@ interface KerjasamaItem {
   tanggalMulai: string;
   berlakuHingga: string;
   tahun: string;
-  status: 'Menunggu' | 'Diproses' | 'Aktif' | 'Berakhir';
+  status: 'Aktif' | 'Tidak Aktif';
 }
 
 const kerjasamaItems: KerjasamaItem[] = [
@@ -26,7 +26,7 @@ const kerjasamaItems: KerjasamaItem[] = [
     tanggalMulai: '20 Feb 2026',
     berlakuHingga: '20 Feb 2028',
     tahun: '2026',
-    status: 'Menunggu',
+    status: 'Tidak Aktif',
   },
   {
     id: 2,
@@ -48,7 +48,7 @@ const kerjasamaItems: KerjasamaItem[] = [
     tanggalMulai: '26 Feb 2026',
     berlakuHingga: '26 Feb 2027',
     tahun: '2026',
-    status: 'Diproses',
+    status: 'Tidak Aktif',
   },
   {
     id: 4,
@@ -59,7 +59,7 @@ const kerjasamaItems: KerjasamaItem[] = [
     tanggalMulai: '25 Feb 2025',
     berlakuHingga: '25 Feb 2028',
     tahun: '2025',
-    status: 'Berakhir',
+    status: 'Tidak Aktif',
   },
   {
     id: 5,
@@ -92,15 +92,13 @@ const kerjasamaItems: KerjasamaItem[] = [
     tanggalMulai: '21 Feb 2023',
     berlakuHingga: '21 Feb 2026',
     tahun: '2023',
-    status: 'Menunggu',
+    status: 'Tidak Aktif',
   },
 ];
 
 const statusStyle: Record<KerjasamaItem['status'], string> = {
-  Menunggu: 'bg-amber-100 text-amber-700',
-  Diproses: 'bg-sky-100 text-sky-700',
   Aktif: 'bg-emerald-100 text-emerald-700',
-  Berakhir: 'bg-rose-100 text-rose-700',
+  'Tidak Aktif': 'bg-rose-100 text-rose-700',
 };
 
 export default function PimpinanDaftarKerjasamaPage() {
@@ -108,6 +106,7 @@ export default function PimpinanDaftarKerjasamaPage() {
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const currentYear = new Date().getFullYear();
   const [yearRangeStart, setYearRangeStart] = useState(currentYear - 4);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
@@ -129,6 +128,49 @@ export default function PimpinanDaftarKerjasamaPage() {
     });
   }, [search, filterStatus, filterTahun]);
 
+  const handleExport = () => {
+    const header = [
+      'No. Dokumen',
+      'Nama Mitra',
+      'Jenis',
+      'Unit',
+      'Tanggal Mulai',
+      'Berlaku Hingga',
+      'Tahun',
+      'Status',
+    ];
+
+    const rows = filteredItems.map((item) => [
+      item.noDokumen,
+      item.namaMitra,
+      item.jenis,
+      item.unit,
+      item.tanggalMulai,
+      item.berlakuHingga,
+      item.tahun,
+      item.status,
+    ]);
+
+    const content = [header, ...rows]
+      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff', content], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `daftar-kerjasama-pimpinan-${dateStamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -139,6 +181,7 @@ export default function PimpinanDaftarKerjasamaPage() {
 
         <button
           type="button"
+          onClick={handleExport}
           className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
         >
           <Download size={15} />
@@ -171,10 +214,8 @@ export default function PimpinanDaftarKerjasamaPage() {
               className="input-field h-10 px-3 text-sm text-slate-700"
             >
               <option>Semua Status</option>
-              <option>Menunggu</option>
-              <option>Diproses</option>
               <option>Aktif</option>
-              <option>Berakhir</option>
+              <option>Tidak Aktif</option>
             </select>
 
             <div className="relative">
@@ -292,7 +333,11 @@ export default function PimpinanDaftarKerjasamaPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button type="button" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                      <button
+                        type="button"
+                        onClick={() => setDetailItem(item)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
                         <Eye size={14} />
                         Detail
                       </button>
@@ -316,6 +361,58 @@ export default function PimpinanDaftarKerjasamaPage() {
           </div>
         </div>
       </section>
+
+      {detailItem && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/35 backdrop-blur-[2px]">
+          <div className="flex min-h-full items-start justify-center px-4 py-8 sm:items-center">
+            <div className="w-full max-w-2xl rounded-[24px] bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-6">
+                <div>
+                  <h2 className="text-xl font-bold text-[#102A43]">Detail Kerjasama</h2>
+                  <p className="mt-1 text-sm text-slate-500">Informasi lengkap dokumen kerjasama untuk role pimpinan</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailItem(null)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 px-6 py-5 text-sm sm:grid-cols-2">
+                <DetailItem label="No. Dokumen" value={detailItem.noDokumen} />
+                <DetailItem label="Nama Mitra" value={detailItem.namaMitra} />
+                <DetailItem label="Jenis Dokumen" value={detailItem.jenis} />
+                <DetailItem label="Unit" value={detailItem.unit} />
+                <DetailItem label="Tanggal Mulai" value={detailItem.tanggalMulai} />
+                <DetailItem label="Berlaku Hingga" value={detailItem.berlakuHingga} />
+                <DetailItem label="Tahun" value={detailItem.tahun} />
+                <DetailItem label="Status" value={detailItem.status} />
+              </div>
+
+              <div className="flex justify-end border-t border-slate-100 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => setDetailItem(null)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
     </div>
   );
 }
