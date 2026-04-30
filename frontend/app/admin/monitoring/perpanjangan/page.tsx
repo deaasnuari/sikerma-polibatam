@@ -72,6 +72,7 @@ export default function MonitoringPerpanjanganPage() {
     });
   };
 
+
   return (
     <div className="space-y-5">
       <div>
@@ -79,7 +80,29 @@ export default function MonitoringPerpanjanganPage() {
         <p className="mt-1 text-sm text-gray-600">Antrian keputusan admin untuk pengajuan perpanjangan kerja sama dari Monitoring.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      {/* Search bar dan tombol export */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Cari dokumen/mitra..."
+            className="input-field w-full max-w-xs border border-slate-300 bg-white px-3 py-2 text-sm text-gray-700"
+            // TODO: Implement search logic if needed
+          />
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            // TODO: Implement export logic
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 12l-4-4m4 4l4-4m-8 8h12" />
+            </svg>
+            Export Data
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4 mt-2">
         <button
           type="button"
           onClick={() => setFilter('semua')}

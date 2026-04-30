@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 
 interface RenewalFormProps {
@@ -7,42 +8,27 @@ interface RenewalFormProps {
 
 export default function RenewalForm({ kerjasamaId, onSuccess }: RenewalFormProps) {
   const [catatan, setCatatan] = useState('');
-  const [tanggalMulaiBaru, setTanggalMulaiBaru] = useState('');
   const [tanggalBerakhirBaru, setTanggalBerakhirBaru] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!tanggalMulaiBaru || !tanggalBerakhirBaru) {
-      setError('Silakan isi tanggal mulai dan tanggal berakhir perpanjangan.');
+    if (!tanggalBerakhirBaru) {
+      setError('Silakan isi tanggal perpanjangan baru.');
       return;
     }
-    if (new Date(tanggalBerakhirBaru) < new Date(tanggalMulaiBaru)) {
-      setError('Tanggal berakhir tidak boleh lebih kecil dari tanggal mulai.');
-      return;
-    }
-    onSuccess({ catatan, tanggalMulaiBaru, tanggalBerakhirBaru });
+    onSuccess({ catatan, tanggalMulaiBaru: '', tanggalBerakhirBaru });
     setCatatan('');
-    setTanggalMulaiBaru('');
     setTanggalBerakhirBaru('');
   };
 
   return (
     <form onSubmit={handleSubmit} className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
       <p className="mb-3 text-sm font-semibold text-gray-900">Ajukan Permintaan Perpanjangan Baru</p>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-1">
         <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">Dari Tanggal</label>
-          <input
-            type="date"
-            value={tanggalMulaiBaru}
-            onChange={(e) => setTanggalMulaiBaru(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">Sampai Tanggal</label>
+          <label className="mb-1 block text-xs font-semibold text-gray-700">Tanggal Perpanjangan Baru</label>
           <input
             type="date"
             value={tanggalBerakhirBaru}

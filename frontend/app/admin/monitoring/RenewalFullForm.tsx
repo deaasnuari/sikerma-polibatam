@@ -133,26 +133,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
           <input type="date" name="tanggalBerakhir" value={form.tanggalBerakhir} onChange={handleChange} className="input-field w-full" />
         </div>
         {/* Field tanggal baru dan catatan dari form sederhana */}
-        <div>
-          <label className="block text-xs font-semibold mb-1">Dari Tanggal (Perpanjangan Baru)</label>
-          <input
-            type="date"
-            name="tanggalMulaiBaru"
-            value={form.tanggalMulaiBaru || ''}
-            onChange={handleChange}
-            className="input-field w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Sampai Tanggal (Perpanjangan Baru)</label>
-          <input
-            type="date"
-            name="tanggalBerakhirBaru"
-            value={form.tanggalBerakhirBaru || ''}
-            onChange={handleChange}
-            className="input-field w-full"
-          />
-        </div>
+        {/* Hapus field tanggal perpanjangan baru yang ganda, cukup gunakan tanggal berakhir baru jika perlu. */}
         <div className="md:col-span-2">
           <label className="block text-xs font-semibold mb-1">Catatan Perpanjangan (opsional)</label>
           <textarea

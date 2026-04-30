@@ -15,6 +15,8 @@ import {
   pengajuanDokumenBadge,
   savePengajuanReview,
   updatePengajuanItem,
+  pengajuanJurusanOptions,
+  pengajuanUnitOptions,
   type PengajuanItem,
   type PengajuanStatus,
 } from '@/services/adminPengajuanService';
@@ -133,8 +135,7 @@ export default function PengajuanKerjasama() {
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
-<<<<<<< HEAD
-=======
+
   const [editAsal, setEditAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const [editJurusanOpen, setEditJurusanOpen] = useState(false);
   const [editRlOpen, setEditRlOpen] = useState(false);
@@ -146,7 +147,7 @@ export default function PengajuanKerjasama() {
   const [editOriginalJenisDokumen, setEditOriginalJenisDokumen] = useState('');
   const [editUploadedFiles, setEditUploadedFiles] = useState<File[]>([]);
   const [editFileError, setEditFileError] = useState<string | null>(null);
->>>>>>> 7640082 (update edit admin)
+
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
   const [editingItem, setEditingItem] = useState<PengajuanItem | null>(null);
 
@@ -231,8 +232,7 @@ export default function PengajuanKerjasama() {
           .map((name) => ({ name, url: '' }))
     : [];
   const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
-<<<<<<< HEAD
-=======
+
   const editAllJurusanOptions = [...pengajuanJurusanOptions, ...editCustomJurusanOpts];
   const editAllUnitOptions = [...pengajuanUnitOptions, ...editCustomUnitOpts];
   const editAsalOptions = editAsal === 'Jurusan' ? editAllJurusanOptions : editAllUnitOptions;
@@ -240,7 +240,7 @@ export default function PengajuanKerjasama() {
   const editTemplateUrl = editForm ? (templatePreviewUrlByJenis[editForm.jenisDokumen] || '') : '';
   const editTemplateFileName = editForm ? (templateFileNameByJenis[editForm.jenisDokumen] || '') : '';
   const editSelectedTemplate = editForm ? (editTemplateDokumenMap[editForm.jenisDokumen] || null) : null;
->>>>>>> 7640082 (update edit admin)
+
 
   function openReview(item: PengajuanItem) {
     setReviewItem(item);
@@ -260,15 +260,14 @@ export default function PengajuanKerjasama() {
   }
 
   function openEdit(item: PengajuanItem) {
-<<<<<<< HEAD
-=======
+
     setEditingItem(item);
   }
 
   function openEditLegacy(item: PengajuanItem) {
     const asalDefault: 'Jurusan' | 'Unit' = pengajuanUnitOptions.includes(item.jurusan) ? 'Unit' : 'Jurusan';
 
->>>>>>> 7640082 (update edit admin)
+
     setEditForm({
       id: item.id,
       judul: item.judul,
@@ -279,8 +278,7 @@ export default function PengajuanKerjasama() {
       tanggalBerakhir: item.tanggalBerakhir || '',
       ruangLingkup: item.ruangLingkup,
     });
-<<<<<<< HEAD
-=======
+
     setEditAsal(asalDefault);
     setEditJurusanOpen(false);
     setEditRlOpen(false);
@@ -376,7 +374,7 @@ export default function PengajuanKerjasama() {
   function removeEditRuangLingkupOption(option: string) {
     setEditCustomRlOpts((prev) => prev.filter((item) => item !== option));
     setEditForm((prev) => (prev ? { ...prev, ruangLingkup: prev.ruangLingkup.filter((item) => item !== option) } : prev));
->>>>>>> 7640082 (update edit admin)
+
   }
 
   function saveEdit() {
@@ -1057,12 +1055,11 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-<<<<<<< HEAD
-=======
+
               <div className="md:col-span-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
                 Edit mengikuti form pengajuan. Jika jenis dokumen diubah (MoU/MoA/IA), upload dokumen baru wajib.
               </div>
->>>>>>> 7640082 (update edit admin)
+
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
                 <input
@@ -1092,14 +1089,14 @@ export default function PengajuanKerjasama() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
-<<<<<<< HEAD
+
                 <input
                   type="text"
                   value={editForm.jenisDokumen}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jenisDokumen: e.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                 />
-=======
+
                 <select
                   value={editForm.jenisDokumen}
                   onChange={(e) => {
@@ -1118,7 +1115,7 @@ export default function PengajuanKerjasama() {
                 {editForm.jenisDokumen !== editOriginalJenisDokumen && (
                   <p className="mt-1 text-[11px] font-semibold text-amber-700">Jenis dokumen berubah, upload ulang dokumen wajib.</p>
                 )}
->>>>>>> 7640082 (update edit admin)
+
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
@@ -1358,3 +1355,4 @@ export default function PengajuanKerjasama() {
     </div>
   );
 }
+
