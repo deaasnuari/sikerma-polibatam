@@ -331,7 +331,10 @@ export default function RekapDataPage() {
                 </tr>
               ) : (
                 filteredRows.map((row, index) => (
-                  <tr key={row.noDokumen ?? index} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+                  <tr
+                    key={`${row.noDokumen}-${row.namaMitra}-${row.tanggalMulai}-${index}`}
+                    className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60"
+                  >
                     <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
