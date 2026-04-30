@@ -17,6 +17,13 @@ interface KerjasamaItem {
   status: ApprovalStatus;
 }
 
+interface DokumenTerkait {
+  nama: string;
+  url: string;
+  ukuran: string;
+  tanggal: string;
+}
+
 interface EditFormData {
   nomorDokumen: string;
   jenisDokumen: string;
@@ -26,6 +33,7 @@ interface EditFormData {
   tanggalBerakhir: string;
   emailMitra: string;
   alamatMitra: string;
+  dokumenTerkait?: DokumenTerkait[];
 }
 
 interface EditDokumenModalProps {
@@ -41,7 +49,6 @@ function toDateInputValue(dateStr: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
-export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenModalProps) {
   const [form, setForm] = useState<EditFormData>({
     nomorDokumen: item.noDokumen,
     jenisDokumen: item.jenis,
@@ -51,6 +58,7 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
     tanggalBerakhir: toDateInputValue(item.berlakuHingga),
     emailMitra: '',
     alamatMitra: '',
+    dokumenTerkait: (item as any).dokumenTerkait || [],
   });
 
   useEffect(() => {
@@ -60,6 +68,35 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
 
   function handleChange(field: keyof EditFormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      const newDoc = {
+        nama: file.name,
+        url,
+        ukuran: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+      };
+      setForm((prev) => ({
+        ...prev,
+        dokumenTerkait: [...(prev.dokumenTerkait || []), newDoc],
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDeleteDoc(idx: number) {
+    setForm((prev) => ({
+      ...prev,
+      dokumenTerkait: (prev.dokumenTerkait || []).filter((_, i) => i !== idx),
+    }));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -184,6 +221,26 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
               onChange={(e) => handleChange('alamatMitra', e.target.value)}
               className="input-field w-full px-3 py-2 text-sm text-gray-700 resize-y"
             />
+          </div>
+
+          {/* Row 6: Upload Dokumen */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Upload Dokumen (PDF, max 10MB)</label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="input-field w-full px-3 py-2 text-sm text-gray-700"
+            />
+            {form.dokumenTerkait && form.dokumenTerkait.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {form.dokumenTerkait.map((doc, idx) => (
+                  <li key={doc.nama} className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 bg-gray-50">
+                    <span className="text-xs font-medium text-gray-700">{doc.nama} ({doc.ukuran})</span>
+                    <button type="button" onClick={() => handleDeleteDoc(idx)} className="ml-2 text-red-500 hover:text-red-700 text-xs">Hapus</button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </form>
 

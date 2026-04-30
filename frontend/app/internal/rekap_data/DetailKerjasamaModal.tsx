@@ -165,7 +165,7 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {activeTab === 'informasi' && <TabInformasi item={item} />}
-          {activeTab === 'dokumen' && <TabDokumen />}
+          {activeTab === 'dokumen' && <TabDokumen dokumenTerkait={(item as any).dokumenTerkait} />}
           {activeTab === 'kontak' && <TabKontak />}
           {activeTab === 'histori' && <TabHistori />}
         </div>
@@ -270,13 +270,20 @@ function TabInformasi({ item }: { item: KerjasamaItem }) {
   );
 }
 
-function TabDokumen() {
+function TabDokumen({ dokumenTerkait }: { dokumenTerkait?: { nama: string; url: string; ukuran: string; tanggal: string }[] }) {
+  if (!dokumenTerkait || dokumenTerkait.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-sm font-bold text-gray-900">Dokumen Terkait</h3>
+        <div className="text-gray-500 text-sm">Belum ada dokumen terlampir.</div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-bold text-gray-900">Dokumen Terkait</h3>
-
       <div className="space-y-3">
-        {dummyDokumen.map((doc) => (
+        {dokumenTerkait.map((doc) => (
           <div key={doc.nama} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
@@ -287,13 +294,25 @@ function TabDokumen() {
                 <p className="text-xs text-gray-500">{doc.ukuran} • {doc.tanggal}</p>
               </div>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
-            >
-              <Download size={14} />
-              Download
-            </button>
+            <div className="flex gap-2">
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 transition-colors hover:text-blue-800 border border-blue-100 rounded px-2 py-1"
+                style={{ textDecoration: 'none' }}
+              >
+                Lihat
+              </a>
+              <a
+                href={doc.url}
+                download={doc.nama}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+              >
+                <Download size={14} />
+                Download
+              </a>
+            </div>
           </div>
         ))}
       </div>

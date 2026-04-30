@@ -194,7 +194,7 @@ export default function InternalAjukanKerjasamaForm({
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
-  const [dokumen, setDokumen] = useState<File[]>([]);
+  const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
@@ -397,9 +397,14 @@ export default function InternalAjukanKerjasamaForm({
         event.target.value = '';
         return;
       }
-    }
 
-    setDokumen((prev) => [...prev, ...files]);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setDokumen((prev) => [...prev, { file, dataUrl }]);
+      };
+      reader.readAsDataURL(file);
+    }
     event.target.value = '';
   };
 
@@ -412,11 +417,11 @@ export default function InternalAjukanKerjasamaForm({
   };
 
   const buildFileAttachments = () => {
-    return dokumen.map((file) => ({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: URL.createObjectURL(file),
+    return dokumen.map((item) => ({
+      name: item.file.name,
+      type: item.file.type,
+      size: item.file.size,
+      url: item.dataUrl || '',
     }));
   };
 
@@ -456,7 +461,7 @@ export default function InternalAjukanKerjasamaForm({
       emailPengusul: formData.emailKontak,
       whatsappPengusul: formData.teleponKontak,
       ruangLingkup: selectedRuangLingkup,
-      fileName: dokumen.map((file) => file.name).join(', ') || 'Dokumen pendukung internal',
+      fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
       fileAttachments: buildFileAttachments(),
     });
 
