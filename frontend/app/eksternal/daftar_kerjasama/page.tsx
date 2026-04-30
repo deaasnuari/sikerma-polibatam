@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Filter, Search, X } from 'lucide-react';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
 interface KerjasamaItem {
@@ -92,6 +92,49 @@ export default function DaftarKerjasamaEksternalPage() {
     });
   }, [data, search, filterStatus, filterTahun]);
 
+  const handleExport = () => {
+    const header = [
+      'No. Dokumen',
+      'Nama Mitra',
+      'Jenis',
+      'Unit',
+      'Tanggal Mulai',
+      'Berlaku Hingga',
+      'Tahun',
+      'Status',
+    ];
+
+    const rows = filteredItems.map((item) => [
+      item.noDokumen,
+      item.namaMitra,
+      item.jenis,
+      item.unit,
+      item.tanggalMulai,
+      item.berlakuHingga,
+      item.tahun,
+      item.status,
+    ]);
+
+    const content = [header, ...rows]
+      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff', content], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `daftar-kerjasama-eksternal-${dateStamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -102,6 +145,7 @@ export default function DaftarKerjasamaEksternalPage() {
 
         <button
           type="button"
+          onClick={handleExport}
           className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
         >
           <Download size={15} />
@@ -226,14 +270,13 @@ export default function DaftarKerjasamaEksternalPage() {
                 <th className="px-4 py-3">Tanggal Mulai</th>
                 <th className="px-4 py-3">Berlaku Hingga</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">View</th>
                 <th className="px-4 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
                     Tidak ada data kerjasama.
                   </td>
                 </tr>
@@ -254,11 +297,6 @@ export default function DaftarKerjasamaEksternalPage() {
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle[item.status]}`}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button type="button" onClick={() => setDetailItem(item)} className="text-slate-500 hover:text-slate-800">
-                        <Eye size={16} />
-                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <button
