@@ -258,6 +258,7 @@ export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'st
 
   upsertMonitoringFromPengajuan({
     id: payload.id,
+    judul: payload.judul,
     mitra: payload.mitra,
     jenisDokumen: payload.jenisDokumen,
     tanggalMulai: payload.tanggalMulai,

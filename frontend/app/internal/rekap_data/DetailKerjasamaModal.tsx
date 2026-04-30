@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Clock, Download, FileText, Mail, Phone, User } from 'lucide-react';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -106,7 +107,7 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
             </button>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Detail Kerjasama</h2>
-              <p className="text-xs text-gray-500">{item.noDokumen}</p>
+              <p className="text-xs text-gray-500">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
             </div>
           </div>
           <button

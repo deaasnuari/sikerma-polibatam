@@ -109,11 +109,11 @@ export default function TambahDokumenModal({
     return null;
   }
 
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Partial<Record<keyof DokumenData, string>> = {};
-    if (!formData.nomorDokumen.trim()) newErrors.nomorDokumen = 'Nomor dokumen wajib diisi';
     if (!formData.jenisDokumen || formData.jenisDokumen === 'Pilih Jenis') newErrors.jenisDokumen = 'Jenis dokumen wajib dipilih';
     if (!formData.namaPIC.trim()) newErrors.namaPIC = 'Nama PIC wajib diisi';
     if (!formData.kategoriMitra || formData.kategoriMitra === 'Pilih Kategori') newErrors.kategoriMitra = 'Kategori mitra wajib dipilih';
@@ -135,10 +135,33 @@ export default function TambahDokumenModal({
       return;
     }
 
+    // Ambil data rekap yang sudah ada
+    let allData = [];
+    try {
+      allData = JSON.parse(window.localStorage.getItem('adminRekapDokumenData') || '[]');
+    } catch {}
+    const lastId = allData.length > 0 ? Math.max(...allData.map((d: any) => d.id ?? 0)) : 0;
+    const nextId = lastId + 1;
+
+    // Generate nomor dokumen otomatis
+    let nomorDokumen = '';
+    try {
+      // Import generateNoDokumen secara dinamis
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { generateNoDokumen } = require('@/services/adminMonitoringService');
+      nomorDokumen = generateNoDokumen({
+        urutan: nextId,
+        jenis: formData.jenisDokumen,
+        tanggal: formData.tanggalMulai,
+      });
+    } catch {
+      nomorDokumen = nextId.toString().padStart(2, '0');
+    }
+
     setErrors({});
     setUploadErrors({});
     if (onSubmit) {
-      onSubmit(formData);
+      onSubmit({ ...formData, nomorDokumen });
     }
     setFormData(emptyFormData);
     setSelectedFile(null);

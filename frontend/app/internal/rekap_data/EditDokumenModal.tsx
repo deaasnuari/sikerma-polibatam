@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Pencil, X } from 'lucide-react';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -76,7 +77,7 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
               <Pencil size={20} className="text-white" />
               <div>
                 <h2 className="text-lg font-bold text-white">Edit Dokumen</h2>
-                <p className="text-xs text-blue-200">{item.noDokumen}</p>
+                <p className="text-xs text-blue-200">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
               </div>
             </div>
             <button

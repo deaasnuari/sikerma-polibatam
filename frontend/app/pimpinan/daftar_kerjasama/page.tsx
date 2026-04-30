@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search } from 'lucide-react';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 interface KerjasamaItem {
   id: number;
@@ -18,7 +19,7 @@ interface KerjasamaItem {
 const kerjasamaItems: KerjasamaItem[] = [
   {
     id: 1,
-    noDokumen: 'MoU/001/2026',
+    noDokumen: generateNoDokumen({ urutan: 1, jenis: 'MoU', tanggal: '20 Feb 2026' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'MoU',
     unit: 'Teknik Informatika',
@@ -29,7 +30,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 2,
-    noDokumen: 'MoA/002/2026',
+    noDokumen: generateNoDokumen({ urutan: 2, jenis: 'MoA', tanggal: '27 Feb 2026' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'MoA',
     unit: 'Jurusan Teknik',
@@ -40,7 +41,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 3,
-    noDokumen: 'IA/003/2026',
+    noDokumen: generateNoDokumen({ urutan: 3, jenis: 'IA', tanggal: '26 Feb 2026' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'IA',
     unit: 'Teknik Elektro',
@@ -51,7 +52,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 4,
-    noDokumen: 'MoU/004/2025',
+    noDokumen: generateNoDokumen({ urutan: 4, jenis: 'MoU', tanggal: '25 Feb 2025' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'MoU',
     unit: 'Teknik Mesin',
@@ -62,7 +63,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 5,
-    noDokumen: 'MoA/005/2025',
+    noDokumen: generateNoDokumen({ urutan: 5, jenis: 'MoA', tanggal: '24 Feb 2024' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'MoA',
     unit: 'Teknik Industri',
@@ -73,7 +74,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 6,
-    noDokumen: 'IA/006/2024',
+    noDokumen: generateNoDokumen({ urutan: 6, jenis: 'IA', tanggal: '23 Feb 2024' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'IA',
     unit: 'Jurusan Teknik',
@@ -84,7 +85,7 @@ const kerjasamaItems: KerjasamaItem[] = [
   },
   {
     id: 7,
-    noDokumen: 'MoU/007/2023',
+    noDokumen: generateNoDokumen({ urutan: 7, jenis: 'MoU', tanggal: '21 Feb 2023' }),
     namaMitra: 'PT Teknologi Maju Indonesia',
     jenis: 'MoU',
     unit: 'Teknik Elektro',

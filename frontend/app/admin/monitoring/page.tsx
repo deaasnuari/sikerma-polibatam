@@ -241,9 +241,14 @@ export default function MonitoringdanstatusPage() {
               <div className="p-4">
                 {/* Top row */}
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-base font-extrabold text-gray-900 md:text-lg">{item.namaMitra}</p>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${monitoringJenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
+                  <div className="flex flex-col gap-0.5 md:gap-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-extrabold text-gray-900 md:text-lg">{item.namaMitra}</p>
+                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${monitoringJenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
+                    </div>
+                    {item.judul && (
+                      <p className="text-sm font-semibold text-blue-900 whitespace-pre-line break-words">{item.judul}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs font-semibold">
                     <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />

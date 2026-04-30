@@ -11,6 +11,7 @@ import {
   Info,
 } from 'lucide-react';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 interface ArsipDokumen {
   id: number;
@@ -50,7 +51,7 @@ function mapPengajuanToArsip(item: PengajuanItem): ArsipDokumen {
 
   return {
     id: item.id,
-    noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    noDokumen: generateNoDokumen({ urutan: item.id, jenis, tanggal: item.tanggalMulai }),
     namaMitra: item.mitra,
     jenis,
     tanggalMulai: toDisplayDate(item.tanggalMulai),
