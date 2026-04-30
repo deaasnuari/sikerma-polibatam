@@ -72,9 +72,36 @@ export default function InternalRekapDataPage() {
     return () => window.removeEventListener('rekap-data-updated', sync);
   }, []);
 
-  function handleDelete(item: KerjasamaItem) {
+function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
     deleteRekapDokumen(item.noDokumen);
+  }
+
+  function handleExport() {
+    const csvContent = [
+      ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'],
+      ...filteredData.map((item) => [
+        item.noDokumen,
+        item.namaMitra,
+        item.jenis,
+        item.unit,
+        item.tanggalMulai,
+item.berlakuHingga,
+        item.status,
+      ]),
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `rekap_kerjasama_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   const filteredData = useMemo(() => {
@@ -102,8 +129,9 @@ export default function InternalRekapDataPage() {
           <h1 className="page-title">Daftar Kerjasama</h1>
           <p className="page-subtitle mt-1">Kelola dan monitor semua kerjasama</p>
         </div>
-        <button
+<button
           type="button"
+          onClick={handleExport}
           className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm"
         >
           <Download size={16} />
@@ -182,9 +210,9 @@ export default function InternalRekapDataPage() {
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
-              ) : (
-                paginatedData.map((row) => (
-                  <tr key={row.noDokumen} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+) : (
+                paginatedData.map((row, index) => (
+<tr key={`${row.noDokumen}-${index}`} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
                     <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: (currentPage - 1) * ITEMS_PER_PAGE + index + 1, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
@@ -204,16 +232,10 @@ export default function InternalRekapDataPage() {
                         {row.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+<td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
                         <button type="button" onClick={() => setDetailItem(row)} className="text-[#1E376C] transition-colors hover:text-[#2B4A93]" title="Lihat detail">
                           <Eye size={16} />
-                        </button>
-                        <button type="button" onClick={() => setEditItem(row)} className="text-green-600 transition-colors hover:text-green-700" title="Edit">
-                          <Pencil size={16} />
-                        </button>
-                        <button type="button" onClick={() => handleDelete(row)} className="text-red-600 transition-colors hover:text-red-700" title="Hapus">
-                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

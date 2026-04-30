@@ -49,6 +49,7 @@ function toDateInputValue(dateStr: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
+export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenModalProps) {
   const [form, setForm] = useState<EditFormData>({
     nomorDokumen: item.noDokumen,
     jenisDokumen: item.jenis,

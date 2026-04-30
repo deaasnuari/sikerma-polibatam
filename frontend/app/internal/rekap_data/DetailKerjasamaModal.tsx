@@ -110,8 +110,34 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
               <p className="text-xs text-gray-500">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
             </div>
           </div>
-          <button
+<button
             type="button"
+            onClick={() => {
+              const csvContent = [
+                ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'],
+                [
+                  item.noDokumen,
+                  item.namaMitra,
+                  item.jenis,
+                  item.unit,
+                  item.tanggalMulai,
+item.berlakuUntil,
+                  item.status,
+                ],
+              ]
+                .map((row) => row.join(','))
+                .join('\n');
+
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${item.noDokumen || 'detail_kerjasama'}.csv`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
           >
             <Download size={15} />

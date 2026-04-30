@@ -97,6 +97,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
 <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => window.open(`/api/backend/dokumen/${story.noDokumen}`, '_blank')}
             className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
           >
             <Download size={14} />
