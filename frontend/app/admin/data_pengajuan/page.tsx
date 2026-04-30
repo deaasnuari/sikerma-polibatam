@@ -2,8 +2,10 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload } from 'lucide-react';
 import AjukanForm from './AjukanForm';
+import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
+import { validateSelectedFile } from '@/lib/fileUploadUtils';
 import {
   deletePengajuanItem,
   getFilteredPengajuanData,
@@ -69,6 +71,50 @@ const templatePreviewUrlByJenis: Record<string, string> = {
   IA: '/templates/DRAFT%20IA%20POLIBATAM.docx',
 };
 
+type TemplateDokumenConfig = {
+  title: string;
+  subtitle: string;
+  struktur: string[];
+  note: string;
+  fileName: string;
+  downloadUrl: string;
+};
+
+const editTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
+  MoU: {
+    title: 'Memorandum of Understanding (MoU)',
+    subtitle: 'Template untuk kesepahaman awal kerja sama',
+    struktur: ['Pembukaan', 'Para Pihak', 'Tujuan Kerja Sama', 'Ruang Lingkup', 'Jangka Waktu', 'Penutup'],
+    note: 'Template bisa diunduh sebagai acuan. Anda tetap bisa langsung mengunggah dokumen sendiri.',
+    fileName: 'Draft MOU Industri.docx',
+    downloadUrl: '/templates/Draft%20MOU%20Industri.docx',
+  },
+  MoA: {
+    title: 'Memorandum of Agreement (MoA)',
+    subtitle: 'Template untuk perjanjian teknis pelaksanaan',
+    struktur: ['Dasar Kerja Sama', 'Hak dan Kewajiban', 'Program Pelaksanaan', 'Pendanaan', 'Monitoring', 'Penutup'],
+    note: 'Gunakan format MoA resmi agar isi dokumen sesuai standar admin.',
+    fileName: 'Draft MOA Magang.docx',
+    downloadUrl: '/templates/Draft%20MOA%20Magang.docx',
+  },
+  IA: {
+    title: 'Implementation Arrangement (IA)',
+    subtitle: 'Template rincian implementasi program',
+    struktur: ['Informasi Program', 'Target Kegiatan', 'Peran Tim', 'Timeline', 'Output', 'Pelaporan'],
+    note: 'Template IA dipakai untuk detail implementasi kerja sama yang sudah disepakati.',
+    fileName: 'DRAFT IA POLIBATAM.docx',
+    downloadUrl: '/templates/DRAFT%20IA%20POLIBATAM.docx',
+  },
+};
+
+const templateFileNameByJenis: Record<string, string> = {
+  MoU: 'Draft MOU Industri.docx',
+  MoA: 'Draft MOA Magang.docx',
+  IA: 'DRAFT IA POLIBATAM.docx',
+};
+
+const MAX_EDIT_FILE_SIZE = 10 * 1024 * 1024;
+
 export default function PengajuanKerjasama() {
   const searchParams = useSearchParams();
   const isAjukanView = searchParams.get('view') === 'ajukan';
@@ -87,7 +133,22 @@ export default function PengajuanKerjasama() {
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
+<<<<<<< HEAD
+=======
+  const [editAsal, setEditAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
+  const [editJurusanOpen, setEditJurusanOpen] = useState(false);
+  const [editRlOpen, setEditRlOpen] = useState(false);
+  const [editJurusanInput, setEditJurusanInput] = useState('');
+  const [editRlInput, setEditRlInput] = useState('');
+  const [editCustomJurusanOpts, setEditCustomJurusanOpts] = useState<string[]>([]);
+  const [editCustomUnitOpts, setEditCustomUnitOpts] = useState<string[]>([]);
+  const [editCustomRlOpts, setEditCustomRlOpts] = useState<string[]>([]);
+  const [editOriginalJenisDokumen, setEditOriginalJenisDokumen] = useState('');
+  const [editUploadedFiles, setEditUploadedFiles] = useState<File[]>([]);
+  const [editFileError, setEditFileError] = useState<string | null>(null);
+>>>>>>> 7640082 (update edit admin)
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
+  const [editingItem, setEditingItem] = useState<PengajuanItem | null>(null);
 
   useEffect(() => {
     const syncPengajuan = () => {
@@ -170,6 +231,16 @@ export default function PengajuanKerjasama() {
           .map((name) => ({ name, url: '' }))
     : [];
   const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
+<<<<<<< HEAD
+=======
+  const editAllJurusanOptions = [...pengajuanJurusanOptions, ...editCustomJurusanOpts];
+  const editAllUnitOptions = [...pengajuanUnitOptions, ...editCustomUnitOpts];
+  const editAsalOptions = editAsal === 'Jurusan' ? editAllJurusanOptions : editAllUnitOptions;
+  const editAllRlOptions = [...ruangLingkupOptions, ...editCustomRlOpts];
+  const editTemplateUrl = editForm ? (templatePreviewUrlByJenis[editForm.jenisDokumen] || '') : '';
+  const editTemplateFileName = editForm ? (templateFileNameByJenis[editForm.jenisDokumen] || '') : '';
+  const editSelectedTemplate = editForm ? (editTemplateDokumenMap[editForm.jenisDokumen] || null) : null;
+>>>>>>> 7640082 (update edit admin)
 
   function openReview(item: PengajuanItem) {
     setReviewItem(item);
@@ -189,6 +260,15 @@ export default function PengajuanKerjasama() {
   }
 
   function openEdit(item: PengajuanItem) {
+<<<<<<< HEAD
+=======
+    setEditingItem(item);
+  }
+
+  function openEditLegacy(item: PengajuanItem) {
+    const asalDefault: 'Jurusan' | 'Unit' = pengajuanUnitOptions.includes(item.jurusan) ? 'Unit' : 'Jurusan';
+
+>>>>>>> 7640082 (update edit admin)
     setEditForm({
       id: item.id,
       judul: item.judul,
@@ -199,6 +279,104 @@ export default function PengajuanKerjasama() {
       tanggalBerakhir: item.tanggalBerakhir || '',
       ruangLingkup: item.ruangLingkup,
     });
+<<<<<<< HEAD
+=======
+    setEditAsal(asalDefault);
+    setEditJurusanOpen(false);
+    setEditRlOpen(false);
+    setEditJurusanInput('');
+    setEditRlInput('');
+    setEditCustomJurusanOpts([]);
+    setEditCustomUnitOpts([]);
+    setEditCustomRlOpts([]);
+    setEditOriginalJenisDokumen(item.jenisDokumen);
+    setEditUploadedFiles([]);
+    setEditFileError(null);
+  }
+
+  function handleEditDownloadTemplate() {
+    if (!editForm || !editTemplateUrl || !editTemplateFileName) {
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = editTemplateUrl;
+    link.download = editTemplateFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function handleEditFileUpload(files: FileList | null) {
+    const selected = Array.from(files || []);
+    if (selected.length === 0) {
+      return;
+    }
+
+    for (const file of selected) {
+      const validationError = validateSelectedFile(file, {
+        accept: '.pdf,.doc,.docx',
+        maxSizeBytes: MAX_EDIT_FILE_SIZE,
+      });
+
+      if (validationError) {
+        setEditFileError(`${file.name}: ${validationError}`);
+        return;
+      }
+    }
+
+    setEditUploadedFiles((prev) => [...prev, ...selected]);
+    setEditFileError(null);
+  }
+
+  function handleRemoveEditFile(indexToRemove: number) {
+    setEditUploadedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  }
+
+  function addEditJurusanUnitOption() {
+    const trimmed = editJurusanInput.trim();
+    if (!trimmed) return;
+
+    if (editAsal === 'Jurusan') {
+      if (!editAllJurusanOptions.includes(trimmed)) setEditCustomJurusanOpts((prev) => [...prev, trimmed]);
+    } else {
+      if (!editAllUnitOptions.includes(trimmed)) setEditCustomUnitOpts((prev) => [...prev, trimmed]);
+    }
+
+    setEditForm((prev) => (prev ? { ...prev, jurusan: trimmed } : prev));
+    setEditJurusanInput('');
+    setEditJurusanOpen(false);
+  }
+
+  function removeEditJurusanUnitOption(option: string) {
+    if (editAsal === 'Jurusan') {
+      setEditCustomJurusanOpts((prev) => prev.filter((item) => item !== option));
+    } else {
+      setEditCustomUnitOpts((prev) => prev.filter((item) => item !== option));
+    }
+
+    setEditForm((prev) => {
+      if (!prev) return prev;
+      if (prev.jurusan === option) {
+        return { ...prev, jurusan: '' };
+      }
+      return prev;
+    });
+  }
+
+  function addEditRuangLingkupOption() {
+    const trimmed = editRlInput.trim();
+    if (!trimmed || editAllRlOptions.includes(trimmed)) return;
+
+    setEditCustomRlOpts((prev) => [...prev, trimmed]);
+    setEditForm((prev) => (prev ? { ...prev, ruangLingkup: [...prev.ruangLingkup, trimmed] } : prev));
+    setEditRlInput('');
+  }
+
+  function removeEditRuangLingkupOption(option: string) {
+    setEditCustomRlOpts((prev) => prev.filter((item) => item !== option));
+    setEditForm((prev) => (prev ? { ...prev, ruangLingkup: prev.ruangLingkup.filter((item) => item !== option) } : prev));
+>>>>>>> 7640082 (update edit admin)
   }
 
   function saveEdit() {
@@ -214,6 +392,11 @@ export default function PengajuanKerjasama() {
       return;
     }
 
+    if (editForm.jenisDokumen !== editOriginalJenisDokumen && editUploadedFiles.length === 0) {
+      setInfoModalMessage('Karena jenis dokumen diubah, upload dokumen baru wajib dilakukan.');
+      return;
+    }
+
     const next = updatePengajuanItem(editForm.id, {
       judul: editForm.judul.trim(),
       mitra: editForm.mitra.trim(),
@@ -222,10 +405,23 @@ export default function PengajuanKerjasama() {
       tanggalMulai: editForm.tanggalMulai || undefined,
       tanggalBerakhir: editForm.tanggalBerakhir || undefined,
       ruangLingkup: editForm.ruangLingkup,
+      ...(editUploadedFiles.length > 0
+        ? {
+            fileName: editUploadedFiles.map((file) => file.name).join(', '),
+            fileAttachments: editUploadedFiles.map((file) => ({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              url: URL.createObjectURL(file),
+            })),
+          }
+        : {}),
     });
 
     setPengajuanData(next);
     setEditForm(null);
+    setEditUploadedFiles([]);
+    setEditFileError(null);
     setInfoModalMessage('Data pengajuan berhasil diperbarui.');
   }
 
@@ -247,6 +443,75 @@ export default function PengajuanKerjasama() {
     }
 
     setInfoModalMessage('Data pengajuan berhasil dihapus.');
+  }
+
+  function handleSubmitEditFromAjukan(payload: {
+    formData: {
+      namaMitra: string;
+      jenisMitra: string;
+      teleponMitra: string;
+      emailMitra: string;
+      alamatMitra: string;
+      negara: string;
+      jenisKerjasama: string;
+      unitPelaksana: string;
+      tanggalMulai: string;
+      tanggalBerakhir: string;
+      judulKerjasama: string;
+      deskripsi: string;
+      ruangLingkup: string;
+      namaKontak: string;
+      jabatanKontak: string;
+      emailKontak: string;
+      teleponKontak: string;
+    };
+    asal: 'Jurusan' | 'Unit';
+    selectedRuangLingkup: string[];
+    dokumen: File[];
+  }): boolean {
+    if (!editingItem) {
+      return false;
+    }
+
+    if (!payload.formData.judulKerjasama.trim() || !payload.formData.namaMitra.trim() || !payload.formData.unitPelaksana.trim()) {
+      setInfoModalMessage('Judul, mitra, dan jurusan/unit wajib diisi untuk menyimpan perubahan.');
+      return false;
+    }
+
+    if (payload.selectedRuangLingkup.length === 0) {
+      setInfoModalMessage('Pilih minimal 1 ruang lingkup pada form edit.');
+      return false;
+    }
+
+    const next = updatePengajuanItem(editingItem.id, {
+      judul: payload.formData.judulKerjasama.trim(),
+      mitra: payload.formData.namaMitra.trim(),
+      jurusan: payload.formData.unitPelaksana.trim(),
+      jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
+      tanggalMulai: payload.formData.tanggalMulai || undefined,
+      tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,
+      ruangLingkup: payload.selectedRuangLingkup,
+      emailPengusul: payload.formData.emailKontak || editingItem.emailPengusul,
+      whatsappPengusul: payload.formData.teleponKontak || editingItem.whatsappPengusul,
+      alamatMitra: payload.formData.alamatMitra || editingItem.alamatMitra,
+      negara: payload.formData.negara || editingItem.negara,
+      ...(payload.dokumen.length > 0
+        ? {
+            fileName: payload.dokumen.map((file) => file.name).join(', '),
+            fileAttachments: payload.dokumen.map((file) => ({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              url: URL.createObjectURL(file),
+            })),
+          }
+        : {}),
+    });
+
+    setPengajuanData(next);
+    setEditingItem(null);
+    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+    return true;
   }
 
     return (
@@ -527,6 +792,49 @@ export default function PengajuanKerjasama() {
           </div>
         )}
 
+      {editingItem && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/55 backdrop-blur-[2px] p-4"
+          onClick={() => setEditingItem(null)}
+        >
+          <div className="flex min-h-full items-center justify-center">
+            <div
+              className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <InternalAjukanKerjasamaForm
+                disableDraftPersistence
+                lockJenisKerjasama
+                submitButtonLabel="Simpan Perubahan"
+                initialData={{
+                  asal: pengajuanUnitOptions.includes(editingItem.jurusan) ? 'Unit' : 'Jurusan',
+                  namaMitra: editingItem.mitra,
+                  jenisMitra: '',
+                  teleponMitra: editingItem.whatsappPengusul || '',
+                  emailMitra: editingItem.emailPengusul || '',
+                  alamatMitra: editingItem.alamatMitra || '',
+                  negara: editingItem.negara || 'Indonesia',
+                  jenisKerjasama: editingItem.jenisDokumen,
+                  unitPelaksana: editingItem.jurusan,
+                  tanggalMulai: editingItem.tanggalMulai || '',
+                  tanggalBerakhir: editingItem.tanggalBerakhir || '',
+                  judulKerjasama: editingItem.judul,
+                  deskripsi: '',
+                  namaKontak: editingItem.pengusul,
+                  jabatanKontak: '',
+                  emailKontak: editingItem.emailPengusul || '',
+                  teleponKontak: editingItem.whatsappPengusul || '',
+                  selectedRuangLingkup: editingItem.ruangLingkup,
+                }}
+                onCancel={() => setEditingItem(null)}
+                onSubmitted={() => setEditingItem(null)}
+                onSubmitOverride={handleSubmitEditFromAjukan}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {detailItem && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
           <div className="w-full max-w-[640px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3]">
@@ -749,6 +1057,12 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+<<<<<<< HEAD
+=======
+              <div className="md:col-span-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                Edit mengikuti form pengajuan. Jika jenis dokumen diubah (MoU/MoA/IA), upload dokumen baru wajib.
+              </div>
+>>>>>>> 7640082 (update edit admin)
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
                 <input
@@ -778,12 +1092,33 @@ export default function PengajuanKerjasama() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
+<<<<<<< HEAD
                 <input
                   type="text"
                   value={editForm.jenisDokumen}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jenisDokumen: e.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                 />
+=======
+                <select
+                  value={editForm.jenisDokumen}
+                  onChange={(e) => {
+                    const nextJenis = e.target.value;
+                    setEditForm((prev) => (prev ? { ...prev, jenisDokumen: nextJenis } : prev));
+                    setEditUploadedFiles([]);
+                    setEditFileError(null);
+                  }}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                >
+                  <option value="">Pilih jenis kerjasama</option>
+                  <option value="MoU">MoU</option>
+                  <option value="MoA">MoA</option>
+                  <option value="IA">IA</option>
+                </select>
+                {editForm.jenisDokumen !== editOriginalJenisDokumen && (
+                  <p className="mt-1 text-[11px] font-semibold text-amber-700">Jenis dokumen berubah, upload ulang dokumen wajib.</p>
+                )}
+>>>>>>> 7640082 (update edit admin)
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
@@ -842,6 +1177,110 @@ export default function PengajuanKerjasama() {
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="md:col-span-2 rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-4 sm:p-5">
+                <div className="mb-4">
+                  <h4 className="text-base font-bold text-slate-900">Template Dokumen</h4>
+                  <p className="mt-1 text-xs text-slate-600">Alur edit dokumen sama seperti form pengajuan.</p>
+                </div>
+
+                <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">1</span>
+                      <p className="text-sm font-semibold text-gray-900">Pilih Jenis</p>
+                    </div>
+                    <p className="text-xs text-gray-600">Pilih MoU, MoA, atau IA sesuai dokumen.</p>
+                  </div>
+                  <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">2</span>
+                      <p className="text-sm font-semibold text-gray-900">Download Template</p>
+                    </div>
+                    <p className="text-xs text-gray-600">Opsional sebagai acuan isi dokumen.</p>
+                  </div>
+                  <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">3</span>
+                      <p className="text-sm font-semibold text-gray-900">Upload Dokumen</p>
+                    </div>
+                    <p className="text-xs text-gray-600">Jika jenis berubah, upload ulang wajib.</p>
+                  </div>
+                </div>
+
+                <p className="mb-3 text-xs text-slate-600">Format: PDF, Word (.doc/.docx), maksimal 10MB per file.</p>
+
+                {editSelectedTemplate && editTemplateUrl && (
+                  <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-lg font-bold text-[#173B82]">{editSelectedTemplate.title}</p>
+                        <p className="text-sm text-slate-600">{editSelectedTemplate.subtitle}</p>
+                        <p className="mt-2 text-xs text-slate-500">File template: {editTemplateFileName}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleEditDownloadTemplate}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#173B82] px-4 text-xs font-semibold text-white hover:bg-[#0f2c61]"
+                    >
+                      <Download size={14} />
+                      Download Template
+                    </button>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="mb-2 text-sm font-semibold text-[#173B82]">Isi utama dokumen:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {editSelectedTemplate.struktur.map((item) => (
+                          <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-xs text-slate-600">Catatan: {editSelectedTemplate.note}</p>
+                  </div>
+                )}
+
+                <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-sm font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    multiple
+                    onChange={(e) => {
+                      handleEditFileUpload(e.target.files);
+                      e.currentTarget.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <Upload size={16} />
+                  Upload Dokumen
+                </label>
+
+                {editFileError && <p className="mt-2 text-xs text-red-600">{editFileError}</p>}
+
+                {editUploadedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {editUploadedFiles.map((file, index) => (
+                      <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-slate-800">{file.name}</p>
+                          <p className="text-[11px] text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditFile(index)}
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                          aria-label={`Hapus ${file.name}`}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
