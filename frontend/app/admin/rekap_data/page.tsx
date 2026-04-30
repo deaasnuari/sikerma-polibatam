@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
+import { useAuth } from '@/context/AuthContext';
 import {
   addRekapDokumen,
   createDokumenFormData,
@@ -24,6 +25,7 @@ import {
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 export default function RekapDataPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const [rekapData, setRekapData] = useState<RekapDokumen[]>([]);
   const [search, setSearch] = useState('');
@@ -35,6 +37,7 @@ export default function RekapDataPage() {
   const [isTambahModalOpen, setIsTambahModalOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<RekapDokumen | null>(null);
   const [editingItem, setEditingItem] = useState<RekapDokumen | null>(null);
+
 
   useEffect(() => {
     const syncRekapData = () => {
@@ -492,7 +495,8 @@ export default function RekapDataPage() {
         title="+ Tambah Dokumen Baru"
         submitLabel="Tambah Dokumen"
         onSubmit={(data: DokumenData) => {
-          addRekapDokumen(data);
+          // Inject rolePengaju dari user login
+          addRekapDokumen({ ...data, rolePengaju: user?.role ?? '' });
           alert(`Dokumen "${data.namaMitra}" berhasil ditambahkan dengan WhatsApp: ${data.whatsappMitra}`);
         }}
       />

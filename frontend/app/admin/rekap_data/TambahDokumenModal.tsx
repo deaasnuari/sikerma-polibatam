@@ -160,8 +160,22 @@ export default function TambahDokumenModal({
 
     setErrors({});
     setUploadErrors({});
+
+    // Siapkan dokumenTerkait jika ada file
+    let dokumenTerkait = undefined;
+    if (selectedFile) {
+      dokumenTerkait = [
+        {
+          nama: selectedFile.name,
+          url: URL.createObjectURL(selectedFile),
+          ukuran: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
+          tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+        },
+      ];
+    }
+
     if (onSubmit) {
-      onSubmit({ ...formData, nomorDokumen });
+      onSubmit({ ...formData, nomorDokumen, dokumenTerkait });
     }
     setFormData(emptyFormData);
     setSelectedFile(null);

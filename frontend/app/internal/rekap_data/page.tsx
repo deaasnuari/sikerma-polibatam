@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
@@ -56,6 +57,7 @@ const statusOptions = ['Semua Status', 'Menunggu', 'Disetujui', 'Ditolak'];
 const ITEMS_PER_PAGE = 10;
 
 export default function InternalRekapDataPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<KerjasamaItem[]>([]);
   const [search, setSearch] = useState('');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan');
@@ -66,11 +68,32 @@ export default function InternalRekapDataPage() {
   const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
 
   useEffect(() => {
-    const sync = () => setData(getRekapData().map(mapRekapToItem));
+    const sync = () => {
+      const { rekapJurusanOptions } = require('@/services/adminRekapDataService');
+      // Filter data sesuai role user login
+      const role = user?.role;
+      let filteredData = getRekapData();
+      if (role === 'internal' || role === 'eksternal' || role === 'pimpinan') {
+        filteredData = filteredData.filter((item) => {
+          if ('rolePengaju' in item) {
+            return item.rolePengaju === role;
+          }
+          // Fallback lama: internal = jurusan, eksternal = tidak termasuk jurusan/unit
+          if (role === 'internal') {
+            return item.kategoriUnit === 'Jurusan' || rekapJurusanOptions.includes(item.unit);
+          }
+          if (role === 'eksternal') {
+            return item.kategoriUnit !== 'Jurusan' && !rekapJurusanOptions.includes(item.unit);
+          }
+          return true;
+        });
+      }
+      setData(filteredData.map(mapRekapToItem));
+    };
     sync();
     window.addEventListener('rekap-data-updated', sync);
     return () => window.removeEventListener('rekap-data-updated', sync);
-  }, []);
+  }, [user]);
 
 function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
