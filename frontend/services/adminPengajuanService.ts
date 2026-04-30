@@ -197,9 +197,23 @@ function savePengajuanData(items: PengajuanItem[]) {
   if (!canUseStorage()) {
     return;
   }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  emitPengajuanUpdate();
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    emitPengajuanUpdate();
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      // Hapus data lama, lalu coba simpan lagi
+      window.localStorage.removeItem(STORAGE_KEY);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        emitPengajuanUpdate();
+      } catch {
+        alert('Data terlalu besar untuk disimpan. Silakan hubungi admin.');
+      }
+    } else {
+      throw e;
+    }
+  }
 }
 
 // Ambil seluruh data pengajuan, lalu gabungkan dengan data default bila perlu.

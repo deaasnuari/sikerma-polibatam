@@ -416,10 +416,13 @@ export function findKerjasamaById(items: Kerjasama[], id: number | null): Kerjas
 
 // Buat tautan WhatsApp otomatis untuk menghubungi mitra.
 export function createWhatsAppLink(item: Kerjasama): string {
-  // Gunakan judul dokumen jika ada, jika tidak pakai nomor dokumen
-  // WAJIB hanya kirim judul dokumen, tanpa fallback ke nomor dokumen
-  const judul = (item as any).judul;
-  return `https://wa.me/${item.whatsappNumber}?text=Halo%20${encodeURIComponent(item.namaMitra)},%20saya%20ingin%20membahas%20tentang%20kerjasama%20${encodeURIComponent(judul || '')}`;
+  let nomor = String(item.whatsappNumber).replace(/[^0-9]/g, '');
+  if (nomor.startsWith('0')) {
+    nomor = '62' + nomor.slice(1);
+  }
+  const judul = item.judul || item.noDokumen || '';
+  const pesan = `Halo ${item.namaMitra}, saya ingin membahas tentang kerjasama ${judul}`;
+  return `https://wa.me/${nomor}?text=${encodeURIComponent(pesan)}`;
 }
 
 // Helper untuk membuat record perpanjangan baru.
