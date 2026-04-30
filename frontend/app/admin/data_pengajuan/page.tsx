@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip } from 'lucide-react';
 import AjukanForm from './AjukanForm';
 import {
   deletePengajuanItem,
@@ -61,6 +61,12 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
     className: 'badge badge-danger',
     iconEl: <XCircle size={13} />,
   },
+};
+
+const templatePreviewUrlByJenis: Record<string, string> = {
+  MoU: '/templates/Draft%20MOU%20Industri.docx',
+  MoA: '/templates/Draft%20MOA%20Magang.docx',
+  IA: '/templates/DRAFT%20IA%20POLIBATAM.docx',
 };
 
 export default function PengajuanKerjasama() {
@@ -153,6 +159,17 @@ export default function PengajuanKerjasama() {
     filterTahun,
     search,
   });
+
+  const detailFileEntries = detailItem
+    ? detailItem.fileAttachments?.length
+      ? detailItem.fileAttachments
+      : (detailItem.fileName || '')
+          .split(',')
+          .map((name) => name.trim())
+          .filter(Boolean)
+          .map((name) => ({ name, url: '' }))
+    : [];
+  const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
 
   function openReview(item: PengajuanItem) {
     setReviewItem(item);
@@ -518,7 +535,7 @@ export default function PengajuanKerjasama() {
                 <h3 className="text-xl font-bold text-gray-900">Detail Pengajuan</h3>
                 <p className="text-xs text-gray-600">ID: {detailItem.id}</p>
               </div>
-              <button type="button" onClick={() => setDetailItem(null)} className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => { setDetailItem(null); }} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
@@ -577,9 +594,49 @@ export default function PengajuanKerjasama() {
                 </div>
               </div>
 
+              <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Dokumen Pendukung</p>
+
+                {detailFileEntries.length === 0 && (
+                  <p className="text-xs text-gray-500">Belum ada dokumen yang diunggah.</p>
+                )}
+
+                {detailFileEntries.length > 0 && (
+                  <div className="space-y-2">
+                    {detailFileEntries.map((doc, index) => {
+                      const sourceUrl = doc.url || detailFallbackTemplateUrl;
+                      const canDownload = Boolean(sourceUrl) && !sourceUrl.startsWith('blob:');
+
+                      return (
+                        <div key={`${doc.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                          <div className="min-w-0 flex items-center gap-2">
+                            <Paperclip size={14} className="shrink-0 text-slate-500" />
+                            <p className="truncate text-xs font-medium text-slate-800">{doc.name}</p>
+                          </div>
+                          {canDownload ? (
+                            <a
+                              href={sourceUrl}
+                              download
+                              className="inline-flex items-center gap-1 rounded-md bg-[#1E376C] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2A4A8F]"
+                            >
+                              <ExternalLink size={12} />
+                              Unduh
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                              Tidak Tersedia
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <button
                 type="button"
-                onClick={() => setDetailItem(null)}
+                onClick={() => { setDetailItem(null); }}
                 className="w-full h-10 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
               >
                 Tutup

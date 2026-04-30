@@ -1,6 +1,7 @@
 'use client';
 
-import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText } from 'lucide-react';
+import { useState } from 'react';
+import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip } from 'lucide-react';
 import type { PengajuanItem, PengajuanStatus } from '@/services/adminPengajuanService';
 import { pengajuanDokumenBadge } from '@/services/adminPengajuanService';
 
@@ -40,8 +41,22 @@ const reviewCopy: Record<PengajuanStatus, string> = {
   Ditolak: 'Pengajuan belum disetujui admin. Silakan cek catatan review.',
 };
 
+const templatePreviewUrlByJenis: Record<string, string> = {
+  MoU: '/templates/Draft%20MOU%20Industri.docx',
+  MoA: '/templates/Draft%20MOA%20Magang.docx',
+  IA: '/templates/DRAFT%20IA%20POLIBATAM.docx',
+};
+
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
   const sc = statusConfig[item.status];
+  const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
+  const fileEntries = item.fileAttachments?.length
+    ? item.fileAttachments
+    : (item.fileName || '')
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean)
+        .map((name) => ({ name, url: '' }));
 
   return (
     <div
@@ -137,6 +152,54 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
             </section>
           )}
 
+          <section>
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+              Dokumen Pendukung
+            </h3>
+
+            {fileEntries.length === 0 && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                Belum ada dokumen yang diunggah.
+              </p>
+            )}
+
+            {fileEntries.length > 0 && (
+              <div className="space-y-2">
+                {fileEntries.map((doc, index) => {
+                  const sourceUrl = doc.url || fallbackTemplateUrl;
+                  const canDownload = Boolean(sourceUrl) && !sourceUrl.startsWith('blob:');
+
+                  return (
+                    <div
+                      key={`${doc.name}-${index}`}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <Paperclip size={14} className="shrink-0 text-slate-500" />
+                        <p className="truncate text-xs font-medium text-slate-800">{doc.name}</p>
+                      </div>
+
+                      {canDownload ? (
+                        <a
+                          href={sourceUrl}
+                          download
+                          className="inline-flex items-center gap-1 rounded-md bg-[#173B82] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#0f2c61]"
+                        >
+                          <ExternalLink size={12} />
+                          Unduh
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                          Tidak Tersedia
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           {/* Hasil Review Admin */}
           <section
             id="review-section"
@@ -161,6 +224,8 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           </section>
         </div>
       </div>
+
+
     </div>
   );
 }

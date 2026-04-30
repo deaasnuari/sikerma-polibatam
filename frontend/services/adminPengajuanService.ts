@@ -5,6 +5,13 @@ import { hideStoryByPengajuanId, initAktivitasOnApproval } from '@/services/admi
 
 export type PengajuanStatus = 'Menunggu' | 'Diproses' | 'Disetujui' | 'Ditolak';
 
+export type PengajuanFileAttachment = {
+  name: string;
+  url: string;
+  type?: string;
+  size?: number;
+};
+
 // Tipe utama untuk satu data pengajuan kerjasama.
 export interface PengajuanItem {
   id: number;
@@ -25,6 +32,7 @@ export interface PengajuanItem {
   ruangLingkup: string[];
   status: PengajuanStatus;
   fileName?: string;
+  fileAttachments?: PengajuanFileAttachment[];
   reviewComment?: string;
   reviewedAt?: string;
   reviewedBy?: string;
