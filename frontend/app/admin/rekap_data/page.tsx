@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
-import { useAuth } from '@/context/AuthContext';
 import {
   addRekapDokumen,
   createDokumenFormData,
@@ -25,7 +24,6 @@ import {
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 export default function RekapDataPage() {
-  const { user } = useAuth();
   const router = useRouter();
   const [rekapData, setRekapData] = useState<RekapDokumen[]>([]);
   const [search, setSearch] = useState('');
@@ -69,6 +67,49 @@ export default function RekapDataPage() {
 
   const { totalKerjasama, totalAktif, totalAkanBerakhir, totalKadaluarsa } = getRekapStats(rekapData);
 
+  const handleExportExcel = () => {
+    const header = [
+      'No',
+      'No Dokumen',
+      'Nama Mitra',
+      'Jenis',
+      'Jurusan / Unit',
+      'Tanggal Mulai',
+      'Berlaku Hingga',
+      'Status',
+    ];
+
+    const rows = filteredRows.map((row, index) => [
+      String(index + 1),
+      row.noDokumen,
+      row.namaMitra,
+      row.jenis,
+      row.unit,
+      row.tanggalMulai,
+      row.berlakuHingga,
+      row.status,
+    ]);
+
+    const content = [header, ...rows]
+      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff', content], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `rekap-data-${dateStamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   function handleDelete(item: RekapDokumen) {
     const isConfirmed = window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`);
 
@@ -82,6 +123,15 @@ export default function RekapDataPage() {
     }
     alert(`Dokumen ${item.noDokumen} berhasil dihapus.`);
   }
+
+  const toInputDateValue = (value: string) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    return parsed.toISOString().slice(0, 10);
+  };
 
   return (
     <div className="space-y-5">
@@ -247,6 +297,7 @@ export default function RekapDataPage() {
 
             <button
               type="button"
+              onClick={handleExportExcel}
               className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-sm font-semibold"
             >
               <Upload size={14} />
@@ -280,8 +331,8 @@ export default function RekapDataPage() {
                 </tr>
               ) : (
                 filteredRows.map((row, index) => (
-                  <tr key={row.id ?? index} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
-                    <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: row.id, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
+                  <tr key={row.noDokumen ?? index} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
+                    <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${rekapJenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
@@ -318,15 +369,6 @@ export default function RekapDataPage() {
                         >
                           <Pencil size={16} />
                         </button>
-                        {/* Tombol story aktivitas dihapus sesuai permintaan */}
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(row)}
-                          className="text-red-600 transition-colors hover:text-red-700"
-                          title="Hapus dokumen"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -338,9 +380,11 @@ export default function RekapDataPage() {
       </section>
 
       {detailItem && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
-          <div className="w-full max-w-2xl rounded-[24px] bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/35 backdrop-blur-[2px]">
+          <div className="flex min-h-full items-center justify-center px-4 py-8">
+          <div className="w-full max-w-2xl rounded-[24px] bg-white shadow-2xl flex flex-col">
+            {/* Header - sticky, tidak ikut scroll */}
+            <div className="flex-shrink-0 flex items-start justify-between gap-4 border-b border-gray-100 px-6 pt-6 pb-4">
               <div>
                 <h2 className="text-xl font-bold text-[#1E376C]">Detail Dokumen</h2>
                 <p className="text-sm text-gray-500 mt-1">Informasi lengkap dokumen rekap kerjasama</p>
@@ -354,7 +398,8 @@ export default function RekapDataPage() {
               </button>
             </div>
 
-
+            {/* Body */}
+            <div className="flex-1 px-6 pb-6">
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
               <InfoItem label="No. Dokumen" value={detailItem.noDokumen} />
               <InfoItem label="Jenis Dokumen" value={detailItem.jenis} />
@@ -372,13 +417,18 @@ export default function RekapDataPage() {
             <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-slate-50">
               <h3 className="font-bold mb-2 text-gray-900 text-sm">Ajukan Perpanjangan Kerjasama</h3>
               <form
-                onSubmit={async (e) => {
+                onSubmit={(e) => {
                   e.preventDefault();
-                  const form = e.target;
-                  const tanggalMulai = form.tanggalMulai.value;
-                  const berlakuHingga = form.berlakuHingga.value;
-                  const catatan = form.catatan.value;
-                  const dokumenInput = form.dokumenBaru;
+                  const form = e.currentTarget;
+                  const submittedData = new FormData(form);
+                  const tanggalMulai = String(submittedData.get('tanggalMulai') || '');
+                  const berlakuHingga = String(submittedData.get('berlakuHingga') || '');
+                  const dokumenInput = form.elements.namedItem('dokumenBaru') as HTMLInputElement | null;
+
+                  if (!tanggalMulai || !berlakuHingga) {
+                    alert('Tanggal mulai dan tanggal berakhir baru wajib diisi.');
+                    return;
+                  }
                   let dokumenTerkait = detailItem.dokumenTerkait ? [...detailItem.dokumenTerkait] : [];
                   if (dokumenInput && dokumenInput.files && dokumenInput.files[0]) {
                     const file = dokumenInput.files[0];
@@ -393,11 +443,9 @@ export default function RekapDataPage() {
                     ];
                   }
                   updateRekapDokumen(detailItem.noDokumen, {
-                    ...detailItem,
+                    ...createDokumenFormData(detailItem),
                     tanggalMulai,
-                    berlakuHingga,
-                    catatanPerpanjangan: catatan,
-                    dokumenTerkait,
+                    tanggalBerakhir: berlakuHingga,
                   });
                   alert('Perpanjangan kerjasama berhasil diajukan!');
                   setDetailItem(null);
@@ -410,7 +458,7 @@ export default function RekapDataPage() {
                     <input
                       type="date"
                       name="tanggalMulai"
-                      defaultValue={detailItem.tanggalMulai}
+                      defaultValue={toInputDateValue(detailItem.tanggalMulai)}
                       className="input-field w-full"
                       required
                     />
@@ -420,7 +468,7 @@ export default function RekapDataPage() {
                     <input
                       type="date"
                       name="berlakuHingga"
-                      defaultValue={detailItem.berlakuHingga}
+                      defaultValue={toInputDateValue(detailItem.berlakuHingga)}
                       className="input-field w-full"
                       required
                     />
@@ -435,38 +483,48 @@ export default function RekapDataPage() {
                     placeholder="Catatan tambahan..."
                   />
                 </div>
-                {/* TODO: Tambahkan upload dokumen jika diperlukan */}
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">Upload Dokumen Baru (MoU/MoA/IA)</label>
-                                  <input
-                                    type="file"
-                                    name="dokumenBaru"
-                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                    className="input-field w-full"
-                                  />
-                                </div>
-                            {/* Tampilkan dokumen terbaru hasil perpanjangan */}
-                            {detailItem.dokumenTerkait && detailItem.dokumenTerkait.length > 0 && (
-                              <div className="mt-4">
-                                <h4 className="font-semibold text-xs text-gray-700 mb-1">Dokumen Terbaru</h4>
-                                <ul className="space-y-1">
-                                  {detailItem.dokumenTerkait.slice(0, 1).map((doc) => (
-                                    <li key={doc.nama}>
-                                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline text-xs">
-                                        {doc.nama} ({doc.ukuran})
-                                      </a>
-                                      <span className="ml-2 text-gray-400 text-xs">diunggah {doc.tanggal}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                <button
-                  type="submit"
-                  className="btn-primary mt-2 w-full"
-                >
-                  Ajukan Perpanjangan
-                </button>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Upload Dokumen Baru (MoU/MoA/IA)</label>
+                  <input
+                    type="file"
+                    name="dokumenBaru"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    className="input-field w-full"
+                  />
+                </div>
+
+                {detailItem.dokumenTerkait && detailItem.dokumenTerkait.length > 0 && (
+                  <div className="mt-1 rounded-lg border border-slate-200 bg-white p-3">
+                    <h4 className="font-semibold text-xs text-gray-700 mb-1">Dokumen Terbaru</h4>
+                    <ul className="space-y-1">
+                      {detailItem.dokumenTerkait.slice(0, 1).map((doc) => (
+                        <li key={doc.nama}>
+                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline text-xs">
+                            {doc.nama} ({doc.ukuran})
+                          </a>
+                          <span className="ml-2 text-gray-400 text-xs">diunggah {doc.tanggal}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-1 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDetailItem(null)}
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary px-4 py-2"
+                  >
+                    Ajukan Perpanjangan
+                  </button>
+                </div>
               </form>
             </div>
 
@@ -485,7 +543,9 @@ export default function RekapDataPage() {
                 </button>
               </div>
             )}
+            </div>{/* end scrollable body */}
           </div>
+          </div>{/* end min-h-full flex */}
         </div>
       )}
 
@@ -495,8 +555,7 @@ export default function RekapDataPage() {
         title="+ Tambah Dokumen Baru"
         submitLabel="Tambah Dokumen"
         onSubmit={(data: DokumenData) => {
-          // Inject rolePengaju dari user login
-          addRekapDokumen({ ...data, rolePengaju: user?.role ?? '' });
+          addRekapDokumen(data);
           alert(`Dokumen "${data.namaMitra}" berhasil ditambahkan dengan WhatsApp: ${data.whatsappMitra}`);
         }}
       />

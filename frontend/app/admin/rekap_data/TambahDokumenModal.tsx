@@ -230,7 +230,7 @@ export default function TambahDokumenModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-900/35 px-2 py-3 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-8">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-slate-900/35 px-2 py-3 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-8">
       <div className="relative max-h-[96vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-[24px]">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
           <h2 className="text-lg font-bold text-[#1E376C] sm:text-[20px]">{title}</h2>

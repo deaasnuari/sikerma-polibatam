@@ -101,6 +101,49 @@ export default function ArsipDokumenPage() {
       item.noDokumen.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExportExcel = () => {
+    const rows = filtered.map((item, index) => [
+      String(index + 1),
+      item.noDokumen,
+      item.namaMitra,
+      item.jenis,
+      item.tanggalMulai,
+      item.berlakuHingga,
+      item.statusFollowUp,
+      item.buktiFollowUp || '-',
+    ]);
+
+    const header = [
+      'No',
+      'No Dokumen',
+      'Nama Mitra',
+      'Jenis',
+      'Tanggal Mulai',
+      'Berlaku Hingga',
+      'Follow Up',
+      'Bukti',
+    ];
+
+    const content = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff', content], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `arsip-dokumen-${dateStamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const totalArsip = data.length;
   const tahunIni = new Date().getFullYear();
   const kadaluarsaTahunIni = data.filter((item) => {
@@ -213,7 +256,10 @@ export default function ArsipDokumenPage() {
             className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
           />
         </div>
-        <button className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5">
+        <button
+          onClick={handleExportExcel}
+          className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
+        >
           <Download size={15} />
           Export Arsip
         </button>

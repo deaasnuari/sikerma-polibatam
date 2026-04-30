@@ -14,6 +14,7 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
+import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
 import { getHiddenStoryIds, getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 
@@ -27,7 +28,7 @@ interface Kerjasama {
   status: 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
   aktivitas: number;
   jurusanTerlibat: number;
-  ruangLingkup: number;
+  ruangLingkup: string[];
   jurusan: string[];
 }
 
@@ -84,7 +85,7 @@ function mapPengajuanToKerjasama(item: PengajuanItem): Kerjasama {
     status: getKerjasamaStatus(item.tanggalBerakhir),
     aktivitas: getAktivitasByKerjasamaId(item.id).length,
     jurusanTerlibat: item.jurusan ? 1 : 0,
-    ruangLingkup: item.ruangLingkup.length,
+    ruangLingkup: [...item.ruangLingkup],
     jurusan: item.jurusan ? [item.jurusan] : [],
   };
 }
@@ -115,6 +116,7 @@ export default function StoryAktivitasPage() {
   const [search, setSearch] = useState('');
   const [hiddenStoryIds, setHiddenStoryIds] = useState<number[]>([]);
   const [sourceData, setSourceData] = useState<Kerjasama[]>([]);
+  const [selectedLaporan, setSelectedLaporan] = useState<Kerjasama | null>(null);
 
   useEffect(() => {
     const syncData = () => {
@@ -352,19 +354,28 @@ export default function StoryAktivitasPage() {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <FileText size={14} className="text-gray-400" />
-                    {item.ruangLingkup} Ruang Lingkup
+                    {item.ruangLingkup.length} Ruang Lingkup
                   </span>
                 </div>
 
-                <button
-                  onClick={() =>
-                    router.push(`/admin/story_aktivitas/${item.id}`)
-                  }
-                  className="flex items-center gap-1.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
-                >
-                  <Eye size={14} />
-                  Lihat Detail &Story
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedLaporan(item)}
+                    className="flex items-center gap-1.5 border border-[#0e1d34] text-[#0e1d34] hover:bg-[#0e1d34]/5 text-sm font-medium px-4 py-2 rounded-lg transition"
+                  >
+                    <FileText size={14} />
+                    Laporan Pelaksanaan
+                  </button>
+                  <button
+                    onClick={() =>
+                      router.push(`/admin/story_aktivitas/${item.id}`)
+                    }
+                    className="flex items-center gap-1.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+                  >
+                    <Eye size={14} />
+                    Lihat Detail Story
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2 mt-3">
@@ -381,6 +392,21 @@ export default function StoryAktivitasPage() {
           </div>
         ))}
       </div>
+
+      <LaporanKegiatanTemplateModal
+        isOpen={selectedLaporan !== null}
+        onClose={() => setSelectedLaporan(null)}
+        data={
+          selectedLaporan
+            ? {
+                namaMitra: selectedLaporan.nama,
+                noDokumen: selectedLaporan.nomorDokumen,
+                jenis: selectedLaporan.jenis,
+                ruangLingkup: selectedLaporan.ruangLingkup,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

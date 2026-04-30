@@ -44,7 +44,7 @@ export default function AdminFooter() {
                   <Phone size={10} className="text-slate-400 flex-shrink-0" />
                 </li>
                 <li className="flex items-center gap-1 text-xs justify-end">
-                  <a href="mailto:info@polibatam.ac.id" className="text-slate-300 hover:text-white transition-colors"> info@polibatam.ac.id atau humas@polibatam.ac.id</a>
+                  <a href="mailto:info@polibatam.ac.id" className="text-slate-300 hover:text-white transition-colors"> oia@polibatam.ac.id atau kerjasama@polibatam.ac.id </a>
                   <Mail size={10} className="text-slate-400 flex-shrink-0" />
                 </li>
               </ul>

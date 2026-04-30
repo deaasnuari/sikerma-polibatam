@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   FileEdit,
+  FileText,
   Download,
   MapPin,
   Mail,
@@ -22,6 +23,7 @@ import {
   ChevronDown,
   TableProperties,
 } from 'lucide-react';
+import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 import {
   getAktivitasByKerjasamaId,
@@ -497,6 +499,7 @@ export default function DetailStoryPage() {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showEditDokumen, setShowEditDokumen] = useState(false);
+  const [showLaporanModal, setShowLaporanModal] = useState(false);
 
   // Persist aktivitas ke localStorage setiap kali daftar berubah (hanya untuk data dari pengajuan)
   useEffect(() => {
@@ -659,6 +662,13 @@ export default function DetailStoryPage() {
           <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
             <Download size={15} />
             Download
+          </button>
+          <button
+            onClick={() => setShowLaporanModal(true)}
+            className="flex items-center gap-2 border border-[#1E376C] text-[#1E376C] px-4 py-2 rounded-lg hover:bg-[#1E376C]/5 text-sm font-medium"
+          >
+            <FileText size={15} />
+            Laporan Pelaksanaan
           </button>
         </div>
       </div>
@@ -1147,6 +1157,17 @@ export default function DetailStoryPage() {
       </div>
 
       {/* Edit Dokumen Modal */}
+      <LaporanKegiatanTemplateModal
+        isOpen={showLaporanModal}
+        onClose={() => setShowLaporanModal(false)}
+        data={{
+          namaMitra: dokInfo.nama,
+          noDokumen: dokInfo.nomorDokumen,
+          jenis: (['MoA', 'MoU', 'IA'].includes(dokInfo.jenisDokumen) ? dokInfo.jenisDokumen : 'MoU') as 'MoA' | 'MoU' | 'IA',
+          ruangLingkup: data.ruangLingkup,
+        }}
+      />
+
       {showEditDokumen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
