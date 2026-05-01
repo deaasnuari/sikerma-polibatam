@@ -93,7 +93,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
             </span>
           </div>
           <div className="mb-2 text-lg font-bold text-slate-900">{item.judul}</div>
-          <div className="mb-2 text-sm text-slate-600">{item.deskripsi}</div>
+          <div className="mb-2 text-sm text-slate-600">{item.deskripsi || '-'}</div>
           <div className="mb-2 text-xs text-slate-500">Pengusul: {item.pengusul}</div>
           <div className="mb-2 text-xs text-slate-500">Tanggal: {item.tanggal}</div>
           <div className="mb-2 text-xs text-slate-500">Jurusan/Unit: {item.jurusan}</div>

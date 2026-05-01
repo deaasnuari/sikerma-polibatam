@@ -30,7 +30,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
   for (const baseUrl of API_BASE_URL_CANDIDATES) {
     try {
-      response = await fetch(`${baseUrl}${normalizedEndpoint}`, {
+      const candidateResponse = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
         headers: {
             Accept: 'application/json',
@@ -39,6 +39,20 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
         },
       });
 
+      // Jika kandidat relative proxy gagal (404/5xx),
+      // coba kandidat berikutnya seperti URL backend langsung.
+      const isRelativeCandidate = baseUrl.startsWith('/');
+      const shouldFallbackToNextCandidate =
+        !candidateResponse.ok &&
+        isRelativeCandidate &&
+        (candidateResponse.status === 404 || candidateResponse.status >= 500);
+
+      if (shouldFallbackToNextCandidate) {
+        response = candidateResponse;
+        continue;
+      }
+
+      response = candidateResponse;
       break;
     } catch (error) {
       lastError = error;

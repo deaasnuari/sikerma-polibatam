@@ -16,6 +16,7 @@ export type PengajuanFileAttachment = {
 export interface PengajuanItem {
   id: number;
   judul: string;
+  deskripsi?: string;
   pengusul: string;
   tanggal: string;
   mitra: string;

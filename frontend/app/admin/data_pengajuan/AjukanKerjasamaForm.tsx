@@ -433,7 +433,7 @@ export default function AdminAjukanKerjasamaForm({
         formData,
         asal,
         selectedRuangLingkup,
-        dokumen,
+        dokumen: dokumen.map((item) => item.file),
       });
 
       if (submitResult === false) {
@@ -1020,19 +1020,19 @@ export default function AdminAjukanKerjasamaForm({
             {dokumen.length > 0 && (
               <div className="space-y-2">
                 {dokumen.map((file, index) => (
-                  <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                  <div key={`${file.file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
                     <div className="flex min-w-0 items-center gap-2">
                       <Paperclip size={15} className="shrink-0 text-slate-500" />
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-800">{file.name}</p>
-                        <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                        <p className="truncate font-medium text-slate-800">{file.file.name}</p>
+                        <p className="text-xs text-slate-500">{formatFileSize(file.file.size)}</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveDokumen(index)}
                       className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
-                      aria-label={`Hapus ${file.name}`}
+                      aria-label={`Hapus ${file.file.name}`}
                     >
                       <X size={16} />
                     </button>

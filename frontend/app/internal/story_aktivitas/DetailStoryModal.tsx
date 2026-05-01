@@ -16,7 +16,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { saveAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
+import { saveAktivitasByKerjasamaId, type AktivitasItem } from '@/services/adminStoryAktivitasService';
 import type { KerjasamaStory, Aktivitas } from './page';
 
 type Jenis = 'MoA' | 'MoU' | 'IA';
@@ -64,6 +64,20 @@ const aktivitasIconColor: Record<StatusAktivitas, string> = {
   selesai: 'text-green-500',
 };
 
+function toAktivitasItems(items: Aktivitas[]): AktivitasItem[] {
+  return items.map((a) => ({
+    id: Number(a.id),
+    judul: a.judul,
+    jenisAktivitas: a.judul.split(' - ')[0] || 'Lainnya',
+    tanggal: a.tanggal,
+    peserta: a.peserta,
+    deskripsi: a.deskripsi,
+    picPolibatam: a.picPolibatam,
+    picMitra: a.picMitra,
+    status: a.status,
+  }));
+}
+
 export default function DetailStoryModal({ story, onBack }: DetailStoryModalProps) {
   const [aktivitasList, setAktivitasList] = useState<Aktivitas[]>(story.aktivitas);
   const [showTambah, setShowTambah] = useState(false);
@@ -77,7 +91,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
     if (!window.confirm('Yakin ingin menghapus aktivitas ini?')) return;
     const updated = aktivitasList.filter((a) => a.id !== id);
     setAktivitasList(updated);
-    saveAktivitasByKerjasamaId(Number(story.id), updated.map((a) => ({ ...a, id: Number(a.id), peserta: a.peserta })));
+    saveAktivitasByKerjasamaId(Number(story.id), toAktivitasItems(updated));
     window.dispatchEvent(new Event('story-data-updated'));
   }
 
@@ -85,7 +99,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
     const updated = [data, ...aktivitasList];
     setAktivitasList(updated);
     setShowTambah(false);
-    saveAktivitasByKerjasamaId(Number(story.id), updated.map((a) => ({ ...a, id: Number(a.id), peserta: a.peserta })));
+    saveAktivitasByKerjasamaId(Number(story.id), toAktivitasItems(updated));
     window.dispatchEvent(new Event('story-data-updated'));
   }
 
