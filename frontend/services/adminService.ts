@@ -1,3 +1,15 @@
+// Hapus notifikasi berdasarkan id
+export function deleteNotification(id: number): AdminNotification[] {
+  const updatedNotifications = readNotifications().filter((notification) => notification.id !== id);
+  saveNotifications(updatedNotifications);
+  return updatedNotifications;
+}
+
+// Hapus semua notifikasi
+export function deleteAllNotifications(): AdminNotification[] {
+  saveNotifications([]);
+  return [];
+}
 //DASHBOARD ADMIN
 import type {
   AdminNotification,

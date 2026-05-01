@@ -8,6 +8,8 @@ import {
   getAdminNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  deleteNotification,
+  deleteAllNotifications,
 } from '@/services/adminService';
 import { useRouter } from 'next/navigation';
 import type { AdminNotification } from '@/types/admin';
@@ -27,6 +29,16 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
   const publicMenuRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const router = useRouter();
+
+  // Hapus satu notifikasi
+  const handleDeleteNotification = (id: number) => {
+    setNotifications(deleteNotification(id));
+  };
+
+  // Hapus semua notifikasi
+  const handleDeleteAllNotifications = () => {
+    setNotifications(deleteAllNotifications());
+  };
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const roleLabelMap: Record<string, string> = {
@@ -238,35 +250,52 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                       </button>
                     </div>
                     {notifications.length > 0 && (
-                      <button
-                        onClick={handleMarkAllAsRead}
-                        className="mt-2 text-xs text-slate-600 hover:text-[#091222] font-medium flex items-center gap-1"
-                      >
-                        <CheckCheck size={14} />
-                        Tandai semua dibaca
-                      </button>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs text-slate-600 hover:text-[#091222] font-medium flex items-center gap-1"
+                        >
+                          <CheckCheck size={14} />
+                          Tandai semua dibaca
+                        </button>
+                        <button
+                          onClick={handleDeleteAllNotifications}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+                        >
+                          <X size={14} />
+                          Hapus semua
+                        </button>
+                      </div>
                     )}
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length > 0 ? (
                       notifications.slice(0, 5).map((notif) => (
-                        <button
-                          key={notif.id}
-                          onClick={() => handleOpenNotification(notif)}
-                          className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}
-                        >
-                          <div className="flex gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-[#173B82]' : 'bg-slate-300'}`}></div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-gray-900">{notif.title}</p>
-                              <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
-                              <div className="flex items-center justify-between gap-2 mt-1">
-                                <p className="text-xs text-gray-500">📌 dari: {notif.from}</p>
-                                <p className="text-[11px] text-slate-400">{notif.createdAt}</p>
+                        <div key={notif.id} className="relative group">
+                          <button
+                            onClick={() => handleOpenNotification(notif)}
+                            className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}
+                          >
+                            <div className="flex gap-3">
+                              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-[#173B82]' : 'bg-slate-300'}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900">{notif.title}</p>
+                                <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                  <p className="text-xs text-gray-500">📌 dari: {notif.from}</p>
+                                  <p className="text-[11px] text-slate-400">{notif.createdAt}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </button>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNotification(notif.id)}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity"
+                            title="Hapus notifikasi"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
                       ))
                     ) : (
                       <div className="px-4 py-6 text-center text-gray-600">Tidak ada notifikasi</div>
