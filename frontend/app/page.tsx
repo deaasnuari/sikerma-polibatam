@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
+import { getCarouselImages, type CarouselImageItem } from '@/services/carouselService';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -110,8 +111,64 @@ export default function Home() {
   const [selectedWilayah, setSelectedWilayah] = useState('Semua Wilayah');
   const [selectedJenisDokumen, setSelectedJenisDokumen] = useState('Semua Jenis');
   const [selectedUnit, setSelectedUnit] = useState('Semua Unit');
+  const [carouselImages, setCarouselImages] = useState<CarouselImageItem[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const unitOptions = ['Semua Unit', ...new Set(tableData.map((row) => row.unit))];
+
+  const carouselSlides = useMemo(() => {
+    if (carouselImages.length > 0) {
+      return carouselImages.slice(0, 7).map((item, index) => ({
+        id: item.id,
+        title: item.title || `Aktivitas Kerjasama ${index + 1}`,
+        imageUrl: item.image_url,
+      }));
+    }
+
+    return Array.from({ length: 7 }, (_, index) => ({
+      id: index + 1,
+      title: `Aktivitas Kerjasama ${index + 1}`,
+      imageUrl: '/polibatam.jpg',
+    }));
+  }, [carouselImages]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getCarouselImages()
+      .then((items) => {
+        if (mounted) {
+          setCarouselImages(items);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setCarouselImages([]);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (carouselSlides.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [carouselSlides.length]);
+
+  useEffect(() => {
+    if (activeSlide >= carouselSlides.length) {
+      setActiveSlide(0);
+    }
+  }, [activeSlide, carouselSlides.length]);
 
   // ── Table logic ──────────────────────────────────────────────────────────────
   const filtered = tableData.filter(
@@ -205,6 +262,72 @@ export default function Home() {
                 <p className="text-xs leading-snug text-slate-200 whitespace-pre-line">{stat.label}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AKTIVITAS CAROUSEL ── */}
+      <section id="aktivitas" className="px-4 py-4 md:py-6">
+        <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
+          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#173B82]">Aktivitas Kerjasama</p>
+              <h2 className="text-2xl font-bold text-slate-900">Dokumentasi Kegiatan Kolaborasi</h2>
+            </div>
+            <p className="max-w-2xl text-sm text-slate-500">
+              Galeri ini otomatis mengikuti gambar terbaru yang diupload admin melalui dashboard.
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+            <div
+              className="flex transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+            >
+              {carouselSlides.map((slide) => (
+                <div key={slide.id} className="relative h-[260px] w-full flex-shrink-0 sm:h-[340px] lg:h-[420px]">
+                  <img
+                    src={slide.imageUrl}
+                    alt={slide.title}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/55 via-slate-900/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                    <p className="text-sm font-semibold text-white sm:text-base">{slide.title}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)}
+              className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-900/45 text-white transition hover:bg-slate-900/65"
+              aria-label="Slide sebelumnya"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSlide((prev) => (prev + 1) % carouselSlides.length)}
+              className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-900/45 text-white transition hover:bg-slate-900/65"
+              aria-label="Slide berikutnya"
+            >
+              ›
+            </button>
+
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2">
+              {carouselSlides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setActiveSlide(index)}
+                  className={`h-2.5 rounded-full transition-all ${activeSlide === index ? 'w-7 bg-white' : 'w-2.5 bg-white/60'}`}
+                  aria-label={`Buka slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
