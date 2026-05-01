@@ -36,6 +36,7 @@ export interface PengajuanItem {
   reviewComment?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  isFromAdmin?: boolean;
 }
 
 // Key localStorage untuk menyimpan seluruh data pengajuan di sisi frontend.
@@ -217,7 +218,7 @@ function savePengajuanData(items: PengajuanItem[]) {
 }
 
 // Ambil seluruh data pengajuan, lalu gabungkan dengan data default bila perlu.
-export function getPengajuanData(): PengajuanItem[] {
+export function getPengajuanData(options?: { excludeAdmin?: boolean }): PengajuanItem[] {
   if (!canUseStorage()) {
     return defaultPengajuanData;
   }
@@ -240,7 +241,10 @@ export function getPengajuanData(): PengajuanItem[] {
       ...stored,
       ...defaultPengajuanData.filter((dummy) => !stored.some((item) => item.id === dummy.id)),
     ];
-
+    // Jika diminta excludeAdmin, filter data admin
+    if (options?.excludeAdmin) {
+      return merged.filter((item) => !item.isFromAdmin);
+    }
     return merged;
   } catch {
     return defaultPengajuanData;
@@ -248,15 +252,20 @@ export function getPengajuanData(): PengajuanItem[] {
 }
 
 // Membuat pengajuan baru dari form lalu menambahkan notifikasi ke admin.
-export function submitPengajuan(data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status'>): PengajuanItem {
+export function submitPengajuan(
+  data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'>,
+  isFromAdmin?: boolean
+): PengajuanItem {
   const payload: PengajuanItem = {
     ...data,
-    id: Date.now(),
+    id: Date.now() + Math.floor(Math.random() * 10000),
     tanggal: new Date().toISOString().slice(0, 10),
     status: 'Menunggu',
     emailTerverifikasi: false,
+    isFromAdmin: isFromAdmin || false,
   };
 
+  // Untuk semua pengajuan (admin maupun internal), simpan dan update monitoring/rekap/notifikasi
   const updated = [payload, ...getPengajuanData()];
   savePengajuanData(updated);
 
@@ -505,9 +514,18 @@ export function filterPengajuanData(
   items: PengajuanItem[],
   filterStatus: string,
   filterJurusan: string,
-  search: string
+  search: string,
+  options?: { excludeAdmin?: boolean }
 ) {
   return items.filter((item) => {
+    // Selalu exclude data admin jika diminta
+    if (options?.excludeAdmin && item.isFromAdmin) {
+      return false;
+    }
+
+    // HANYA filter data admin jika memang untuk view internal (excludeAdmin true)
+    // Di halaman admin, data admin harus tetap muncul
+
     const matchStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
     const matchJurusan =
       filterJurusan === 'Semua Jurusan/unit' ||
@@ -533,8 +551,8 @@ export function filterPengajuanData(
 }
 
 // Filter lanjutan yang juga memperhitungkan pilihan tahun.
-export function getFilteredPengajuanData(items: PengajuanItem[], filters: PengajuanFilterOptions) {
-  const filtered = filterPengajuanData(items, filters.filterStatus, filters.filterJurusan, filters.search);
+export function getFilteredPengajuanData(items: PengajuanItem[], filters: PengajuanFilterOptions, options?: { excludeAdmin?: boolean }) {
+  const filtered = filterPengajuanData(items, filters.filterStatus, filters.filterJurusan, filters.search, options);
 
   if (filters.filterTahun === 'Semua Tahun') {
     return filtered;

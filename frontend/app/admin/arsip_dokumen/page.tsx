@@ -95,11 +95,20 @@ export default function ArsipDokumenPage() {
     setData((prev) => prev.filter((d) => d.id !== id));
   };
 
-  const filtered = data.filter(
+  // Filter dan deduplikasi berdasarkan id
+  const filteredRaw = data.filter(
     (item) =>
       item.namaMitra.toLowerCase().includes(search.toLowerCase()) ||
       item.noDokumen.toLowerCase().includes(search.toLowerCase())
   );
+  const seen = new Set();
+  const filtered = [];
+  for (const item of filteredRaw) {
+    if (!seen.has(item.id)) {
+      filtered.push(item);
+      seen.add(item.id);
+    }
+  }
 
   const handleExportExcel = () => {
     const rows = filtered.map((item, index) => [

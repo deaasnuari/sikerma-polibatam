@@ -104,9 +104,22 @@ export default function InternalDataPengajuanPage() {
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
+
+    // Ambil data internal saja, exclude admin, dan deduplikasi berdasarkan id
     const syncPengajuan = () => {
-      const internalOnly = getPengajuanData().filter((item) => item.kategori === 'Internal');
-      setPengajuanData(internalOnly);
+      const internalOnly = getPengajuanData({ excludeAdmin: true }).filter(
+        (item) => item.kategori === 'Internal'
+      );
+      // Dedup berdasarkan id
+      const seen = new Set();
+      const unique = [];
+      for (const item of internalOnly) {
+        if (!seen.has(item.id)) {
+          unique.push(item);
+          seen.add(item.id);
+        }
+      }
+      setPengajuanData(unique);
     };
 
     syncPengajuan();
@@ -134,17 +147,24 @@ export default function InternalDataPengajuanPage() {
       filterJurusan,
       filterTahun: 'Semua Tahun',
       search,
-    });
+    }, { excludeAdmin: true });
 
+    let filtered = baseItems;
     if (filterKategori === 'Jurusan') {
-      return baseItems.filter((item) => !isUnitValue(item.jurusan));
+      filtered = baseItems.filter((item) => !isUnitValue(item.jurusan));
+    } else if (filterKategori === 'Unit') {
+      filtered = baseItems.filter((item) => isUnitValue(item.jurusan));
     }
-
-    if (filterKategori === 'Unit') {
-      return baseItems.filter((item) => isUnitValue(item.jurusan));
+    // Dedup sebelum render
+    const seen = new Set();
+    const unique = [];
+    for (const item of filtered) {
+      if (!seen.has(item.id)) {
+        unique.push(item);
+        seen.add(item.id);
+      }
     }
-
-    return baseItems;
+    return unique;
   }, [pengajuanData, filterStatus, filterJurusan, search, filterKategori]);
 
   const stats = getPengajuanStats(pengajuanData);

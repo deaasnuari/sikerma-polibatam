@@ -145,7 +145,8 @@ export default function StoryAktivitasPage() {
     new Set(visibleData.map((d) => d.tahun))
   ).sort((a, b) => b - a);
 
-  const filtered = visibleData.filter((item) => {
+  // Filter dan deduplikasi berdasarkan id
+  const filteredRaw = visibleData.filter((item) => {
     const matchJenis =
       filterJenis === 'Semua Jenis' || item.jenis === filterJenis;
     const matchStatus =
@@ -157,6 +158,14 @@ export default function StoryAktivitasPage() {
       .includes(search.toLowerCase());
     return matchJenis && matchStatus && matchTahun && matchSearch;
   });
+  const seen = new Set();
+  const filtered = [];
+  for (const item of filteredRaw) {
+    if (!seen.has(item.id)) {
+      filtered.push(item);
+      seen.add(item.id);
+    }
+  }
 
   const totalAktivitas = visibleData.reduce((s, i) => s + i.aktivitas, 0);
   const kerjasamaAktif = visibleData.filter((i) => i.status === 'Aktif').length;

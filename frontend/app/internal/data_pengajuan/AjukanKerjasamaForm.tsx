@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
-  submitPengajuan,
 } from '@/services/adminPengajuanService';
+import { submitInternalPengajuan } from '@/services/internalPengajuanService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 type TemplateDokumenConfig = {
@@ -448,7 +448,7 @@ export default function InternalAjukanKerjasamaForm({
       return;
     }
 
-    submitPengajuan({
+    submitInternalPengajuan({
       judul: formData.judulKerjasama,
       pengusul: formData.namaKontak || 'Internal Polibatam',
       mitra: formData.namaMitra,

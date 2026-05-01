@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload } from 'lucide-react';
-import AjukanForm from './AjukanForm';
+import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 import {
@@ -215,12 +215,21 @@ export default function PengajuanKerjasama() {
   const [yearRangeStart, setYearRangeStart] = useState(defaultYearRangeStart);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
-  const filtered = getFilteredPengajuanData(pengajuanData, {
+  // Deduplikasi data berdasarkan id sebelum render
+  const filteredRaw = getFilteredPengajuanData(pengajuanData, {
     filterStatus,
     filterJurusan,
     filterTahun,
     search,
   });
+  const seen = new Set();
+  const filtered = [];
+  for (const item of filteredRaw) {
+    if (!seen.has(item.id)) {
+      filtered.push(item);
+      seen.add(item.id);
+    }
+  }
 
   const detailFileEntries = detailItem
     ? detailItem.fileAttachments?.length
@@ -784,7 +793,7 @@ export default function PengajuanKerjasama() {
                   className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <AjukanForm onClose={() => setAjukanModalOpen(false)} />
+                  <AdminAjukanKerjasamaForm onCancel={() => setAjukanModalOpen(false)} onSubmitted={() => setAjukanModalOpen(false)} />
                 </div>
             </div>
           </div>
