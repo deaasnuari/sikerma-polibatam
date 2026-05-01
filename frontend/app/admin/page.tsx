@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,9 @@ import {
   BarChart3,
   Zap,
   FileText,
+  Upload,
+  Trash2,
+  GripVertical,
 } from 'lucide-react';
 import {
   getAdminNotifications,
@@ -24,6 +27,13 @@ import {
   markNotificationAsRead,
 } from '@/services/adminService';
 import type { AdminNotification } from '@/types/admin';
+import {
+  deleteCarouselImage,
+  getCarouselImages,
+  updateCarouselSortOrder,
+  uploadCarouselImage,
+  type CarouselImageItem,
+} from '@/services/carouselService';
 
 const AdminDashboardCharts = dynamic(() => import('./components/AdminDashboardCharts'), {
   ssr: false,
@@ -50,6 +60,12 @@ const actionIcons = {
 
 export default function AdminDashboard() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [carouselImages, setCarouselImages] = useState<CarouselImageItem[]>([]);
+  const [carouselTitle, setCarouselTitle] = useState('');
+  const [isUploadingCarousel, setIsUploadingCarousel] = useState(false);
+  const [carouselError, setCarouselError] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState<number | null>(null);
+  const dragIndexRef = useRef<number | null>(null);
   const router = useRouter();
   const dashboardStats = getDashboardStats();
   const quickActions = getQuickActions();
@@ -68,9 +84,99 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('admin-notifications-updated', syncNotifications);
   }, []);
 
+  useEffect(() => {
+    getCarouselImages()
+      .then((items) => setCarouselImages(items))
+      .catch(() => setCarouselImages([]));
+  }, []);
+
   const handleOpenNotification = (notification: AdminNotification) => {
     setNotifications(markNotificationAsRead(notification.id));
     router.push(notification.href || '/admin/notifikasi');
+  };
+
+  const refreshCarouselImages = async () => {
+    const items = await getCarouselImages();
+    setCarouselImages(items);
+  };
+
+  const handleUploadCarousel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setCarouselError(null);
+    setIsUploadingCarousel(true);
+
+    try {
+      await uploadCarouselImage({
+        file,
+        title: carouselTitle.trim() || undefined,
+      });
+
+      setCarouselTitle('');
+      await refreshCarouselImages();
+      alert('Gambar carousel berhasil diupload.');
+    } catch (error) {
+      setCarouselError(error instanceof Error ? error.message : 'Upload gambar carousel gagal.');
+    } finally {
+      setIsUploadingCarousel(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDeleteCarousel = async (image: CarouselImageItem) => {
+    const confirmed = window.confirm(`Hapus gambar carousel${image.title ? ` "${image.title}"` : ''}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteCarouselImage(image.id);
+      await refreshCarouselImages();
+    } catch (error) {
+      setCarouselError(error instanceof Error ? error.message : 'Gagal menghapus gambar carousel.');
+    }
+  };
+
+  const handleDragStart = (index: number) => {
+    dragIndexRef.current = index;
+  };
+
+  const handleDragOver = (event: React.DragEvent, index: number) => {
+    event.preventDefault();
+    setIsDraggingOver(index);
+  };
+
+  const handleDrop = async (dropIndex: number) => {
+    const dragIndex = dragIndexRef.current;
+    setIsDraggingOver(null);
+    dragIndexRef.current = null;
+
+    if (dragIndex === null || dragIndex === dropIndex) {
+      return;
+    }
+
+    // Reorder optimistically
+    const reordered = [...carouselImages];
+    const [moved] = reordered.splice(dragIndex, 1);
+    reordered.splice(dropIndex, 0, moved);
+    const withNewOrder = reordered.map((img, i) => ({ ...img, sort_order: i }));
+    setCarouselImages(withNewOrder);
+
+    // Persist new sort_order to backend
+    try {
+      await Promise.all(withNewOrder.map((img) => updateCarouselSortOrder(img.id, img.sort_order)));
+    } catch (error) {
+      setCarouselError(error instanceof Error ? error.message : 'Gagal menyimpan urutan carousel.');
+      await refreshCarouselImages();
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDraggingOver(null);
+    dragIndexRef.current = null;
   };
 
   return (
@@ -183,6 +289,94 @@ export default function AdminDashboard() {
         documentTypeDistribution={documentTypeDistribution}
         popularSchemes={popularSchemes}
       />
+
+      <div className="card p-5 md:p-6">
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">Kelola Carousel Landing Page</h2>
+            <p className="text-sm text-gray-600 mt-1">Upload maksimal 7 gambar. Perubahan akan otomatis tampil di menu Aktivitas landing page. <span className="text-slate-500">Drag kartu untuk mengatur urutan slide.</span></p>
+          </div>
+          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            {carouselImages.length}/7 gambar aktif
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-700">Judul Aktivitas (opsional)</span>
+            <input
+              type="text"
+              value={carouselTitle}
+              onChange={(event) => setCarouselTitle(event.target.value)}
+              placeholder="Contoh: Penandatanganan MoU Industri"
+              className="input-field h-10 px-3 text-sm text-gray-700"
+            />
+          </label>
+
+          <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors ${isUploadingCarousel ? 'bg-slate-400' : 'bg-[#173B82] hover:bg-[#091222]'}`}>
+            <Upload size={15} />
+            {isUploadingCarousel ? 'Uploading...' : 'Upload Gambar'}
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              className="hidden"
+              onChange={handleUploadCarousel}
+              disabled={isUploadingCarousel || carouselImages.length >= 7}
+            />
+          </label>
+        </div>
+
+        {carouselError && <p className="mt-3 text-sm text-red-600">{carouselError}</p>}
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {carouselImages.length === 0 ? (
+            <div className="col-span-full rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+              Belum ada gambar carousel. Upload gambar pertama untuk menampilkan aktivitas di landing page.
+            </div>
+          ) : (
+            carouselImages.map((image, index) => (
+              <div
+                key={image.id}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={handleDragEnd}
+                className={`overflow-hidden rounded-xl border bg-white transition-all ${isDraggingOver === index ? 'scale-[1.02] border-[#173B82] shadow-md' : 'border-slate-200'}`}
+              >
+                <div className="relative">
+                  <img src={image.image_url} alt={image.title || 'Carousel'} className="h-40 w-full object-cover" />
+                  <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-900/55 px-2 py-0.5 text-[11px] font-bold text-white">
+                    #{index + 1}
+                  </div>
+                </div>
+                <div className="flex items-start justify-between gap-2 p-3">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <span
+                      title="Geser untuk mengubah urutan"
+                      className="mt-0.5 flex-shrink-0 cursor-grab text-slate-400 active:cursor-grabbing"
+                    >
+                      <GripVertical size={16} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-800">{image.title || 'Tanpa Judul'}</p>
+                      <p className="text-xs text-slate-500">Urutan: {image.sort_order}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCarousel(image)}
+                    className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-red-200 text-red-600 transition-colors hover:bg-red-50"
+                    title="Hapus gambar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
