@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
 // import RenewalHistoryModal from './RenewalHistoryModal';
 import RenewalFullForm from './RenewalFullForm';
@@ -14,6 +14,7 @@ import {
   createNotificationRecord,
   createRenewalRecord,
   createWhatsAppLink,
+  deleteMonitoringItem,
   findKerjasamaById,
   getDefaultNotificationHistories,
   getFilteredMonitoringData,
@@ -81,6 +82,15 @@ export default function MonitoringdanstatusPage() {
   const selectedRenewalItem = findKerjasamaById(monitoringData, renewalModal.kerjasamaId);
   const selectedNotificationItem = findKerjasamaById(monitoringData, notificationModal.kerjasamaId);
   const selectedNonactiveItem = findKerjasamaById(monitoringData, nonactiveModal.kerjasamaId);
+
+  const handleDeleteMonitoring = (item: Kerjasama) => {
+    const isConfirmed = window.confirm(`Yakin ingin menghapus data monitoring untuk ${item.namaMitra}?`);
+    if (!isConfirmed) {
+      return;
+    }
+
+    deleteMonitoringItem(item.id);
+  };
 
   return (
     <div className="space-y-5">
@@ -397,6 +407,15 @@ export default function MonitoringdanstatusPage() {
                       </button>
                     </>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMonitoring(item)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                  >
+                    <Trash2 size={13} />
+                    Hapus
+                  </button>
                 </div>
               </div>
             </div>

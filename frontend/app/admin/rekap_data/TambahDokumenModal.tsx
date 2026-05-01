@@ -109,8 +109,17 @@ export default function TambahDokumenModal({
     return null;
   }
 
+  const readFileAsDataUrl = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(new Error(`Gagal membaca file ${file.name}.`));
+      reader.readAsDataURL(file);
+    });
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Partial<Record<keyof DokumenData, string>> = {};
@@ -161,17 +170,15 @@ export default function TambahDokumenModal({
     setErrors({});
     setUploadErrors({});
 
-    // Siapkan dokumenTerkait jika ada file
-    let dokumenTerkait = undefined;
+    let dokumenTerkait = formData.dokumenTerkait;
     if (selectedFile) {
-      dokumenTerkait = [
-        {
-          nama: selectedFile.name,
-          url: URL.createObjectURL(selectedFile),
-          ukuran: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
-          tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-        },
-      ];
+      const dataUrl = await readFileAsDataUrl(selectedFile);
+      dokumenTerkait = [{
+        nama: selectedFile.name,
+        url: dataUrl,
+        ukuran: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
+        tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+      }];
     }
 
     if (onSubmit) {

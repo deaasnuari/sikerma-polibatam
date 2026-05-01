@@ -43,6 +43,7 @@ export interface DokumenData {
   whatsappMitra: string;
   asalKategori: 'Jurusan' | 'Unit';
   unitKerja: string;
+  dokumenTerkait?: DokumenTerkait[];
 }
 
 export interface RekapFilterOptions {
@@ -218,6 +219,7 @@ function mapDokumenDataToRekap(data: DokumenData): RekapDokumen {
     tahun,
     status: (data.status as RekapStatus) || 'Aktif',
     whatsappNumber: data.whatsappMitra,
+    dokumenTerkait: data.dokumenTerkait,
   };
 }
 
@@ -420,6 +422,7 @@ export function createDokumenFormData(item: RekapDokumen): DokumenData {
     whatsappMitra: item.whatsappNumber || '',
     asalKategori,
     unitKerja: item.unit,
+    dokumenTerkait: item.dokumenTerkait,
   };
 }
 

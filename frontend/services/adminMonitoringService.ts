@@ -526,7 +526,16 @@ export function upsertMonitoringFromPengajuan(payload: PengajuanSyncPayload): Ke
 
 // Hapus data monitoring yang berasal dari pengajuan tertentu.
 export function removeMonitoringByPengajuanId(pengajuanId: number): Kerjasama[] {
-  const updated = getMonitoringData().filter((item) => item.sourcePengajuanId !== pengajuanId);
+  const updated = getMonitoringData().filter(
+    (item) => item.sourcePengajuanId !== pengajuanId && item.id !== pengajuanId
+  );
+  saveMonitoringData(updated);
+  return updated;
+}
+
+// Hapus satu data monitoring berdasarkan id item.
+export function deleteMonitoringItem(id: number): Kerjasama[] {
+  const updated = getMonitoringData().filter((item) => item.id !== id);
   saveMonitoringData(updated);
   return updated;
 }

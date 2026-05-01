@@ -35,6 +35,8 @@ export default function RekapDataPage() {
   const [isTambahModalOpen, setIsTambahModalOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<RekapDokumen | null>(null);
   const [editingItem, setEditingItem] = useState<RekapDokumen | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<RekapDokumen | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
 
 
   useEffect(() => {
@@ -111,26 +113,50 @@ export default function RekapDataPage() {
   };
 
   function handleDelete(item: RekapDokumen) {
-    const isConfirmed = window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`);
+    setDeleteCandidate(item);
+  }
 
-    if (!isConfirmed) {
+  function confirmDelete() {
+    if (!deleteCandidate) {
       return;
     }
 
-    deleteRekapDokumen(item.noDokumen);
-    if (detailItem?.noDokumen === item.noDokumen) {
+    deleteRekapDokumen(deleteCandidate.noDokumen);
+    if (detailItem?.noDokumen === deleteCandidate.noDokumen) {
       setDetailItem(null);
     }
-    alert(`Dokumen ${item.noDokumen} berhasil dihapus.`);
+    setDeleteCandidate(null);
+    setFeedbackModal({
+      title: 'Dokumen Berhasil Dihapus',
+      message: `Dokumen ${deleteCandidate.noDokumen} berhasil dihapus dari rekap data.`,
+    });
   }
 
-  const toInputDateValue = (value: string) => {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return '';
+  const downloadDokumen = async (url: string, fileName: string) => {
+    if (!url) {
+      return;
     }
 
-    return parsed.toISOString().slice(0, 10);
+    if (url.startsWith('data:')) {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
   };
 
   return (
@@ -416,119 +442,29 @@ export default function RekapDataPage() {
               <InfoItem label="WhatsApp" value={detailItem.whatsappNumber || '-'} />
             </div>
 
-            {/* Form Perpanjangan Kerjasama */}
-            <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-slate-50">
-              <h3 className="font-bold mb-2 text-gray-900 text-sm">Ajukan Perpanjangan Kerjasama</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget;
-                  const submittedData = new FormData(form);
-                  const tanggalMulai = String(submittedData.get('tanggalMulai') || '');
-                  const berlakuHingga = String(submittedData.get('berlakuHingga') || '');
-                  const dokumenInput = form.elements.namedItem('dokumenBaru') as HTMLInputElement | null;
-
-                  if (!tanggalMulai || !berlakuHingga) {
-                    alert('Tanggal mulai dan tanggal berakhir baru wajib diisi.');
-                    return;
-                  }
-                  let dokumenTerkait = detailItem.dokumenTerkait ? [...detailItem.dokumenTerkait] : [];
-                  if (dokumenInput && dokumenInput.files && dokumenInput.files[0]) {
-                    const file = dokumenInput.files[0];
-                    dokumenTerkait = [
-                      {
-                        nama: file.name,
-                        url: URL.createObjectURL(file),
-                        ukuran: (file.size / 1024 / 1024).toFixed(1) + ' MB',
-                        tanggal: new Date().toLocaleDateString('id-ID'),
-                      },
-                      ...dokumenTerkait.filter((d) => d.nama !== file.name),
-                    ];
-                  }
-                  updateRekapDokumen(detailItem.noDokumen, {
-                    ...createDokumenFormData(detailItem),
-                    tanggalMulai,
-                    tanggalBerakhir: berlakuHingga,
-                  });
-                  alert('Perpanjangan kerjasama berhasil diajukan!');
-                  setDetailItem(null);
-                }}
-                className="flex flex-col gap-3"
-              >
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Mulai Baru</label>
-                    <input
-                      type="date"
-                      name="tanggalMulai"
-                      defaultValue={toInputDateValue(detailItem.tanggalMulai)}
-                      className="input-field w-full"
-                      required
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Berakhir Baru</label>
-                    <input
-                      type="date"
-                      name="berlakuHingga"
-                      defaultValue={toInputDateValue(detailItem.berlakuHingga)}
-                      className="input-field w-full"
-                      required
-                    />
-                  </div>
+            <div className="mt-4 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-medium text-gray-500">Dokumen Upload</p>
+              {detailItem.dokumenTerkait?.length ? (
+                <div className="mt-2 space-y-2">
+                  {detailItem.dokumenTerkait.map((doc) => (
+                    <div key={`${doc.nama}-${doc.tanggal}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-800">{doc.nama}</p>
+                        <p className="text-xs text-gray-500">{doc.ukuran} • {doc.tanggal}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { void downloadDokumen(doc.url, doc.nama); }}
+                        className="rounded-md bg-[#1E376C] px-3 py-1 text-xs font-semibold text-white hover:bg-[#2B4A93]"
+                      >
+                        Unduh
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Catatan Perpanjangan (opsional)</label>
-                  <textarea
-                    name="catatan"
-                    className="input-field w-full"
-                    rows={2}
-                    placeholder="Catatan tambahan..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Upload Dokumen Baru (MoU/MoA/IA)</label>
-                  <input
-                    type="file"
-                    name="dokumenBaru"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                    className="input-field w-full"
-                  />
-                </div>
-
-                {detailItem.dokumenTerkait && detailItem.dokumenTerkait.length > 0 && (
-                  <div className="mt-1 rounded-lg border border-slate-200 bg-white p-3">
-                    <h4 className="font-semibold text-xs text-gray-700 mb-1">Dokumen Terbaru</h4>
-                    <ul className="space-y-1">
-                      {detailItem.dokumenTerkait.slice(0, 1).map((doc) => (
-                        <li key={doc.nama}>
-                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline text-xs">
-                            {doc.nama} ({doc.ukuran})
-                          </a>
-                          <span className="ml-2 text-gray-400 text-xs">diunggah {doc.tanggal}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-1 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDetailItem(null)}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary px-4 py-2"
-                  >
-                    Ajukan Perpanjangan
-                  </button>
-                </div>
-              </form>
+              ) : (
+                <p className="mt-1 text-sm font-semibold text-gray-800">Belum ada dokumen upload</p>
+              )}
             </div>
 
             {detailItem.sourcePengajuanId && (
@@ -559,7 +495,10 @@ export default function RekapDataPage() {
         submitLabel="Tambah Dokumen"
         onSubmit={(data: DokumenData) => {
           addRekapDokumen(data);
-          alert(`Dokumen "${data.namaMitra}" berhasil ditambahkan dengan WhatsApp: ${data.whatsappMitra}`);
+          setFeedbackModal({
+            title: 'Dokumen Berhasil Ditambahkan',
+            message: `Dokumen "${data.namaMitra}" berhasil ditambahkan ke rekap data.`,
+          });
         }}
       />
 
@@ -576,9 +515,58 @@ export default function RekapDataPage() {
 
           updateRekapDokumen(editingItem.noDokumen, data);
           setEditingItem(null);
-          alert(`Dokumen "${data.namaMitra}" berhasil diperbarui.`);
+          setFeedbackModal({
+            title: 'Perubahan Berhasil Disimpan',
+            message: `Dokumen "${data.namaMitra}" berhasil diperbarui.`,
+          });
         }}
       />
+
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Yakin ingin menghapus dokumen <span className="font-semibold text-gray-900">{deleteCandidate.noDokumen}</span>?
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {feedbackModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-[#1E376C]">{feedbackModal.title}</h3>
+            <p className="mt-2 text-sm text-gray-600">{feedbackModal.message}</p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setFeedbackModal(null)}
+                className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93]"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

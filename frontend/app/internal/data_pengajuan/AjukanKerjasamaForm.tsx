@@ -82,7 +82,8 @@ const initialForm = {
 };
 
 const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_DOKUMEN_COUNT = 3;
 
 type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
@@ -116,6 +117,7 @@ type InternalAjukanKerjasamaFormProps = {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
+    dokumenAttachments: { file: File; dataUrl: string }[];
   }) => boolean | void;
 };
 
@@ -206,6 +208,9 @@ export default function InternalAjukanKerjasamaForm({
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
+  const [dokumenError, setDokumenError] = useState('');
+  const [formPopup, setFormPopup] = useState<{ title: string; message: string; tone: 'success' | 'error' } | null>(null);
+  const [isSubmitSuccessPopup, setIsSubmitSuccessPopup] = useState(false);
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
@@ -368,6 +373,7 @@ export default function InternalAjukanKerjasamaForm({
 
     setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
     setDokumen([]);
+    setDokumenError('');
   };
 
   const handleDownloadTemplate = () => {
@@ -383,8 +389,29 @@ export default function InternalAjukanKerjasamaForm({
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!formData.jenisKerjasama) {
+      setDokumenError('Pilih jenis template dokumen terlebih dahulu sebelum upload file.');
+      setFormPopup({
+        title: 'Upload Belum Bisa Dilanjutkan',
+        message: 'Pilih jenis template dokumen terlebih dahulu sebelum upload file.',
+        tone: 'error',
+      });
+      setIsSubmitSuccessPopup(false);
+      event.target.value = '';
+      return;
+    }
+
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
+
+    if (dokumen.length + files.length > MAX_DOKUMEN_COUNT) {
+      const message = 'Maksimal 3 dokumen yang boleh diunggah untuk setiap pengajuan.';
+      setDokumenError(message);
+      setFormPopup({ title: 'Upload Gagal', message, tone: 'error' });
+      setIsSubmitSuccessPopup(false);
+      event.target.value = '';
+      return;
+    }
 
     for (const file of files) {
       const validationError = validateSelectedFile(file, {
@@ -393,7 +420,13 @@ export default function InternalAjukanKerjasamaForm({
       });
 
       if (validationError) {
-        alert(`${file.name}: ${validationError}`);
+        setDokumenError(`${file.name}: ${validationError}`);
+        setFormPopup({
+          title: 'Validasi File Gagal',
+          message: `${file.name}: ${validationError}`,
+          tone: 'error',
+        });
+        setIsSubmitSuccessPopup(false);
         event.target.value = '';
         return;
       }
@@ -402,6 +435,7 @@ export default function InternalAjukanKerjasamaForm({
       reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
         setDokumen((prev) => [...prev, { file, dataUrl }]);
+        setDokumenError('');
       };
       reader.readAsDataURL(file);
     }
@@ -409,7 +443,13 @@ export default function InternalAjukanKerjasamaForm({
   };
 
   const handleRemoveDokumen = (indexToRemove: number) => {
-    setDokumen((prev) => prev.filter((_, index) => index !== indexToRemove));
+    setDokumen((prev) => {
+      const nextDokumen = prev.filter((_, index) => index !== indexToRemove);
+      if (nextDokumen.length === 0) {
+        setDokumenError('Dokumen template wajib diunggah sebelum pengajuan dikirim.');
+      }
+      return nextDokumen;
+    });
   };
 
   const handleChange = (field: keyof typeof initialForm, value: string) => {
@@ -425,8 +465,32 @@ export default function InternalAjukanKerjasamaForm({
     }));
   };
 
+  const validateDokumenSebelumSubmit = () => {
+    if (!formData.jenisKerjasama) {
+      const message = 'Pilih jenis template dokumen terlebih dahulu.';
+      setDokumenError(message);
+      return message;
+    }
+
+    if (dokumen.length === 0) {
+      const message = 'Dokumen template wajib diunggah sebelum pengajuan dikirim.';
+      setDokumenError(message);
+      return message;
+    }
+
+    setDokumenError('');
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const dokumenValidationError = validateDokumenSebelumSubmit();
+    if (dokumenValidationError) {
+      setFormPopup({ title: 'Data Belum Lengkap', message: dokumenValidationError, tone: 'error' });
+      setIsSubmitSuccessPopup(false);
+      return;
+    }
 
     if (onSubmitOverride) {
       const submitResult = onSubmitOverride({
@@ -434,6 +498,9 @@ export default function InternalAjukanKerjasamaForm({
         asal,
         selectedRuangLingkup,
         dokumen: dokumen.map((item) => item.file),
+        dokumenAttachments: dokumen
+          .filter((item): item is { file: File; dataUrl: string } => Boolean(item.dataUrl))
+          .map((item) => ({ file: item.file, dataUrl: item.dataUrl })),
       });
 
       if (submitResult === false) {
@@ -469,7 +536,23 @@ export default function InternalAjukanKerjasamaForm({
       window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
     }
 
-    alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
+    setFormPopup({
+      title: 'Pengajuan Berhasil Dikirim',
+      message: 'Pengajuan kerjasama berhasil dikirim ke admin untuk direview.',
+      tone: 'success',
+    });
+    setIsSubmitSuccessPopup(true);
+  };
+
+  const closeFormPopup = () => {
+    const shouldFinalizeSubmit = isSubmitSuccessPopup;
+
+    setFormPopup(null);
+    setIsSubmitSuccessPopup(false);
+
+    if (!shouldFinalizeSubmit) {
+      return;
+    }
 
     if (onSubmitted) {
       onSubmitted();
@@ -997,7 +1080,11 @@ export default function InternalAjukanKerjasamaForm({
 
           <div className="space-y-3">
             <label
-              className="block cursor-pointer rounded-xl border-2 border-dashed border-[#173B82]/30 bg-white p-5 transition hover:border-[#173B82] hover:bg-slate-50"
+              className={`block rounded-xl border-2 border-dashed bg-white p-5 transition ${
+                formData.jenisKerjasama
+                  ? 'cursor-pointer border-[#173B82]/30 hover:border-[#173B82] hover:bg-slate-50'
+                  : 'cursor-not-allowed border-slate-200 opacity-70'
+              } ${dokumenError ? 'border-rose-300 bg-rose-50/40' : ''}`}
             >
               <input
                 type="file"
@@ -1005,17 +1092,26 @@ export default function InternalAjukanKerjasamaForm({
                 accept=".pdf,.doc,.docx"
                 onChange={handleFileUpload}
                 className="hidden"
+                disabled={!formData.jenisKerjasama}
               />
 
               <div className="flex flex-col items-center justify-center text-center">
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#173B82]/10 text-[#173B82]">
                   <Upload size={20} />
                 </div>
-                <p className="text-sm font-semibold text-slate-800">Klik untuk upload dokumen pendukung</p>
+                <p className="text-sm font-semibold text-slate-800">Upload dokumen template yang sudah diisi</p>
                 <p className="mt-1 text-xs text-slate-500">Format yang didukung: PDF, DOC, DOCX</p>
-                <p className="mt-1 text-xs text-slate-500">Ukuran maksimal per file: 10 MB</p>
+                <p className="mt-1 text-xs text-slate-500">Ukuran maksimal per file: 5 MB</p>
+                <p className="mt-1 text-xs text-slate-500">Jumlah file maksimal: 3 dokumen</p>
+                {!formData.jenisKerjasama && (
+                  <p className="mt-2 text-xs font-medium text-amber-700">Pilih jenis template MoU, MoA, atau IA terlebih dahulu.</p>
+                )}
               </div>
             </label>
+
+            <p className={`text-xs ${dokumenError ? 'text-rose-600' : 'text-slate-500'}`}>
+              {dokumenError || 'Dokumen wajib diunggah sebelum tombol submit dapat diproses.'}
+            </p>
 
             {dokumen.length > 0 && (
               <div className="space-y-2">
@@ -1060,12 +1156,39 @@ export default function InternalAjukanKerjasamaForm({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
+            disabled={!formData.jenisKerjasama || dokumen.length === 0}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition ${
+              !formData.jenisKerjasama || dokumen.length === 0
+                ? 'cursor-not-allowed bg-slate-300'
+                : 'bg-[#173B82] hover:bg-[#0f2c61]'
+            }`}
           >
             {submitButtonLabel}
           </button>
         </div>
       </form>
+
+      {formPopup && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className={`text-lg font-bold ${formPopup.tone === 'success' ? 'text-[#1E376C]' : 'text-rose-700'}`}>
+              {formPopup.title}
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">{formPopup.message}</p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={closeFormPopup}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
+                  formPopup.tone === 'success' ? 'bg-[#1E376C] hover:bg-[#2B4A93]' : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

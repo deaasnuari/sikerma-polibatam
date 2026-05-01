@@ -117,6 +117,55 @@ const templateFileNameByJenis: Record<string, string> = {
 
 const MAX_EDIT_FILE_SIZE = 10 * 1024 * 1024;
 
+function triggerBrowserDownload(url: string, fileName: string) {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+}
+
+async function downloadAttachmentFile(url: string, fileName: string) {
+  if (url.startsWith('data:')) {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    try {
+      triggerBrowserDownload(objectUrl, fileName);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    return;
+  }
+
+  triggerBrowserDownload(url, fileName);
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(new Error(`Gagal membaca file ${file.name}.`));
+
+    reader.readAsDataURL(file);
+  });
+}
+
+async function buildPersistentFileAttachments(files: File[]) {
+  return Promise.all(
+    files.map(async (file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: await readFileAsDataUrl(file),
+    }))
+  );
+}
+
 export default function PengajuanKerjasama() {
   const searchParams = useSearchParams();
   const isAjukanView = searchParams.get('view') === 'ajukan';
@@ -386,7 +435,7 @@ export default function PengajuanKerjasama() {
 
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!editForm) return;
 
     if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
@@ -404,6 +453,10 @@ export default function PengajuanKerjasama() {
       return;
     }
 
+    const persistentAttachments = editUploadedFiles.length > 0
+      ? await buildPersistentFileAttachments(editUploadedFiles)
+      : [];
+
     const next = updatePengajuanItem(editForm.id, {
       judul: editForm.judul.trim(),
       mitra: editForm.mitra.trim(),
@@ -415,12 +468,7 @@ export default function PengajuanKerjasama() {
       ...(editUploadedFiles.length > 0
         ? {
             fileName: editUploadedFiles.map((file) => file.name).join(', '),
-            fileAttachments: editUploadedFiles.map((file) => ({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              url: URL.createObjectURL(file),
-            })),
+            fileAttachments: persistentAttachments,
           }
         : {}),
     });
@@ -475,6 +523,7 @@ export default function PengajuanKerjasama() {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
+    dokumenAttachments: { file: File; dataUrl: string }[];
   }): boolean {
     if (!editingItem) {
       return false;
@@ -505,11 +554,11 @@ export default function PengajuanKerjasama() {
       ...(payload.dokumen.length > 0
         ? {
             fileName: payload.dokumen.map((file) => file.name).join(', '),
-            fileAttachments: payload.dokumen.map((file) => ({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              url: URL.createObjectURL(file),
+            fileAttachments: payload.dokumenAttachments.map((item) => ({
+              name: item.file.name,
+              type: item.file.type,
+              size: item.file.size,
+              url: item.dataUrl,
             })),
           }
         : {}),
@@ -920,7 +969,7 @@ export default function PengajuanKerjasama() {
                   <div className="space-y-2">
                     {detailFileEntries.map((doc, index) => {
                       const sourceUrl = doc.url || detailFallbackTemplateUrl;
-                      const canDownload = Boolean(sourceUrl) && !sourceUrl.startsWith('blob:');
+                      const canDownload = Boolean(sourceUrl);
 
                       return (
                         <div key={`${doc.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
@@ -929,14 +978,16 @@ export default function PengajuanKerjasama() {
                             <p className="truncate text-xs font-medium text-slate-800">{doc.name}</p>
                           </div>
                           {canDownload ? (
-                            <a
-                              href={sourceUrl}
-                              download
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void downloadAttachmentFile(sourceUrl, doc.name);
+                              }}
                               className="inline-flex items-center gap-1 rounded-md bg-[#1E376C] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2A4A8F]"
                             >
                               <ExternalLink size={12} />
                               Unduh
-                            </a>
+                            </button>
                           ) : (
                             <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                               Tidak Tersedia
