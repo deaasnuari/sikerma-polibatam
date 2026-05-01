@@ -13,7 +13,8 @@ import {
   Users,
 } from 'lucide-react';
 import DetailStoryModal from './DetailStoryModal';
-import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { type PengajuanItem } from '@/services/adminPengajuanService';
+import { getInternalPengajuanDisetujui } from '@/services/internalPengajuanService';
 import { getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
 
 // ── Types ──────────────────────────────────────────────
@@ -143,7 +144,7 @@ export default function InternalStoryAktivitasPage() {
 
   useEffect(() => {
     const sync = () => {
-      const disetujui = getPengajuanData().filter((item) => item.status === 'Disetujui');
+      const disetujui = getInternalPengajuanDisetujui();
       setKerjasamaData(disetujui.map(mapPengajuanToStory));
     };
     sync();

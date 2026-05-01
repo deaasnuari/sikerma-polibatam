@@ -16,6 +16,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
+import { saveAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
 import type { KerjasamaStory, Aktivitas } from './page';
 
 type Jenis = 'MoA' | 'MoU' | 'IA';
@@ -74,12 +75,18 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
 
   function handleDeleteAktivitas(id: string) {
     if (!window.confirm('Yakin ingin menghapus aktivitas ini?')) return;
-    setAktivitasList((prev) => prev.filter((a) => a.id !== id));
+    const updated = aktivitasList.filter((a) => a.id !== id);
+    setAktivitasList(updated);
+    saveAktivitasByKerjasamaId(Number(story.id), updated.map((a) => ({ ...a, id: Number(a.id), peserta: a.peserta })));
+    window.dispatchEvent(new Event('story-data-updated'));
   }
 
   function handleTambahAktivitas(data: Aktivitas) {
-    setAktivitasList((prev) => [data, ...prev]);
+    const updated = [data, ...aktivitasList];
+    setAktivitasList(updated);
     setShowTambah(false);
+    saveAktivitasByKerjasamaId(Number(story.id), updated.map((a) => ({ ...a, id: Number(a.id), peserta: a.peserta })));
+    window.dispatchEvent(new Event('story-data-updated'));
   }
 
   return (

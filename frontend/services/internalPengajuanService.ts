@@ -1,4 +1,4 @@
-import { PengajuanItem, PengajuanStatus, PengajuanFileAttachment, PengajuanFilterOptions, pengajuanJurusanOptions, pengajuanUnitOptions, pengajuanJurusanUnitOptions } from './adminPengajuanService';
+import { PengajuanItem, PengajuanStatus, PengajuanFileAttachment, PengajuanFilterOptions, pengajuanJurusanOptions, pengajuanUnitOptions, pengajuanJurusanUnitOptions, getPengajuanData } from './adminPengajuanService';
 
 // Key localStorage khusus internal, benar-benar terpisah dari admin
 const STORAGE_KEY = 'pengajuanKerjasamaDataInternal';
@@ -79,3 +79,45 @@ export function submitInternalPengajuan(
 }
 
 // Fungsi lain (statistik, update status, dsb) dapat di-copy sesuai kebutuhan
+
+/**
+ * Ambil data pengajuan internal yang sudah disetujui admin,
+ * dengan menyinkronkan status terbaru dari admin storage.
+ * Menggabungkan data dari internal storage + admin storage (berdasarkan id yang sama).
+ */
+export function getInternalPengajuanDisetujui(): PengajuanItem[] {
+  if (typeof window === 'undefined') return [];
+
+  // Baca dari admin storage — filter yang bukan dari admin (isFromAdmin false)
+  // dan yang kategorinya Internal ATAU tidak punya kategori (data lama)
+  const adminData = getPengajuanData();
+  const fromAdmin = adminData.filter(
+    (item) => !item.isFromAdmin && item.status === 'Disetujui' &&
+    (item.kategori === 'Internal' || !item.kategori)
+  );
+
+  // Baca dari internal storage untuk menangkap data yang mungkin tidak tersimpan di admin storage
+  const internalData = getInternalPengajuanData();
+
+  // Sinkronkan status internal storage dari admin storage berdasarkan id
+  const adminMap = new Map(adminData.map((item) => [item.id, item]));
+  const fromInternal = internalData
+    .map((item) => {
+      const adminItem = adminMap.get(item.id);
+      if (adminItem) return { ...item, status: adminItem.status as PengajuanStatus };
+      return item;
+    })
+    .filter((item) => item.status === 'Disetujui');
+
+  // Gabungkan dan deduplikasi berdasarkan id
+  const combined = [...fromAdmin, ...fromInternal];
+  const seen = new Set<number>();
+  const unique: PengajuanItem[] = [];
+  for (const item of combined) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      unique.push(item);
+    }
+  }
+  return unique;
+}
