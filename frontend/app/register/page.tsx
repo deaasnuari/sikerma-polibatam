@@ -15,7 +15,8 @@ import {
   User,
   UserRound,
 } from 'lucide-react';
-import { registerUser } from '@/services/authService';
+import { apiRequest } from '@/lib/api';
+import OtpStep from './OtpStep';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -58,11 +60,13 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await registerUser({ ...form, role: 'external' });
-      setSuccess('Registrasi berhasil. Akun mitra Anda sudah aktif dan bisa langsung login.');
-      setTimeout(() => router.push('/login'), 1200);
+      await apiRequest('/otp/send', {
+        method: 'POST',
+        body: JSON.stringify({ ...form, role: 'external' }),
+      });
+      setStep(2);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Registrasi gagal.');
+      setError(err instanceof Error ? err.message : 'Gagal mengirim OTP. Coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +110,15 @@ export default function RegisterPage() {
           </div>
 
           <div className="bg-white/95 px-4 py-5 text-slate-800 md:px-6 md:py-6">
+            {step === 2 ? (
+              <OtpStep
+                email={form.email}
+                formData={{ ...form, role: 'external' }}
+                onSuccess={() => router.push('/login')}
+                onBack={() => { setStep(1); setError(''); setSuccess(''); }}
+              />
+            ) : (
+            <>
             <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/90 p-3 text-sm text-slate-600">
               <div className="flex items-start gap-2">
                 <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#173B82]" />
@@ -317,6 +330,8 @@ export default function RegisterPage() {
                 Masuk di sini
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>
