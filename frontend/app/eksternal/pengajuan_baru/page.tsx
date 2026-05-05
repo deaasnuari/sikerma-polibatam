@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { submitPengajuan } from '@/services/adminPengajuanService';
@@ -24,6 +25,7 @@ function normalizeUploadedDokumen(items: UploadedDokumenLike[]) {
 
 export default function PengajuanBaruEksternalPage() {
   const router = useRouter();
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -35,7 +37,6 @@ export default function PengajuanBaruEksternalPage() {
       <InternalAjukanKerjasamaForm
         disableDraftPersistence
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
-        onSubmitted={() => router.push('/eksternal/daftar_kerjasama')}
         onSubmitOverride={({ formData, selectedRuangLingkup, dokumen }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
 
@@ -62,10 +63,36 @@ export default function PengajuanBaruEksternalPage() {
             })),
           });
 
-          alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
-          return true;
+          setIsSuccessModalOpen(true);
+          return false;
         }}
       />
+
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
+            <p className="mt-2 text-sm text-slate-600">Pengajuan kerjasama berhasil dikirim ke admin untuk direview.</p>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSuccessModalOpen(false)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/eksternal/daftar_kerjasama')}
+                className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16305c]"
+              >
+                Lihat Daftar Kerjasama
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
