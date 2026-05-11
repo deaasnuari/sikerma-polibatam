@@ -405,7 +405,7 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-3 py-6">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 px-3 py-6">
       <div className="relative max-h-[92vh] w-full max-w-5xl overflow-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3">
           <h2 className="text-base font-bold text-[#1E376C]">Upload Laporan Pelaksanaan Kerjasama</h2>

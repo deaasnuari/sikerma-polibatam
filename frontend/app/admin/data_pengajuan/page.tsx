@@ -892,7 +892,7 @@ export default function PengajuanKerjasama() {
       )}
 
       {detailItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
+        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
           <div className="w-full max-w-[640px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
@@ -1013,7 +1013,7 @@ export default function PengajuanKerjasama() {
       )}
 
       {reviewItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
+        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
           <div className="w-full max-w-[680px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>

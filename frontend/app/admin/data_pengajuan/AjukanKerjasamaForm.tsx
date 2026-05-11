@@ -563,8 +563,8 @@ export default function AdminAjukanKerjasamaForm({
   };
 
   return (
-    <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+    <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 bg-white rounded-t-2xl">
         <div>
           <p className="text-sm font-semibold text-[#173B82]">{appearanceSettings.topBadgeText}</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">{appearanceSettings.pageTitle}</h1>
@@ -600,7 +600,7 @@ export default function AdminAjukanKerjasamaForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-5 px-6 py-5">
         {enableAppearanceEdit && isAppearanceEditMode && (
           <section className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">

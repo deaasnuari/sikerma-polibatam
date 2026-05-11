@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Mail, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { X, Mail, CheckCircle2, Clock, AlertCircle, Loader } from 'lucide-react';
+import { sendNotificationEmail } from '@/services/adminMonitoringService';
+import { logNotifikasiDikirim } from '@/services/kerjasamaEventLogService';
 
 interface Notification {
   id: string;
@@ -19,6 +21,7 @@ interface NotificationHistoryModalProps {
   noDokumen: string;
   emailMitra: string;
   notifications: Notification[];
+  kerjasamaId?: number;
   onSendNotification?: (jenis: string) => void;
 }
 
@@ -60,24 +63,66 @@ export default function NotificationHistoryModal({
   noDokumen,
   emailMitra,
   notifications,
+  kerjasamaId = 0,
   onSendNotification,
 }: NotificationHistoryModalProps) {
-  const [sendingNotification, setSendingNotification] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   if (!isOpen) {
     return null;
   }
 
   const handleSendNotification = async (jenis: string) => {
-    setSendingNotification(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (onSendNotification) {
-        onSendNotification(jenis);
+    setSendingNotification(jenis);
+    setFeedbackMessage(null);
+
+    try {
+      const result = await sendNotificationEmail(
+        emailMitra,
+        jenis as 'reminder-3bulan' | 'reminder-1bulan' | 'urgent',
+        noDokumen,
+        namaMitra
+      );
+
+      if (result.success) {
+        setFeedbackMessage({
+          type: 'success',
+          text: result.message,
+        });
+
+        // Log event notifikasi dikirim
+        logNotifikasiDikirim(
+          kerjasamaId,
+          namaMitra,
+          noDokumen,
+          jenis,
+          emailMitra
+        );
+
+        if (onSendNotification) {
+          onSendNotification(jenis);
+        }
+
+        // Auto-hide success message setelah 3 detik
+        setTimeout(() => {
+          setFeedbackMessage(null);
+        }, 3000);
+      } else {
+        setFeedbackMessage({
+          type: 'error',
+          text: result.message,
+        });
       }
-      setSendingNotification(false);
-      alert(`Notifikasi "${jenis}" berhasil dikirim ke ${emailMitra}`);
-    }, 1000);
+    } catch (error) {
+      console.error('Error:', error);
+      setFeedbackMessage({
+        type: 'error',
+        text: 'Terjadi kesalahan saat mengirim notifikasi email.',
+      });
+    } finally {
+      setSendingNotification(null);
+    }
   };
 
   const sortedNotifications = [...notifications].sort(
@@ -85,7 +130,7 @@ export default function NotificationHistoryModal({
   );
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/35 px-4 py-8 backdrop-blur-[2px]">
       <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
@@ -106,23 +151,44 @@ export default function NotificationHistoryModal({
         </div>
 
         <div className="space-y-5 px-6 py-5">
+          {/* Feedback Message */}
+          {feedbackMessage && (
+            <div className={`rounded-lg p-4 ${feedbackMessage.type === 'success' ? 'border border-green-200 bg-green-50' : 'border border-red-200 bg-red-50'}`}>
+              <p className={`text-sm font-semibold ${feedbackMessage.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>
+                {feedbackMessage.text}
+              </p>
+            </div>
+          )}
+
           {/* Send Notification Buttons */}
           <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-            <p className="mb-3 text-sm font-semibold text-[#1E376C]">Kirim Notifikasi Manual</p>
+            <p className="mb-3 text-sm font-semibold text-[#1E376C]">Kirim Notifikasi Manual ke Email Mitra</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(notificationConfig).map(([key, config]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => handleSendNotification(key)}
-                  disabled={sendingNotification}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:opacity-50"
+                  disabled={sendingNotification !== null}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                 >
-                  <Mail size={13} />
-                  {config.label}
+                  {sendingNotification === key ? (
+                    <>
+                      <Loader size={13} className="animate-spin" />
+                      Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={13} />
+                      {config.label}
+                    </>
+                  )}
                 </button>
               ))}
             </div>
+            <p className="mt-3 text-xs text-gray-600">
+              Email akan dikirim ke: <span className="font-semibold">{emailMitra}</span>
+            </p>
           </div>
 
           {/* Notification History List */}

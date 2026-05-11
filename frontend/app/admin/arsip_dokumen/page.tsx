@@ -76,6 +76,50 @@ const jenisColor: Record<string, string> = {
 export default function ArsipDokumenPage() {
   const [search, setSearch] = useState('');
   const [data, setData] = useState<ArsipDokumen[]>([]);
+  const [activeTab, setActiveTab] = useState<'akan-kadaluarsa' | 'kadaluarsa'>('akan-kadaluarsa');
+
+  // Helper function to determine document status
+  const getDocumentStatus = (berlakuHingga: string): 'akan-kadaluarsa' | 'kadaluarsa' | null => {
+    const dateStr = berlakuHingga.split('/').reverse().join('-');
+    const expiryDate = new Date(dateStr);
+    const today = new Date();
+    
+    // Reset time to compare only dates
+    today.setHours(0, 0, 0, 0);
+    expiryDate.setHours(0, 0, 0, 0);
+
+    if (isNaN(expiryDate.getTime())) {
+      return null;
+    }
+
+    // Jika sudah berlalu
+    if (expiryDate < today) {
+      return 'kadaluarsa'; // Already expired
+    }
+
+    // 3 months warning threshold
+    const threeMonthsFromNow = new Date(today);
+    threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+    // Jika akan berakhir dalam 3 bulan ke depan
+    if (expiryDate <= threeMonthsFromNow) {
+      return 'akan-kadaluarsa'; // Will expire within 3 months
+    }
+
+    // Masih jauh dari masa berlaku, tidak perlu di arsip
+    return null;
+  };
+
+  const getRowStyling = (berlakuHingga: string) => {
+    const status = getDocumentStatus(berlakuHingga);
+    if (status === 'kadaluarsa') {
+      return 'bg-red-50/40 hover:bg-red-50';
+    } else if (status === 'akan-kadaluarsa') {
+      return 'bg-orange-50/30 hover:bg-orange-50';
+    } else {
+      return 'hover:bg-gray-50';
+    }
+  };
 
   useEffect(() => {
     const syncArsip = () => {
@@ -105,7 +149,10 @@ export default function ArsipDokumenPage() {
   const filtered = [];
   for (const item of filteredRaw) {
     if (!seen.has(item.id)) {
-      filtered.push(item);
+      const status = getDocumentStatus(item.berlakuHingga);
+      if (status === activeTab && status !== null) {
+        filtered.push(item);
+      }
       seen.add(item.id);
     }
   }
@@ -153,12 +200,12 @@ export default function ArsipDokumenPage() {
     URL.revokeObjectURL(url);
   };
 
-  const totalArsip = data.length;
-  const tahunIni = new Date().getFullYear();
-  const kadaluarsaTahunIni = data.filter((item) => {
-    const parsed = new Date(item.berlakuHingga.split('/').reverse().join('-'));
-    return !Number.isNaN(parsed.getTime()) && parsed.getFullYear() === tahunIni;
+  const totalArsip = data.filter((item) => {
+    const status = getDocumentStatus(item.berlakuHingga);
+    return status !== null;
   }).length;
+  const akanKadaluarsa = data.filter((item) => getDocumentStatus(item.berlakuHingga) === 'akan-kadaluarsa').length;
+  const sudahKadaluarsa = data.filter((item) => getDocumentStatus(item.berlakuHingga) === 'kadaluarsa').length;
   const tidakDirespon = data.filter(
     (item) => item.statusFollowUp === 'Tidak Direspon'
   ).length;
@@ -168,10 +215,10 @@ export default function ArsipDokumenPage() {
       {/* Header */}
       <div>
         <h1 className="page-title">
-          Arsip Dokumen Kadaluarsa
+          Arsip Dokumen Kerjasama
         </h1>
         <p className="page-subtitle mt-1">
-          Daftar dokumen kerjasama yang sudah melewati masa berlaku
+          Daftar dokumen kerjasama yang akan atau sudah kadaluarsa
         </p>
       </div>
 
@@ -179,75 +226,94 @@ export default function ArsipDokumenPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Arsip */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-50 border-l-4 border-red-500 flex items-center justify-center shrink-0">
-            <Archive size={22} className="text-red-500" />
+          <div className="w-12 h-12 rounded-xl bg-slate-50 border-l-4 border-gray-500 flex items-center justify-center shrink-0">
+            <Archive size={22} className="text-gray-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Total Arsip</p>
+            <p className="text-sm text-gray-500 font-medium">Total Dokumen</p>
             <p className="text-3xl font-bold text-gray-900">{totalArsip}</p>
           </div>
         </div>
 
-        {/* Kadaluarsa Tahun Ini */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+        {/* Akan Kadaluarsa */}
+        <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-orange-50 border-l-4 border-orange-500 flex items-center justify-center shrink-0">
-            <Archive size={22} className="text-orange-500" />
+            <AlertCircle size={22} className="text-orange-500" />
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">
-              Kadaluarsa Tahun Ini
+              Akan Kadaluarsa
             </p>
-            <p className="text-3xl font-bold text-gray-900">
-              {kadaluarsaTahunIni}
+            <p className="text-3xl font-bold text-orange-700">
+              {akanKadaluarsa}
             </p>
           </div>
         </div>
 
-        {/* Tidak Direspon */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 border-l-4 border-blue-500 flex items-center justify-center shrink-0">
-            <AlertCircle size={22} className="text-blue-500" />
+        {/* Sudah Kadaluarsa */}
+        <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-red-50 border-l-4 border-red-500 flex items-center justify-center shrink-0">
+            <Archive size={22} className="text-red-500" />
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">
-              Tidak Direspon
+              Sudah Kadaluarsa
             </p>
-            <p className="text-3xl font-bold text-gray-900">{tidakDirespon}</p>
+            <p className="text-3xl font-bold text-red-700">{sudahKadaluarsa}</p>
           </div>
         </div>
       </div>
 
       {/* Info Box */}
-      <div className="card bg-slate-50 p-5">
+      <div className="card bg-blue-50 border border-blue-200 p-5">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
             <Info size={18} className="text-blue-600" />
           </div>
           <div>
-            <h3 className="font-bold text-blue-900 text-sm mb-1.5">
-              Informasi Arsip
+            <h3 className="font-bold text-blue-900 text-sm mb-2">
+              Panduan Arsip Dokumen
             </h3>
-            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+            <ul className="text-sm text-blue-800 space-y-1.5 list-disc list-inside">
               <li>
-                Dokumen yang sudah kadaluarsa akan secara otomatis dipindahkan
-                ke arsip
+                <span className="font-semibold">Akan Kadaluarsa (⏰)</span>: Dokumen yang akan berakhir dalam 3 bulan ke depan
               </li>
               <li>
-                Data arsip dapat digunakan untuk keperluan akreditasi dan
-                pelaporan
+                <span className="font-semibold">Sudah Kadaluarsa (❌)</span>: Dokumen yang sudah melampaui tanggal berlaku
               </li>
               <li>
-                Dokumen dapat diperpanjang dengan membuat pengajuan kerjasama
-                baru
+                Dokumen yang sudah kadaluarsa dapat diperpanjang dengan membuat pengajuan kerjasama baru
               </li>
-              <li>Arsip dapat dihapus permanen oleh admin</li>
               <li>
-                Bukti follow up menunjukkan apakah mitra telah merespon
-                perpanjangan atau tidak
+                Arsip dapat dihapus permanen oleh admin jika tidak diperlukan lagi
               </li>
             </ul>
           </div>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('akan-kadaluarsa')}
+          className={`px-4 py-3 font-semibold text-sm border-b-2 transition ${
+            activeTab === 'akan-kadaluarsa'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          ⏰ Akan Kadaluarsa ({akanKadaluarsa})
+        </button>
+        <button
+          onClick={() => setActiveTab('kadaluarsa')}
+          className={`px-4 py-3 font-semibold text-sm border-b-2 transition ${
+            activeTab === 'kadaluarsa'
+              ? 'border-red-500 text-red-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          ❌ Sudah Kadaluarsa ({sudahKadaluarsa})
+        </button>
       </div>
 
       {/* Search & Export */}
@@ -296,6 +362,9 @@ export default function ArsipDokumenPage() {
                   Berlaku Hingga
                 </th>
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
+                  Status
+                </th>
+                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
                   Follow Up
                 </th>
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
@@ -310,7 +379,7 @@ export default function ArsipDokumenPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="py-10 text-center text-gray-400"
                   >
                     Tidak ada data ditemukan
@@ -321,7 +390,7 @@ export default function ArsipDokumenPage() {
               {filtered.map((item) => (
                 <tr
                   key={item.id}
-                  className="border-b border-gray-100 hover:bg-gray-50/50 transition"
+                  className={`border-b border-gray-100 transition ${getRowStyling(item.berlakuHingga)}`}
                 >
                   <td className="py-3.5 px-4 font-medium text-gray-900">
                     {item.noDokumen}
@@ -341,6 +410,17 @@ export default function ArsipDokumenPage() {
                   </td>
                   <td className="py-3.5 px-4 text-gray-600">
                     {item.berlakuHingga}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        getDocumentStatus(item.berlakuHingga) === 'kadaluarsa'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-orange-100 text-orange-700'
+                      }`}
+                    >
+                      {getDocumentStatus(item.berlakuHingga) === 'kadaluarsa' ? '❌ Kadaluarsa' : '⏰ Akan Kadaluarsa'}
+                    </span>
                   </td>
                   <td className="py-3.5 px-4">
                     <span
