@@ -220,7 +220,7 @@ export default function Home() {
         <div className="pointer-events-none absolute -left-10 top-14 h-40 w-40 rounded-full bg-[#57C9E8]/15 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[#F28C00]/10 blur-3xl" />
 
-        <div className="relative mx-auto grid min-h-[520px] max-w-7xl gap-10 px-4 py-12 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
+        <div className="relative mx-auto grid min-h-[600px] max-w-7xl gap-10 px-4 py-16 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
           <div>
             <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100 backdrop-blur-sm">
               Portal Resmi Bagian Kerjasama
@@ -267,7 +267,7 @@ export default function Home() {
       </section>
 
       {/* ── AKTIVITAS CAROUSEL ── */}
-      <section id="aktivitas" className="px-4 py-4 md:py-6">
+      <section id="aktivitas" className="px-4 py-8 md:py-12">
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
@@ -333,7 +333,7 @@ export default function Home() {
       </section>
 
       {/* ── SUMMARY CARDS ── */}
-      <section className="relative -mt-8 px-4 pb-4">
+      <section className="relative -mt-6 px-6 pb-3 md:pb-4">
         <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
@@ -374,7 +374,7 @@ export default function Home() {
       </section>
 
       {/* ── STATISTIK KERJASAMA ── */}
-      <section className="px-4 py-4 md:py-6">
+      <section className="px-4 pt-4 md:pt-4 pb-18 md:pb-12">
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
@@ -429,7 +429,7 @@ export default function Home() {
       </section>
 
       {/* ── INFORMASI KERJASAMA ── */}
-      <section id="info-kerjasama" className="px-4 py-4 pb-6">
+      <section id="info-kerjasama" className="px-4 pt-4 md:pt-2 pb-14">
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
@@ -595,10 +595,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div id="kontak" className="px-4 pb-4 pt-2">
-        <div className="mx-auto max-w-7xl">
-          <AdminFooter />
-        </div>
+      <div id="kontak" className="px-4 py-8 md:py-12">
+        <AdminFooter />
       </div>
     </main>
   );
