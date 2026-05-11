@@ -52,7 +52,17 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
   const userRoleLabel = roleLabelMap[user?.role || 'user'] || 'Pengguna';
 
   const refreshNotifications = () => {
-    setNotifications(getAdminNotifications());
+    const allNotifications = getAdminNotifications();
+    // Filter notifikasi berdasarkan role user
+    const filteredNotifications = allNotifications.filter((notif) => {
+      // Admin bisa lihat semua notifikasi (dari semua role)
+      if (user?.role === 'admin') {
+        return true;
+      }
+      // Selain admin, notifikasi tanpa targetRole dianggap notifikasi admin lama.
+      return notif.targetRole === user?.role;
+    });
+    setNotifications(filteredNotifications);
   };
 
   const handleLogout = () => {
@@ -60,10 +70,24 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
     router.push('/login');
   };
 
+  const resolveNotificationRoute = (notification: AdminNotification) => {
+    const fallbackRoute = '/admin/notifikasi';
+    const targetRoute = notification.href || fallbackRoute;
+
+    // Admin tetap diarahkan ke halaman admin meskipun notifikasi berasal dari role lain.
+    if (user?.role === 'admin' && !targetRoute.startsWith('/admin')) {
+      if (targetRoute.startsWith('/internal') || targetRoute.startsWith('/eksternal') || targetRoute.startsWith('/pimpinan')) {
+        return '/admin/data_pengajuan';
+      }
+    }
+
+    return targetRoute;
+  };
+
   const handleOpenNotification = (notification: AdminNotification) => {
     setNotifications(markNotificationAsRead(notification.id));
     setShowNotifications(false);
-    router.push(notification.href || '/admin/notifikasi');
+    router.push(resolveNotificationRoute(notification));
   };
 
   const handleMarkAllAsRead = () => {
@@ -222,6 +246,7 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Notifikasi - Bell icon untuk semua, tapi isi hanya Admin */}
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}

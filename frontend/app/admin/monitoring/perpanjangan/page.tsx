@@ -67,8 +67,9 @@ export default function MonitoringPerpanjanganPage() {
       title: status === 'disetujui' ? 'Perpanjangan Disetujui' : 'Perpanjangan Ditolak',
       message: `Permintaan perpanjangan ${item.noDokumen} (${item.namaMitra}) telah ${status}.`,
       from: 'Admin Monitoring',
-      href: '/admin/monitoring/perpanjangan',
+      href: item.notificationHref,
       category: status === 'disetujui' ? 'approval' : 'reminder',
+      targetRole: item.requesterRole,
     });
   };
 

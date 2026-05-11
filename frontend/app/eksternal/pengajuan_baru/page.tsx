@@ -61,7 +61,7 @@ export default function PengajuanBaruEksternalPage() {
               size: item.file.size,
               url: item.dataUrl,
             })),
-          });
+          }, false, 'eksternal');
 
           setIsSuccessModalOpen(true);
           return false;
