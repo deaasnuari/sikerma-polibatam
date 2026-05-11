@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Upload, X, Download } from 'lucide-react';
+import { Plus, Upload, X, Download, AlertCircle, RefreshCw } from 'lucide-react';
 import { compressImageFileIfNeeded, validateSelectedFile } from '@/lib/fileUploadUtils';
 
 export interface RenewalFullFormProps {
@@ -30,14 +30,14 @@ export interface RenewalFullFormProps {
 }
 
 export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFormProps) {
-  const [form, setForm] = useState({ ...initialData });
+  const [form, setForm] = useState({
+    tanggalMulaiBaru: initialData.tanggalMulaiBaru || initialData.tanggalBerakhir,
+    tanggalBerakhirBaru: initialData.tanggalBerakhirBaru || '',
+    catatanPerpanjangan: initialData.catatanPerpanjangan || '',
+  });
   const [dokumen, setDokumen] = useState(initialData.dokumenTerakhir ? [initialData.dokumenTerakhir] : []);
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'mitra' | 'perpanjangan'>('mitra');
-
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddDokumen = () => {
     const input = document.createElement('input');
@@ -70,187 +70,198 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
+    setError('');
+    
+    if (!form.tanggalMulaiBaru || form.tanggalMulaiBaru.trim() === '') {
+      setError('Tanggal mulai perpanjangan wajib diisi.');
+      return;
+    }
+    if (!form.tanggalBerakhirBaru || form.tanggalBerakhirBaru.trim() === '') {
+      setError('Tanggal berakhir perpanjangan wajib diisi.');
+      return;
+    }
     if (!form.catatanPerpanjangan || form.catatanPerpanjangan.trim() === '') {
-      setError('Alasan perpanjangan wajib diisi.');
+      setError('Alasan/catatan perpanjangan wajib diisi.');
       return;
     }
     if (dokumen.length === 0) {
-      setError('Silakan upload dokumen perpanjangan.');
+      setError('Silakan upload dokumen perpanjangan (MoU/MoA/IA terbaru).');
       return;
     }
-    setError('');
-    onSubmit({ ...form, dokumen: dokumen[0] });
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      onSubmit({
+        ...initialData,
+        tanggalMulaiBaru: form.tanggalMulaiBaru,
+        tanggalBerakhirBaru: form.tanggalBerakhirBaru,
+        catatanPerpanjangan: form.catatanPerpanjangan,
+        dokumen: dokumen[0],
+      });
+      setIsSubmitting(false);
+    }, 500);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-0 md:p-0 bg-white">
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 md:p-4 mb-3">
-        <h3 className="font-bold text-blue-900 mb-2 text-base">Data Mitra</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold mb-1">Nama Instansi</label>
-          <input name="namaMitra" value={form.namaMitra} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Jenis Mitra</label>
-          <input name="jenisMitra" value={form.jenisMitra} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">WhatsApp Aktif</label>
-          <input name="teleponMitra" value={form.teleponMitra} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Email Mitra</label>
-          <input name="emailMitra" value={form.emailMitra} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold mb-1">Alamat Lengkap</label>
-          <input name="alamatLengkap" value={form.alamatLengkap} onChange={handleChange} className="input-field w-full" />
-        </div>
-      </div>
-      </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 md:p-4 mb-3">
-        <h3 className="font-bold text-blue-900 mb-2 text-base">Detail Kerjasama</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold mb-1">Negara Mitra</label>
-          <input name="negara" value={form.negara} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Jenis Kerjasama</label>
-          <input name="jenisKerjasama" value={form.jenisKerjasama} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Unit Pelaksana</label>
-          <input name="unitPelaksana" value={form.unitPelaksana} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Tanggal Mulai</label>
-          <input type="date" name="tanggalMulai" value={form.tanggalMulai} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Tanggal Berakhir</label>
-          <input type="date" name="tanggalBerakhir" value={form.tanggalBerakhir} onChange={handleChange} className="input-field w-full" />
-        </div>
-        {/* Field tanggal baru dan catatan dari form sederhana */}
-        {/* Hapus field tanggal perpanjangan baru yang ganda, cukup gunakan tanggal berakhir baru jika perlu. */}
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold mb-1">Catatan Perpanjangan (opsional)</label>
-          <textarea
-            name="catatanPerpanjangan"
-            value={form.catatanPerpanjangan || ''}
-            onChange={handleChange}
-            placeholder="Catatan perpanjangan (opsional)..."
-            rows={2}
-            className="input-field w-full"
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold mb-1">Judul Kerjasama</label>
-          <input name="judulKerjasama" value={form.judulKerjasama} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold mb-1">Deskripsi</label>
-          <textarea name="deskripsi" value={form.deskripsi} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs font-semibold mb-1">Ruang Lingkup</label>
-          <input name="ruangLingkup" value={form.ruangLingkup.join(', ')} onChange={e => setForm({ ...form, ruangLingkup: e.target.value.split(',').map((s: string) => s.trim()) })} className="input-field w-full" />
-        </div>
-      </div>
-      </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 md:p-4 mb-3">
-        <h3 className="font-bold text-blue-900 mb-2 text-base">Kontak Person Mitra</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold mb-1">Nama Kontak Person</label>
-          <input name="kontakNama" value={form.kontakNama} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Jabatan</label>
-          <input name="kontakJabatan" value={form.kontakJabatan} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Email</label>
-          <input name="kontakEmail" value={form.kontakEmail} onChange={handleChange} className="input-field w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">WhatsApp Aktif</label>
-          <input name="kontakTelepon" value={form.kontakTelepon} onChange={handleChange} className="input-field w-full" />
-        </div>
-      </div>
-      </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 md:p-4 mb-3">
-        <h3 className="font-bold text-blue-900 mb-2 text-base">Pengajuan Perpanjangan</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold mb-1">Dari Tanggal (Perpanjangan Baru)</label>
-            <input
-              type="date"
-              name="tanggalMulaiBaru"
-              value={form.tanggalMulaiBaru || ''}
-              onChange={handleChange}
-              className="input-field w-full"
-            />
+    <form onSubmit={handleSubmit} className="space-y-5 p-0 md:p-0 bg-white">
+      {/* ===== BAGIAN 1: DATA KERJASAMA LAMA (READ-ONLY) ===== */}
+      <div className="rounded-xl border border-gray-300 bg-gray-50 p-4">
+        <h3 className="font-bold text-gray-900 mb-3 text-base flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-400 text-xs font-bold text-white">1</span>
+          Data Kerjasama Saat Ini
+        </h3>
+        
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Nama Mitra</label>
+            <p className="text-sm font-medium text-gray-900">{initialData.namaMitra}</p>
           </div>
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Jenis Kerjasama</label>
+            <p className="text-sm font-medium text-gray-900">{initialData.jenisKerjasama}</p>
+          </div>
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Tanggal Mulai</label>
+            <p className="text-sm font-medium text-gray-900">{initialData.tanggalMulai}</p>
+          </div>
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Tanggal Berakhir</label>
+            <p className="text-sm font-medium text-gray-900">{initialData.tanggalBerakhir}</p>
+          </div>
+          {initialData.judulKerjasama && (
+            <div className="bg-white rounded-lg p-3 border border-gray-200 md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Judul Kerjasama</label>
+              <p className="text-sm font-medium text-gray-900">{initialData.judulKerjasama}</p>
+            </div>
+          )}
+          {initialData.ruangLingkup.length > 0 && (
+            <div className="bg-white rounded-lg p-3 border border-gray-200 md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-2">Ruang Lingkup</label>
+              <div className="flex flex-wrap gap-2">
+                {initialData.ruangLingkup.map((tag) => (
+                  <span key={tag} className="inline-flex rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ===== BAGIAN 2: PERPANJANGAN KERJASAMA (EDITABLE) ===== */}
+      <div className="rounded-xl border border-green-300 bg-green-50 p-4">
+        <h3 className="font-bold text-green-900 mb-3 text-base flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">2</span>
+          Data Perpanjangan Kerjasama
+        </h3>
+
+        <div className="space-y-3">
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-green-900 mb-1.5">Tanggal Mulai Perpanjangan <span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                value={form.tanggalMulaiBaru}
+                onChange={(e) => setForm({ ...form, tanggalMulaiBaru: e.target.value })}
+                className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-green-900 mb-1.5">Tanggal Berakhir Perpanjangan <span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                value={form.tanggalBerakhirBaru}
+                onChange={(e) => setForm({ ...form, tanggalBerakhirBaru: e.target.value })}
+                className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-xs font-semibold mb-1">Sampai Tanggal (Perpanjangan Baru)</label>
-            <input
-              type="date"
-              name="tanggalBerakhirBaru"
-              value={form.tanggalBerakhirBaru || ''}
-              onChange={handleChange}
-              className="input-field w-full"
+            <label className="block text-xs font-semibold text-green-900 mb-1.5">Alasan/Catatan Perpanjangan <span className="text-red-500">*</span></label>
+            <textarea
+              value={form.catatanPerpanjangan}
+              onChange={(e) => setForm({ ...form, catatanPerpanjangan: e.target.value })}
+              placeholder="Jelaskan alasan perpanjangan kerjasama ini..."
+              rows={3}
+              className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
           </div>
         </div>
-        <div className="mt-3">
-          <label className="block text-xs font-semibold mb-1">Alasan Perpanjangan <span className="text-red-500">*</span></label>
-          <textarea
-            name="catatanPerpanjangan"
-            value={form.catatanPerpanjangan || ''}
-            onChange={handleChange}
-            placeholder="Jelaskan alasan perpanjangan kerjasama..."
-            rows={2}
-            className="input-field w-full"
-            required
-          />
-        </div>
-        {/* Step pengajuan ke mitra */}
-        {step === 'mitra' && (
+      </div>
+
+      {/* ===== BAGIAN 3: DOKUMEN PERPANJANGAN ===== */}
+      <div className="rounded-xl border border-blue-300 bg-blue-50 p-4">
+        <h3 className="font-bold text-blue-900 mb-3 text-base flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
+          Upload Dokumen Perpanjangan (MoU/MoA/IA Terbaru)
+        </h3>
+
+        <div className="space-y-3">
+          {dokumen.length > 0 && (
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload size={16} className="text-green-600" />
+                <div>
+                  <a href={dokumen[0].url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-green-700 hover:underline">
+                    {dokumen[0].nama}
+                  </a>
+                  <p className="text-xs text-green-600">Ukuran: {dokumen[0].ukuran} | Tanggal: {dokumen[0].tanggal}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveDokumen}
+                className="text-red-500 hover:text-red-700 transition-colors p-1.5 hover:bg-red-100 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
-            className="mt-4 w-full rounded-lg bg-blue-600 text-white font-semibold py-2.5 text-sm hover:bg-blue-700 transition-colors"
-            onClick={() => setStep('perpanjangan')}
-            disabled={!form.catatanPerpanjangan || form.catatanPerpanjangan.trim() === ''}
+            onClick={handleAddDokumen}
+            className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-400 bg-white py-4 px-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-500 hover:bg-blue-100"
           >
-            Ajukan Kerjasama
+            <Plus size={18} />
+            {dokumen.length > 0 ? 'Ganti Dokumen Perpanjangan' : 'Upload Dokumen Perpanjangan'}
           </button>
-        )}
-        {step === 'perpanjangan' && (
-          <div className="mt-4">
-            <div className="mb-2 text-green-700 text-sm font-semibold">Sudah hubungi mitra untuk perpanjangan terlebih dahulu. Silakan lengkapi dokumen dan ajukan perpanjangan.</div>
-            <button type="submit" className="btn-primary w-full mt-2">Ajukan Perpanjangan</button>
-          </div>
-        )}
+          <p className="text-xs text-blue-700">
+            📄 Format yang didukung: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (Maks. 10 MB)
+          </p>
+        </div>
       </div>
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 mb-2">
-        <h3 className="font-bold text-blue-900 mb-2 text-base">Dokumen Pendukung (MoU/MoA/IA)</h3>
-        {dokumen.length > 0 && (
-          <div className="flex items-center gap-2 mb-2">
-            <a href={dokumen[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline text-xs">
-              <Upload size={14} className="inline mr-1" />
-              {dokumen[0].nama} ({dokumen[0].ukuran})
-            </a>
-            <button type="button" onClick={handleRemoveDokumen} className="text-red-500 hover:text-red-700 text-xs"><X size={14} /></button>
-          </div>
-        )}
-        <button type="button" onClick={handleAddDokumen} className="flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-2 px-3 text-xs font-medium text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-700">
-          <Plus size={14} /> {dokumen.length > 0 ? 'Ganti Dokumen' : 'Upload Dokumen MoU/MoA/IA'}
+
+      {/* ===== BAGIAN 4: ERROR MESSAGE ===== */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex gap-2">
+          <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
+          <p className="text-xs font-medium text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* ===== BAGIAN 5: ACTION BUTTONS ===== */}
+      <div className="flex gap-2 pt-2">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 text-sm transition-all hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              Mengajukan...
+            </>
+          ) : (
+            <>
+              <RefreshCw size={16} />
+              Ajukan Perpanjangan Kerjasama
+            </>
+          )}
         </button>
-        <div className="text-xs text-gray-500 mt-1">Hanya file MoU, MoA, IA yang didukung (.pdf, .doc, .docx, .xls, .xlsx, .jpg, .jpeg, .png)</div>
       </div>
-      {error && <div className="text-xs text-red-600 mt-2">{error}</div>}
     </form>
   );
 }

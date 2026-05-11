@@ -409,7 +409,7 @@ export default function RekapDataPage() {
       </section>
 
       {detailItem && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/35 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-900/35 backdrop-blur-[2px]">
           <div className="flex min-h-full items-center justify-center px-4 py-8">
           <div className="w-full max-w-2xl rounded-[24px] bg-white shadow-2xl flex flex-col">
             {/* Header - sticky, tidak ikut scroll */}

@@ -24,12 +24,14 @@ import {
   TableProperties,
 } from 'lucide-react';
 import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
+import EventHistoryModal from '@/app/admin/monitoring/EventHistoryModal';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 import {
   getAktivitasByKerjasamaId,
   saveAktivitasByKerjasamaId,
   type AktivitasItem,
 } from '@/services/adminStoryAktivitasService';
+import { logAktivitasDitambah } from '@/services/kerjasamaEventLogService';
 
 
 interface DetailKerjasama {
@@ -500,6 +502,7 @@ export default function DetailStoryPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showEditDokumen, setShowEditDokumen] = useState(false);
   const [showLaporanModal, setShowLaporanModal] = useState(false);
+  const [eventHistoryModal, setEventHistoryModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
 
   // Persist aktivitas ke localStorage setiap kali daftar berubah (hanya untuk data dari pengajuan)
   useEffect(() => {
@@ -547,6 +550,17 @@ export default function DetailStoryPage() {
           ? Math.max(...aktivitasList.map((a) => a.id)) + 1
           : 1;
       setAktivitasList((prev) => [...prev, { id: newId, ...formData }]);
+
+      // Log event aktivitas ditambah
+      if (data) {
+        logAktivitasDitambah(
+          Number(id),
+          data.nama,
+          data.nomorDokumen,
+          formData.judul,
+          formData.status
+        );
+      }
     }
     setShowAddForm(false);
     setFormData({
@@ -815,26 +829,35 @@ export default function DetailStoryPage() {
             📋 Story Kerjasama & Aktivitas
           </h2>
           {!showAddForm && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  judul: '',
-                  jenisAktivitas: '',
-                  tanggal: '',
-                  peserta: 0,
-                  status: 'direncanakan' as 'direncanakan' | 'berlangsung' | 'selesai',
-                  picPolibatam: '',
-                  picMitra: '',
-                  deskripsi: '',
-                });
-                setShowAddForm(true);
-              }}
-              className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
-            >
-              <Plus size={15} />
-              Tambah Aktivitas
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEventHistoryModal({ open: true, kerjasamaId: Number(id) })}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+              >
+                📖 Event Log
+              </button>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    judul: '',
+                    jenisAktivitas: '',
+                    tanggal: '',
+                    peserta: 0,
+                    status: 'direncanakan' as 'direncanakan' | 'berlangsung' | 'selesai',
+                    picPolibatam: '',
+                    picMitra: '',
+                    deskripsi: '',
+                  });
+                  setShowAddForm(true);
+                }}
+                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+              >
+                <Plus size={15} />
+                Tambah Aktivitas
+              </button>
+            </div>
           )}
         </div>
 
@@ -1156,6 +1179,15 @@ export default function DetailStoryPage() {
         )}
       </div>
 
+      {/* Event History Modal */}
+      <EventHistoryModal
+        isOpen={eventHistoryModal.open}
+        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
+        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
+        namaMitra={data?.nama || ''}
+        noDokumen={data?.nomorDokumen || ''}
+      />
+
       {/* Edit Dokumen Modal */}
       <LaporanKegiatanTemplateModal
         isOpen={showLaporanModal}
@@ -1168,8 +1200,16 @@ export default function DetailStoryPage() {
         }}
       />
 
+      <EventHistoryModal
+        isOpen={eventHistoryModal.open}
+        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
+        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
+        namaMitra={data?.nama || ''}
+        noDokumen={data?.nomorDokumen || ''}
+      />
+
       {showEditDokumen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="bg-gradient-to-r from-[#0e1d34] to-[#1a3a5c] rounded-t-2xl px-6 py-5">
               <h2 className="text-lg font-bold text-white">Edit Dokumen Kerjasama</h2>

@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { saveAktivitasByKerjasamaId, type AktivitasItem } from '@/services/adminStoryAktivitasService';
+import { logAktivitasDitambah } from '@/services/kerjasamaEventLogService';
 import type { KerjasamaStory, Aktivitas } from './page';
 
 type Jenis = 'MoA' | 'MoU' | 'IA';
@@ -100,6 +101,16 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
     setAktivitasList(updated);
     setShowTambah(false);
     saveAktivitasByKerjasamaId(Number(story.id), toAktivitasItems(updated));
+    
+    // Log event aktivitas ditambah
+    logAktivitasDitambah(
+      Number(story.id),
+      story.namaMitra,
+      story.noDokumen,
+      data.judul,
+      data.status
+    );
+    
     window.dispatchEvent(new Event('story-data-updated'));
   }
 

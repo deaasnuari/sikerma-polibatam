@@ -67,7 +67,7 @@ export default function RenewalHistoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3 py-6">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 px-3 py-6">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4">
           <h2 className="text-lg font-bold text-[#1E376C]">History Perpanjangan Kerjasama</h2>

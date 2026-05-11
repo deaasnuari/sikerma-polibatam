@@ -9,6 +9,7 @@ import RenewalForm from './RenewalForm';
 // import RenewalForm from './RenewalForm';
 import NotificationHistoryModal from './NotificationHistoryModal';
 import NonactiveConfirmationModal from './NonactiveConfirmationModal';
+import EventHistoryModal from './EventHistoryModal';
 import {
   createNonactiveRecord,
   createNotificationRecord,
@@ -31,6 +32,7 @@ import {
 } from '@/services/adminMonitoringService';
 import { addAdminNotification } from '@/services/adminService';
 import { addRenewalRequest } from '@/services/adminRenewalRequestService';
+import { logPerpanjanganDiajukan, logNotifikasiDikirim } from '@/services/kerjasamaEventLogService';
 
 
 export default function MonitoringdanstatusPage() {
@@ -44,6 +46,7 @@ export default function MonitoringdanstatusPage() {
   const [notificationHistories, setNotificationHistories] = useState<Record<number, MonitoringNotification[]>>(getDefaultNotificationHistories());
   const [nonactiveModal, setNonactiveModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [nonactiveHistories, setNonactiveHistories] = useState<Record<number, NonactiveRecord[]>>({});
+  const [eventHistoryModal, setEventHistoryModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [monitoringData, setMonitoringData] = useState<Kerjasama[]>([]);
   // State untuk toggle form sederhana/baru
   const [showSimpleForm, setShowSimpleForm] = useState(false);
@@ -410,6 +413,14 @@ export default function MonitoringdanstatusPage() {
 
                   <button
                     type="button"
+                    onClick={() => setEventHistoryModal({ open: true, kerjasamaId: item.id })}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+                  >
+                    📖 Event Log
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => handleDeleteMonitoring(item)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
                   >
@@ -431,7 +442,7 @@ export default function MonitoringdanstatusPage() {
 
 
       {renewalModal.open && selectedRenewalItem && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center bg-slate-900/40 px-2 pt-32 pb-4">
+        <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-900/40 px-2 pt-32 pb-4">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl p-0 flex flex-col" style={{ maxHeight: 'calc(100vh - 9rem)' }}>
             <div className="overflow-auto p-4" style={{ maxHeight: 'calc(100vh - 11rem)' }}>
             <h2 className="text-lg font-bold text-[#1E376C] mb-2">Perpanjangan Kerjasama</h2>
@@ -461,8 +472,49 @@ export default function MonitoringdanstatusPage() {
                 catatanPerpanjangan: '',
               }}
               onSubmit={(data) => {
+                // Simpan ke renewal requests
+                addRenewalRequest({
+                  kerjasamaId: selectedRenewalItem.id,
+                  namaMitra: selectedRenewalItem.namaMitra,
+                  noDokumen: selectedRenewalItem.noDokumen,
+                  tanggalMulaiBaru: data.tanggalMulaiBaru,
+                  tanggalBerakhirBaru: data.tanggalBerakhirBaru,
+                  catatan: data.catatanPerpanjangan,
+                });
+
+                // Juga buat record di monitoring history
+                const renewalRecord = createRenewalRecord(
+                  selectedRenewalItem.id,
+                  data.catatanPerpanjangan,
+                  data.tanggalMulaiBaru,
+                  data.tanggalBerakhirBaru
+                );
+                setRenewalHistories((prev) => ({
+                  ...prev,
+                  [selectedRenewalItem.id]: [...(prev[selectedRenewalItem.id] || []), renewalRecord],
+                }));
+
+                // Log event perpanjangan
+                logPerpanjanganDiajukan(
+                  selectedRenewalItem.id,
+                  selectedRenewalItem.namaMitra,
+                  selectedRenewalItem.noDokumen,
+                  data.tanggalMulaiBaru,
+                  data.tanggalBerakhirBaru,
+                  data.catatanPerpanjangan
+                );
+
+                // Tambah notifikasi admin
+                addAdminNotification({
+                  title: 'Permintaan Perpanjangan Kerjasama',
+                  message: `Perpanjangan kerjasama dengan ${selectedRenewalItem.namaMitra} (${selectedRenewalItem.noDokumen}) telah diajukan. Periode baru: ${data.tanggalMulaiBaru} s/d ${data.tanggalBerakhirBaru}`,
+                  from: 'Admin SIKERMA',
+                  href: '/admin/pengajuan_perpanjangan',
+                  category: 'info',
+                });
+
                 setRenewalModal({ open: false, kerjasamaId: null });
-                alert('Perpanjangan kerjasama berhasil diajukan!');
+                alert('✓ Perpanjangan kerjasama berhasil diajukan!\n\nData telah dikirim ke sistem permintaan perpanjangan.');
               }}
             />
             <button
@@ -485,6 +537,7 @@ export default function MonitoringdanstatusPage() {
         noDokumen={selectedNotificationItem?.noDokumen || ''}
         emailMitra={selectedNotificationItem?.emailMitra || ''}
         notifications={notificationHistories[notificationModal.kerjasamaId || 0] || []}
+        kerjasamaId={notificationModal.kerjasamaId || 0}
         onSendNotification={(jenis: string) => {
           if (!notificationModal.kerjasamaId || !selectedNotificationItem) return;
           const newNotification = createNotificationRecord(
@@ -517,6 +570,18 @@ export default function MonitoringdanstatusPage() {
           alert(`Kerjasama "${selectedNonactiveItem?.namaMitra || ''}" telah berhasil dinonaktifkan.`);
           setNonactiveModal({ open: false, kerjasamaId: null });
         }}
+      />
+
+      <EventHistoryModal
+        isOpen={eventHistoryModal.open}
+        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
+        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
+        namaMitra={
+          findKerjasamaById(monitoringData, eventHistoryModal.kerjasamaId)?.namaMitra || ''
+        }
+        noDokumen={
+          findKerjasamaById(monitoringData, eventHistoryModal.kerjasamaId)?.noDokumen || ''
+        }
       />
     </div>
   );

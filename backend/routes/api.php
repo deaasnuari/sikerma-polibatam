@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CarouselImageController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -21,3 +22,7 @@ Route::delete('/admin/carousel-images/{carouselImage}', [CarouselImageController
 // OTP Email Verification Routes
 Route::post('/otp/send', [OtpController::class, 'sendOtp']);
 Route::post('/otp/verify', [OtpController::class, 'verifyOtp']);
+
+// Notification Email Routes
+Route::post('/notifications/send-email', [NotificationController::class, 'sendEmail']);
+Route::post('/notifications/send-bulk', [NotificationController::class, 'sendBulk']);
