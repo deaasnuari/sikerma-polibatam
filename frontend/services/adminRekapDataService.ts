@@ -438,6 +438,7 @@ export function addRekapDokumen(data: DokumenData): RekapDokumen[] {
     from: data.namaPIC || 'Admin SIKERMA',
     href: '/admin/rekap_data',
     category: 'info',
+    targetRole: 'admin',
   });
 
   return updated;
@@ -457,6 +458,7 @@ export function updateRekapDokumen(originalNoDokumen: string, data: DokumenData)
     from: data.namaPIC || 'Admin SIKERMA',
     href: '/admin/rekap_data',
     category: 'approval',
+    targetRole: 'admin',
   });
 
   return updated;
@@ -473,6 +475,7 @@ export function deleteRekapDokumen(noDokumen: string): RekapDokumen[] {
     from: 'Admin SIKERMA',
     href: '/admin/rekap_data',
     category: 'reminder',
+    targetRole: 'admin',
   });
 
   return updated;

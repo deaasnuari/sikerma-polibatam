@@ -30,6 +30,7 @@ import {
   type RenewalRecord,
   type TabKey,
 } from '@/services/adminMonitoringService';
+import { getPengajuanData } from '@/services/adminPengajuanService';
 import { addAdminNotification } from '@/services/adminService';
 import { addRenewalRequest } from '@/services/adminRenewalRequestService';
 import { logPerpanjanganDiajukan, logNotifikasiDikirim } from '@/services/kerjasamaEventLogService';
@@ -50,6 +51,31 @@ export default function MonitoringdanstatusPage() {
   const [monitoringData, setMonitoringData] = useState<Kerjasama[]>([]);
   // State untuk toggle form sederhana/baru
   const [showSimpleForm, setShowSimpleForm] = useState(false);
+
+  const resolveRenewalNotificationTarget = (item: Kerjasama) => {
+    const sourceItem = item.sourcePengajuanId
+      ? getPengajuanData().find((pengajuan) => pengajuan.id === item.sourcePengajuanId)
+      : undefined;
+
+    if (!sourceItem) {
+      return {
+        targetRole: 'admin' as const,
+        href: '/admin/monitoring/perpanjangan',
+      };
+    }
+
+    if (sourceItem.kategori === 'Eksternal') {
+      return {
+        targetRole: 'eksternal' as const,
+        href: '/eksternal/daftar_kerjasama',
+      };
+    }
+
+    return {
+      targetRole: sourceItem.isFromAdmin ? 'admin' as const : 'internal' as const,
+      href: sourceItem.isFromAdmin ? '/admin/data_pengajuan' : '/internal/data_pengajuan',
+    };
+  };
 
   useEffect(() => {
     const syncMonitoringData = () => {
@@ -472,6 +498,8 @@ export default function MonitoringdanstatusPage() {
                 catatanPerpanjangan: '',
               }}
               onSubmit={(data) => {
+                const renewalNotificationTarget = resolveRenewalNotificationTarget(selectedRenewalItem);
+
                 // Simpan ke renewal requests
                 addRenewalRequest({
                   kerjasamaId: selectedRenewalItem.id,
@@ -480,6 +508,8 @@ export default function MonitoringdanstatusPage() {
                   tanggalMulaiBaru: data.tanggalMulaiBaru,
                   tanggalBerakhirBaru: data.tanggalBerakhirBaru,
                   catatan: data.catatanPerpanjangan,
+                  requesterRole: renewalNotificationTarget.targetRole,
+                  notificationHref: renewalNotificationTarget.href,
                 });
 
                 // Juga buat record di monitoring history
@@ -509,8 +539,9 @@ export default function MonitoringdanstatusPage() {
                   title: 'Permintaan Perpanjangan Kerjasama',
                   message: `Perpanjangan kerjasama dengan ${selectedRenewalItem.namaMitra} (${selectedRenewalItem.noDokumen}) telah diajukan. Periode baru: ${data.tanggalMulaiBaru} s/d ${data.tanggalBerakhirBaru}`,
                   from: 'Admin SIKERMA',
-                  href: '/admin/pengajuan_perpanjangan',
+                  href: renewalNotificationTarget.href,
                   category: 'info',
+                  targetRole: renewalNotificationTarget.targetRole,
                 });
 
                 setRenewalModal({ open: false, kerjasamaId: null });

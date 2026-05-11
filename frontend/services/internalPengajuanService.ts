@@ -1,4 +1,5 @@
 import { PengajuanItem, PengajuanStatus, PengajuanFileAttachment, PengajuanFilterOptions, pengajuanJurusanOptions, pengajuanUnitOptions, pengajuanJurusanUnitOptions, getPengajuanData } from './adminPengajuanService';
+import { addAdminNotification } from './adminService';
 
 // Key localStorage khusus internal, benar-benar terpisah dari admin
 const STORAGE_KEY = 'pengajuanKerjasamaDataInternal';
@@ -58,7 +59,7 @@ export function submitInternalPengajuan(
     // Dynamic import untuk menghindari circular dependency
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { submitPengajuan } = require('./adminPengajuanService');
-    submitPengajuan(data, false); // isFromAdmin: false
+    submitPengajuan(data, false, 'internal'); // isFromAdmin: false, source: 'internal'
   } catch (e) {
     // fallback manual jika dynamic import gagal
     const STORAGE_KEY_UTAMA = 'pengajuanKerjasamaData';
@@ -77,7 +78,6 @@ export function submitInternalPengajuan(
   }
   return payload;
 }
-
 // Fungsi lain (statistik, update status, dsb) dapat di-copy sesuai kebutuhan
 
 /**

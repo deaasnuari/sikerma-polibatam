@@ -10,6 +10,8 @@ export interface RenewalRequestItem {
   catatan: string;
   status: RenewalRequestStatus;
   requestedAt: string;
+  requesterRole: 'admin' | 'internal' | 'eksternal' | 'pimpinan';
+  notificationHref: string;
   decidedAt?: string;
   decidedBy?: string;
 }
@@ -60,6 +62,8 @@ export function addRenewalRequest(payload: {
   tanggalMulaiBaru: string;
   tanggalBerakhirBaru: string;
   catatan?: string;
+  requesterRole?: 'admin' | 'internal' | 'eksternal' | 'pimpinan';
+  notificationHref?: string;
 }): RenewalRequestItem[] {
   const nextItem: RenewalRequestItem = {
     id: Date.now(),
@@ -71,6 +75,8 @@ export function addRenewalRequest(payload: {
     catatan: payload.catatan || '-',
     status: 'menunggu',
     requestedAt: new Date().toLocaleString('id-ID'),
+    requesterRole: payload.requesterRole ?? 'admin',
+    notificationHref: payload.notificationHref ?? '/admin/monitoring/perpanjangan',
   };
 
   const updated = [nextItem, ...getRenewalRequests()];

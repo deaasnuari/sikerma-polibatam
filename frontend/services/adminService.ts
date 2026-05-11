@@ -31,6 +31,7 @@ const defaultNotifications: AdminNotification[] = [
     createdAt: 'Baru saja',
     href: '/admin/data_pengajuan',
     category: 'approval',
+    targetRole: 'admin',
   },
   {
     id: 2,
@@ -41,6 +42,7 @@ const defaultNotifications: AdminNotification[] = [
     createdAt: '10 menit lalu',
     href: '/admin/data_pengajuan',
     category: 'comment',
+    targetRole: 'admin',
   },
   {
     id: 3,
@@ -51,6 +53,7 @@ const defaultNotifications: AdminNotification[] = [
     createdAt: '1 jam lalu',
     href: '/admin/arsip_dokumen',
     category: 'reminder',
+    targetRole: 'admin',
   },
 ];
 
@@ -124,29 +127,40 @@ function saveNotifications(items: AdminNotification[]) {
   emitNotificationUpdate();
 }
 
+function normalizeNotifications(items: AdminNotification[]): AdminNotification[] {
+  return items.map((notification) => ({
+    ...notification,
+    targetRole: notification.targetRole ?? 'admin',
+  }));
+}
+
 function readNotifications(): AdminNotification[] {
   if (!canUseStorage()) {
-    return defaultNotifications;
+    return normalizeNotifications(defaultNotifications);
   }
 
   const raw = window.localStorage.getItem(STORAGE_KEY);
 
   if (!raw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultNotifications));
-    return defaultNotifications;
+    const normalizedDefaults = normalizeNotifications(defaultNotifications);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedDefaults));
+    return normalizedDefaults;
   }
 
   try {
     const parsed = JSON.parse(raw) as AdminNotification[];
     if (Array.isArray(parsed)) {
-      return parsed;
+      const normalizedNotifications = normalizeNotifications(parsed);
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedNotifications));
+      return normalizedNotifications;
     }
   } catch {
     // fallback to default notifications below
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultNotifications));
-  return defaultNotifications;
+  const normalizedDefaults = normalizeNotifications(defaultNotifications);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedDefaults));
+  return normalizedDefaults;
 }
 
 export function getAdminNotifications(): AdminNotification[] {
@@ -183,6 +197,7 @@ export function addAdminNotification(
   const updatedNotifications = [
     {
       ...notification,
+      targetRole: notification.targetRole ?? 'admin',
       id: Date.now(),
       read: notification.read ?? false,
       createdAt: notification.createdAt ?? 'Baru saja',
