@@ -47,33 +47,6 @@ const templatePreviewUrlByJenis: Record<string, string> = {
   IA: '/templates/DRAFT%20IA%20POLIBATAM.docx',
 };
 
-function triggerBrowserDownload(url: string, fileName: string) {
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-}
-
-async function downloadAttachmentFile(url: string, fileName: string) {
-  if (url.startsWith('data:')) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-
-    try {
-      triggerBrowserDownload(objectUrl, fileName);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-
-    return;
-  }
-
-  triggerBrowserDownload(url, fileName);
-}
-
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
   const sc = statusConfig[item.status];
   const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
@@ -87,7 +60,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
@@ -135,15 +108,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                 {fileEntries.map((file, idx) => (
                   <li key={idx}>
                     {file.url ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void downloadAttachmentFile(file.url, file.name);
-                        }}
-                        className="text-blue-600 underline"
-                      >
-                        {file.name}
-                      </button>
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{file.name}</a>
                     ) : (
                       file.name
                     )}

@@ -16,8 +16,6 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { saveAktivitasByKerjasamaId, type AktivitasItem } from '@/services/adminStoryAktivitasService';
-import { logAktivitasDitambah } from '@/services/kerjasamaEventLogService';
 import type { KerjasamaStory, Aktivitas } from './page';
 
 type Jenis = 'MoA' | 'MoU' | 'IA';
@@ -65,20 +63,6 @@ const aktivitasIconColor: Record<StatusAktivitas, string> = {
   selesai: 'text-green-500',
 };
 
-function toAktivitasItems(items: Aktivitas[]): AktivitasItem[] {
-  return items.map((a) => ({
-    id: Number(a.id),
-    judul: a.judul,
-    jenisAktivitas: a.judul.split(' - ')[0] || 'Lainnya',
-    tanggal: a.tanggal,
-    peserta: a.peserta,
-    deskripsi: a.deskripsi,
-    picPolibatam: a.picPolibatam,
-    picMitra: a.picMitra,
-    status: a.status,
-  }));
-}
-
 export default function DetailStoryModal({ story, onBack }: DetailStoryModalProps) {
   const [aktivitasList, setAktivitasList] = useState<Aktivitas[]>(story.aktivitas);
   const [showTambah, setShowTambah] = useState(false);
@@ -90,28 +74,12 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
 
   function handleDeleteAktivitas(id: string) {
     if (!window.confirm('Yakin ingin menghapus aktivitas ini?')) return;
-    const updated = aktivitasList.filter((a) => a.id !== id);
-    setAktivitasList(updated);
-    saveAktivitasByKerjasamaId(Number(story.id), toAktivitasItems(updated));
-    window.dispatchEvent(new Event('story-data-updated'));
+    setAktivitasList((prev) => prev.filter((a) => a.id !== id));
   }
 
   function handleTambahAktivitas(data: Aktivitas) {
-    const updated = [data, ...aktivitasList];
-    setAktivitasList(updated);
+    setAktivitasList((prev) => [data, ...prev]);
     setShowTambah(false);
-    saveAktivitasByKerjasamaId(Number(story.id), toAktivitasItems(updated));
-    
-    // Log event aktivitas ditambah
-    logAktivitasDitambah(
-      Number(story.id),
-      story.namaMitra,
-      story.noDokumen,
-      data.judul,
-      data.status
-    );
-    
-    window.dispatchEvent(new Event('story-data-updated'));
   }
 
   return (
@@ -126,10 +94,10 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
           <ArrowLeft size={16} />
           Kembali
         </button>
-<div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {/* Tombol Edit Dokumen dihilangkan untuk internal */}
           <button
             type="button"
-            onClick={() => window.open(`/api/backend/dokumen/${story.noDokumen}`, '_blank')}
             className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
           >
             <Download size={14} />
@@ -300,10 +268,11 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                       </div>
                     </div>
 
-<div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-2">
                       <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.className}`}>
                         {badge.label}
                       </span>
+                      {/* Tombol Edit dan Hapus dihilangkan untuk internal */}
                     </div>
                   </div>
                 </div>
@@ -395,22 +364,16 @@ function TambahAktivitasForm({
       {/* Row 1: Judul & Jenis */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-            Judul Aktivitas <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={judul}
-            onChange={(e) => setJudul(e.target.value)}
-            placeholder="Contoh: Workshop Teknologi AI"
-            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-            Jenis Aktivitas <span className="text-red-500">*</span>
-          </label>
-          <select
+              <div className="flex items-center gap-2">
+                {/* Tombol Edit Dokumen dihilangkan untuk internal */}
+                <button
+                  type="button"
+                  className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
+                >
+                  <Download size={14} />
+                  Download
+                </button>
+              </div>
             value={jenisAktivitas}
             onChange={(e) => setJenisAktivitas(e.target.value)}
             className="input-field h-10 w-full px-3 text-sm text-gray-700"

@@ -50,22 +50,6 @@ export const pengajuanDokumenBadge: Record<string, string> = {
   PKS: 'bg-teal-700 text-white',
 };
 
-function resolvePengajuanTargetRole(item: Pick<PengajuanItem, 'kategori' | 'isFromAdmin'>): 'admin' | 'internal' | 'eksternal' {
-  if (item.isFromAdmin) {
-    return 'admin';
-  }
-
-  return item.kategori === 'Eksternal' ? 'eksternal' : 'internal';
-}
-
-function resolvePengajuanNotificationHref(item: Pick<PengajuanItem, 'kategori' | 'isFromAdmin'>): string {
-  if (item.isFromAdmin) {
-    return '/admin/data_pengajuan';
-  }
-
-  return item.kategori === 'Eksternal' ? '/eksternal/daftar_kerjasama' : '/internal/data_pengajuan';
-}
-
 export interface PengajuanFilterOptions {
   filterStatus: string;
   filterJurusan: string;
@@ -271,8 +255,7 @@ export function getPengajuanData(options?: { excludeAdmin?: boolean }): Pengajua
 // Membuat pengajuan baru dari form lalu menambahkan notifikasi ke admin.
 export function submitPengajuan(
   data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'>,
-  isFromAdmin?: boolean,
-  source?: 'admin' | 'internal' | 'eksternal'
+  isFromAdmin?: boolean
 ): PengajuanItem {
   const payload: PengajuanItem = {
     ...data,
@@ -315,14 +298,8 @@ export function submitPengajuan(
       ? `Pengajuan '${payload.judul}' berhasil dikirim oleh ${payload.emailPengusul} dan langsung masuk ke daftar review admin.`
       : `Pengajuan '${payload.judul}' berhasil dikirim dan menunggu review.`,
     from: payload.pengusul,
-    href:
-      source === 'eksternal'
-        ? '/eksternal/daftar_kerjasama'
-        : source === 'internal'
-          ? '/internal/data_pengajuan'
-          : '/admin/data_pengajuan',
+    href: '/admin/data_pengajuan',
     category: 'info',
-    targetRole: source === 'admin' ? 'admin' : source === 'eksternal' ? 'eksternal' : source === 'internal' ? 'internal' : 'admin',
   });
 
   return payload;
@@ -348,9 +325,8 @@ export function markPengajuanEmailVerified(id: number): PengajuanItem | null {
       title: 'Email Pengusul Terverifikasi',
       message: `Email untuk pengajuan '${verifiedItem.judul}' sudah dikonfirmasi aktif.`,
       from: 'Sistem Verifikasi',
-      href: resolvePengajuanNotificationHref(verifiedItem),
+      href: '/admin/data_pengajuan',
       category: 'approval',
-      targetRole: resolvePengajuanTargetRole(verifiedItem),
     });
   }
 
@@ -397,9 +373,8 @@ export function updatePengajuanStatus(
         ? `${updatedItem.judul} diperbarui menjadi ${status}. Catatan: ${comment}`
         : `${updatedItem.judul} diperbarui menjadi ${status}.`,
       from: 'Admin SIKERMA',
-      href: resolvePengajuanNotificationHref(updatedItem),
+      href: '/admin/data_pengajuan',
       category: status === 'Ditolak' ? 'reminder' : 'approval',
-      targetRole: resolvePengajuanTargetRole(updatedItem),
     });
   }
 
@@ -518,9 +493,8 @@ export function deletePengajuanItem(id: number): PengajuanItem[] {
       title: 'Pengajuan Dihapus',
       message: `Pengajuan '${removed.judul}' telah dihapus dari daftar admin.`,
       from: 'Admin SIKERMA',
-      href: resolvePengajuanNotificationHref(removed),
+      href: '/admin/data_pengajuan',
       category: 'reminder',
-      targetRole: resolvePengajuanTargetRole(removed),
     });
   }
 
