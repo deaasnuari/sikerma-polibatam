@@ -83,6 +83,10 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
       body: JSON.stringify(apiPayload),
     });
 
+    const token =
+      (response as { access_token?: string; token?: string }).access_token ||
+      (response as { access_token?: string; token?: string }).token;
+
     const userData = response.user || response.data;
     if (userData?.email) {
       return {
@@ -95,6 +99,7 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
         position: userData.position,
         account_type: userData.account_type,
         approval_status: userData.approval_status as 'active' | 'pending' | 'rejected' | undefined,
+        accessToken: typeof token === 'string' ? token : undefined,
         role: normalizeRole(userData.role),
       };
     }
@@ -161,4 +166,14 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
   }
 
   return matchedDemoUser;
+}
+
+export async function logoutUser(): Promise<void> {
+  try {
+    await apiRequest<{ message: string }>('/logout', {
+      method: 'POST',
+    });
+  } catch {
+    // Ignore logout errors and always clear local session on client.
+  }
 }

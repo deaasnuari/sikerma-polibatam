@@ -94,7 +94,9 @@ const statusStyle: Record<string, { bg: string; text: string; dot: string }> = {
 };
 
 export default function ManajemenUserPage() {
+  const pageSize = 10;
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [filterRole, setFilterRole] = useState('Semua Role');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editUser, setEditUser] = useState<UserItem | null>(null);
@@ -269,10 +271,39 @@ export default function ManajemenUserPage() {
     return matchRole && matchSearch;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedUsers = filtered.slice(startIndex, startIndex + pageSize);
+
+  const paginationItems: Array<number | 'ellipsis'> = (() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, 'ellipsis', totalPages];
+    }
+
+    if (currentPage >= totalPages - 3) {
+      return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages];
+  })();
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterRole]);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
   const totalUser = users.length;
   const totalAdmin = users.filter((u) => u.role === 'Admin').length;
   const totalJurusan = users.filter((u) => u.role === 'Jurusan').length;
   const totalProdi = users.filter((u) => u.role === 'Prodi').length;
+  const totalPimpinan = users.filter((u) => u.role === 'Pimpinan').length;
   const totalMitra = users.filter((u) => u.role === 'Mitra').length;
 
   return (
@@ -296,7 +327,7 @@ export default function ManajemenUserPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -335,6 +366,16 @@ export default function ManajemenUserPage() {
             <p className="text-sm text-gray-500 font-medium">Prodi</p>
           </div>
           <p className="text-3xl font-bold text-gray-900">{totalProdi}</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
+              <UserCheck size={18} className="text-red-600" />
+            </div>
+            <p className="text-sm text-gray-500 font-medium">Pimpinan</p>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">{totalPimpinan}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -435,7 +476,7 @@ export default function ManajemenUserPage() {
                 </tr>
               )}
 
-              {!loading && filtered.map((item) => {
+              {!loading && paginatedUsers.map((item) => {
                 const rc = roleColor[item.role];
                 const sc = statusStyle[item.status];
                 return (
@@ -498,6 +539,60 @@ export default function ManajemenUserPage() {
             </tbody>
           </table>
         </div>
+
+        {!loading && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-white">
+            <p className="text-xs text-gray-500">
+              Menampilkan {startIndex + 1}-{Math.min(startIndex + pageSize, filtered.length)} dari {filtered.length} user
+            </p>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sebelumnya
+              </button>
+
+              {paginationItems.map((item, index) => {
+                if (item === 'ellipsis') {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-1.5 text-xs font-semibold text-gray-500"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
+                const isActive = item === currentPage;
+                return (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`min-w-8 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition ${
+                      isActive
+                        ? 'bg-[#0e1d34] border-[#0e1d34] text-white'
+                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Berikutnya
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add User Modal */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { clearStoredUser, getStoredUser, loginUser, persistUser } from '@/services/authService';
+import { clearStoredUser, getStoredUser, loginUser, logoutUser, persistUser } from '@/services/authService';
 import type { AuthUser } from '@/types/auth';
 
 interface AuthContextType {
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    void logoutUser();
     setUser(null);
     clearStoredUser();
   };

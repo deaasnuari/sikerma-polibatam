@@ -13,6 +13,22 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private function toUserPayload(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'position' => $user->position,
+            'institution_name' => $user->institution_name,
+            'account_type' => $user->account_type,
+            'approval_status' => $user->approval_status,
+            'role' => $user->role,
+        ];
+    }
+
     private function allowedRoles(): array
     {
         return ['admin', 'pimpinan', 'internal', 'external'];
@@ -58,18 +74,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Registrasi mitra berhasil. Akun Anda sudah aktif dan bisa langsung login.',
-            'user' => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ],
+            'user' => $this->toUserPayload($user),
         ], 201);
     }
 
@@ -112,56 +117,22 @@ class AuthController extends Controller
             ]);
         }
 
+        $token = $user->createToken('web-login')->plainTextToken;
+
         return response()->json([
             'message' => 'Login berhasil.',
-            'user' => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ],
+            'token_type' => 'Bearer',
+            'access_token' => $token,
+            'user' => $this->toUserPayload($user),
         ]);
     }
 
     public function me(Request $request): JsonResponse
     {
-        $email = $request->query('email');
-
-        if (! $email) {
-            return response()->json([
-                'message' => 'Parameter email diperlukan.',
-            ], 422);
-        }
-
-        $user = User::query()
-            ->whereRaw('LOWER(email) = ?', [Str::lower($email)])
-            ->first();
-
-        if (! $user) {
-            return response()->json([
-                'message' => 'User tidak ditemukan.',
-            ], 404);
-        }
+        $user = $request->user();
 
         return response()->json([
-            'user' => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ],
+            'user' => $this->toUserPayload($user),
         ]);
     }
 
@@ -212,6 +183,12 @@ class AuthController extends Controller
 
     public function logout(): JsonResponse
     {
+        $user = request()->user();
+
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
+
         return response()->json([
             'message' => 'Logout berhasil.',
         ]);
