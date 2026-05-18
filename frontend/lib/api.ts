@@ -23,18 +23,39 @@ function buildApiBaseUrlCandidates(): string[] {
 const API_BASE_URL = normalizeBaseUrl(rawApiBaseUrl);
 const API_BASE_URL_CANDIDATES = buildApiBaseUrlCandidates();
 
+function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const rawUser = window.localStorage.getItem('user');
+
+    if (!rawUser) {
+      return null;
+    }
+
+    const parsed = JSON.parse(rawUser) as { accessToken?: string };
+    return typeof parsed.accessToken === 'string' && parsed.accessToken.trim() ? parsed.accessToken : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   let response: Response | null = null;
   let lastError: unknown = null;
+  const token = getStoredAccessToken();
 
   for (const baseUrl of API_BASE_URL_CANDIDATES) {
     try {
       const candidateResponse = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
         headers: {
-            Accept: 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(options.headers || {}),
         },
       });

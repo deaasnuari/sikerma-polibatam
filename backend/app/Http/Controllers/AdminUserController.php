@@ -12,28 +12,61 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminUserController extends Controller
 {
+    private const APPROVAL_STATUSES = ['active', 'pending', 'rejected'];
+
     private function allowedRoles(): array
     {
         return ['admin', 'pimpinan', 'internal', 'external'];
     }
 
-    public function index(): JsonResponse
+    private function ensureAdminAccess(Request $request): void
     {
+        $actor = $request->user();
+
+        if (! $actor || $actor->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat mengelola user.');
+        }
+    }
+
+    private function toUserPayload(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'position' => $user->position,
+            'institution_name' => $user->institution_name,
+            'account_type' => $user->account_type,
+            'approval_status' => $user->approval_status,
+            'role' => $user->role,
+        ];
+    }
+
+    private function ensureAtLeastOneAdmin(?User $targetUser = null, ?string $nextRole = null): void
+    {
+        $activeAdminCount = User::query()->where('role', 'admin')->count();
+
+        if ($targetUser && $targetUser->role === 'admin') {
+            if ($nextRole !== null && $nextRole !== 'admin' && $activeAdminCount <= 1) {
+                abort(422, 'Minimal harus ada 1 akun admin aktif di sistem.');
+            }
+
+            if ($nextRole === null && $activeAdminCount <= 1) {
+                abort(422, 'Akun admin terakhir tidak dapat dihapus.');
+            }
+        }
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+
         $users = User::query()
             ->latest('id')
             ->get()
-            ->map(fn (User $user) => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ]);
+            ->map(fn (User $user) => $this->toUserPayload($user));
 
         return response()->json([
             'data' => $users,
@@ -42,6 +75,8 @@ class AdminUserController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->ensureAdminAccess($request);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'institution_name' => ['required', 'string', 'max:255'],
@@ -50,7 +85,7 @@ class AdminUserController extends Controller
             'phone' => ['required', 'string', 'max:30'],
             'position' => ['nullable', 'string', 'max:100'],
             'account_type' => ['nullable', 'string', 'max:100'],
-            'approval_status' => ['required', 'string', Rule::in(['active', 'pending', 'rejected'])],
+            'approval_status' => ['required', 'string', Rule::in(self::APPROVAL_STATUSES)],
             'role' => ['required', 'string', Rule::in($this->allowedRoles())],
             'password' => ['required', 'string', Password::min(8)],
         ]);
@@ -70,23 +105,14 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'User berhasil dibuat.',
-            'user' => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ],
+            'user' => $this->toUserPayload($user),
         ], 201);
     }
 
     public function update(Request $request, User $user): JsonResponse
     {
+        $this->ensureAdminAccess($request);
+
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'institution_name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -103,10 +129,11 @@ class AdminUserController extends Controller
             'phone' => ['sometimes', 'required', 'string', 'max:30'],
             'position' => ['sometimes', 'nullable', 'string', 'max:100'],
             'account_type' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'approval_status' => ['sometimes', 'required', 'string', Rule::in(['active', 'pending', 'rejected'])],
             'role' => ['sometimes', 'required', 'string', Rule::in($this->allowedRoles())],
             'password' => ['sometimes', 'required', 'string', Password::min(8)],
         ]);
+
+        $this->ensureAtLeastOneAdmin($user, $validated['role'] ?? null);
 
         if (array_key_exists('username', $validated)) {
             $validated['username'] = Str::lower($validated['username']);
@@ -124,23 +151,34 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'User berhasil diperbarui.',
-            'user' => [
-                'id' => (string) $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position,
-                'institution_name' => $user->institution_name,
-                'account_type' => $user->account_type,
-                'approval_status' => $user->approval_status,
-                'role' => $user->role,
-            ],
+            'user' => $this->toUserPayload($user),
         ]);
     }
 
-    public function destroy(User $user): JsonResponse
+    public function updateApprovalStatus(Request $request, User $user): JsonResponse
     {
+        $this->ensureAdminAccess($request);
+
+        $validated = $request->validate([
+            'approval_status' => ['required', 'string', Rule::in(self::APPROVAL_STATUSES)],
+        ]);
+
+        $user->update([
+            'approval_status' => $validated['approval_status'],
+        ]);
+
+        return response()->json([
+            'message' => 'Status user berhasil diperbarui.',
+            'user' => $this->toUserPayload($user),
+        ]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+
+        $this->ensureAtLeastOneAdmin($user);
+
         $user->delete();
 
         return response()->json([
