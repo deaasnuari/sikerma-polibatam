@@ -1,0 +1,146 @@
+erDiagram
+    MASTER_UNIT_PRODI ||--o{ MASTER_UNIT_PRODI : parent_child
+
+    USERS ||--o{ PENGAJUAN : mengajukan
+    MASTER_UNIT_PRODI ||--o{ PENGAJUAN : unit_prodi
+    MASTER_MITRA ||--o{ PENGAJUAN : mitra
+
+    PENGAJUAN ||--o{ PENGAJUAN_FILE : lampiran
+    PENGAJUAN ||--o{ PENGAJUAN_LOG : riwayat
+    PENGAJUAN ||--o| DOKUMEN_KERJASAMA : disahkan
+
+    MASTER_UNIT_PRODI ||--o{ DOKUMEN_KERJASAMA : unit_prodi
+    MASTER_MITRA ||--o{ DOKUMEN_KERJASAMA : mitra
+
+    DOKUMEN_KERJASAMA ||--o{ DOKUMEN_FILE : lampiran
+    DOKUMEN_KERJASAMA ||--o{ DOKUMEN_LOG : aktivitas_notifikasi_perpanjangan
+
+    USERS ||--o{ PENGAJUAN_FILE : unggah
+    USERS ||--o{ PENGAJUAN_LOG : catat
+      varchar kode
+    USERS ||--o{ DOKUMEN_FILE : unggah
+    USERS ||--o{ DOKUMEN_LOG : catat
+      timestamp created_at
+      timestamp updated_at
+
+    MASTER_UNIT_PRODI {
+      bigint id PK
+      bigint parent_id FK
+      enum jenis_node
+      varchar nama
+      varchar negara
+      varchar website
+      text alamat
+      varchar email_mitra
+      varchar telepon_mitra
+    }
+      varchar jabatan_kontak_utama
+      varchar email_kontak_utama
+      varchar telepon_kontak_utama
+      boolean aktif
+
+    MASTER_MITRA {
+      bigint id PK
+      varchar nama_mitra
+      varchar kategori_mitra
+      boolean aktif
+      varchar nama_kontak_utama
+    }
+
+    MASTER_RUANG_LINGKUP {
+      bigint id PK
+      varchar nama_ruang_lingkup
+      varchar nama_pengusul
+      varchar jabatan_pengusul
+      varchar email_pengusul
+      varchar whatsapp_pengusul
+    }
+
+      varchar judul_pengajuan
+      text deskripsi_pengajuan
+    PENGAJUAN {
+      varchar kategori_pengajuan
+      bigint ruang_lingkup_ids ARRAY
+      date tanggal_mulai
+      date tanggal_berakhir
+      bigint id PK
+      timestamp diajukan_pada
+      timestamp email_terverifikasi_pada
+      timestamp created_at
+      timestamp updated_at
+      varchar nomor_pengajuan UK
+      bigint user_pengusul_id FK
+      bigint unit_prodi_id FK
+      bigint mitra_id FK
+      enum jenis_dokumen
+      enum status_pengajuan
+      varchar path_file
+      varchar mime_type
+      bigint ukuran_file_bytes
+      bigint diunggah_oleh_user_id FK
+      timestamp diunggah_pada
+    }
+
+    PENGAJUAN_FILE {
+      bigint id PK
+      bigint pengajuan_id FK
+      varchar nama_file
+      enum status_lama
+      enum status_baru
+      varchar judul_log
+      text isi_log
+      jsonb payload_json
+      bigint dibuat_oleh_user_id FK
+    }
+
+    PENGAJUAN_LOG {
+      bigint id PK
+      bigint pengajuan_id FK
+      enum tipe_log
+      timestamp dibuat_pada
+    }
+
+      varchar judul_dokumen
+    DOKUMEN_KERJASAMA {
+      bigint ruang_lingkup_ids ARRAY
+      date tanggal_mulai
+      date tanggal_berakhir
+      date tanggal_ttd
+      bigint id PK
+      timestamp diarsipkan_pada
+      text alasan_arsip
+      bigint dibuat_oleh_user_id FK
+      timestamp created_at
+      timestamp updated_at
+      varchar nomor_dokumen UK
+      bigint sumber_pengajuan_id FK
+      bigint unit_prodi_id FK
+      bigint mitra_id FK
+      enum jenis_dokumen
+      enum status_siklus
+    }
+      varchar path_file
+      varchar mime_type
+      bigint ukuran_file_bytes
+      bigint diunggah_oleh_user_id FK
+      timestamp diunggah_pada
+
+    DOKUMEN_FILE {
+      bigint id PK
+      bigint dokumen_id FK
+      varchar nama_file
+      varchar peran_berkas
+      varchar judul_log
+      text isi_log
+      jsonb payload_json
+      bigint dibuat_oleh_user_id FK
+    }
+
+
+    note for MASTER_RUANG_LINGKUP "Dipakai via array ruang_lingkup_ids\ndi pengajuan dan dokumen_kerjasama"
+    DOKUMEN_LOG {
+      bigint id PK
+      bigint dokumen_id FK
+      enum tipe_log
+      timestamp dibuat_pada
+    }

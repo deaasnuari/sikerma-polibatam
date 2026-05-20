@@ -1,0 +1,191 @@
+@startuml SIKERMA_v2_Simplified
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam class {
+    BackgroundColor #FAFAFA
+    BorderColor #555555
+    HeaderBackgroundColor #4A90D9
+    HeaderFontColor #FFFFFF
+    FontSize 12
+}
+
+entity "users" as users {
+    * id : bigserial <<PK>>
+    --
+    name : varchar(255)
+    email : varchar(255) <<UK>>
+    role : varchar(50)
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "master_unit_prodi" as unit_prodi {
+    * id : bigserial <<PK>>
+    --
+    parent_id : bigint <<FK>>
+    jenis_node : enum (unit | prodi)
+    kode : varchar(30)
+    nama : varchar(150)
+    aktif : boolean
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "master_mitra" as mitra {
+    * id : bigserial <<PK>>
+    --
+    nama_mitra : varchar(255)
+    kategori_mitra : varchar(80)
+    negara : varchar(100)
+    website : varchar(255)
+    alamat : text
+    email_mitra : varchar(255)
+    telepon_mitra : varchar(50)
+    nama_kontak_utama : varchar(200)
+    jabatan_kontak_utama : varchar(120)
+    email_kontak_utama : varchar(255)
+    telepon_kontak_utama : varchar(50)
+    aktif : boolean
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "master_ruang_lingkup" as ruang_lingkup {
+    * id : bigserial <<PK>>
+    --
+    nama_ruang_lingkup : varchar(150) <<UK>>
+    aktif : boolean
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "pengajuan" as pengajuan {
+    * id : bigserial <<PK>>
+    --
+    nomor_pengajuan : varchar(50) <<UK>>
+    user_pengusul_id : bigint <<FK>>
+    nama_pengusul : varchar(200)
+    jabatan_pengusul : varchar(150)
+    email_pengusul : varchar(255)
+    whatsapp_pengusul : varchar(50)
+    unit_prodi_id : bigint <<FK>>
+    mitra_id : bigint <<FK>>
+    judul_pengajuan : varchar(255)
+    deskripsi_pengajuan : text
+    jenis_dokumen : enum (MOU|MOA|IA)
+    kategori_pengajuan : varchar(20)
+    ruang_lingkup_ids : bigint[]
+    tanggal_mulai : date
+    tanggal_berakhir : date
+    status_pengajuan : enum
+    diajukan_pada : timestamp
+    email_terverifikasi_pada : timestamp
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "pengajuan_file" as pengajuan_file {
+    * id : bigserial <<PK>>
+    --
+    pengajuan_id : bigint <<FK>>
+    nama_file : varchar(255)
+    path_file : varchar(500)
+    mime_type : varchar(120)
+    ukuran_file_bytes : bigint
+    diunggah_oleh_user_id : bigint <<FK>>
+    diunggah_pada : timestamp
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "pengajuan_log" as pengajuan_log {
+    * id : bigserial <<PK>>
+    --
+    pengajuan_id : bigint <<FK>>
+    tipe_log : enum (status|komentar|verifikasi)
+    status_lama : enum
+    status_baru : enum
+    judul_log : varchar(255)
+    isi_log : text
+    payload_json : jsonb
+    dibuat_oleh_user_id : bigint <<FK>>
+    dibuat_pada : timestamp
+}
+
+entity "dokumen_kerjasama" as dokumen {
+    * id : bigserial <<PK>>
+    --
+    nomor_dokumen : varchar(100) <<UK>>
+    sumber_pengajuan_id : bigint <<FK>>
+    unit_prodi_id : bigint <<FK>>
+    mitra_id : bigint <<FK>>
+    jenis_dokumen : enum (MOU|MOA|IA)
+    judul_dokumen : varchar(255)
+    ruang_lingkup_ids : bigint[]
+    tanggal_mulai : date
+    tanggal_berakhir : date
+    tanggal_ttd : date
+    status_siklus : enum (active|expiring|archived)
+    diarsipkan_pada : timestamp
+    alasan_arsip : text
+    dibuat_oleh_user_id : bigint <<FK>>
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "dokumen_file" as dokumen_file {
+    * id : bigserial <<PK>>
+    --
+    dokumen_id : bigint <<FK>>
+    peran_berkas : varchar(30)
+    nama_file : varchar(255)
+    path_file : varchar(500)
+    mime_type : varchar(120)
+    ukuran_file_bytes : bigint
+    diunggah_oleh_user_id : bigint <<FK>>
+    diunggah_pada : timestamp
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "dokumen_log" as dokumen_log {
+    * id : bigserial <<PK>>
+    --
+    dokumen_id : bigint <<FK>>
+    tipe_log : enum (aktivitas|notifikasi|perpanjangan|status|arsip)
+    judul_log : varchar(255)
+    isi_log : text
+    payload_json : jsonb
+    dibuat_oleh_user_id : bigint <<FK>>
+    dibuat_pada : timestamp
+}
+
+' ===========================
+' RELASI
+' ===========================
+
+unit_prodi ||--o{ unit_prodi : "parent → child\n(unit → prodi)"
+
+users ||--o{ pengajuan : "mengajukan"
+unit_prodi ||--o{ pengajuan : "dari unit/prodi"
+mitra ||--o{ pengajuan : "ke mitra"
+
+pengajuan ||--o{ pengajuan_file : "punya berkas"
+pengajuan ||--o{ pengajuan_log : "punya log"
+pengajuan ||--o| dokumen : "disahkan menjadi"
+
+unit_prodi ||--o{ dokumen : "terkait unit/prodi"
+mitra ||--o{ dokumen : "terkait mitra"
+dokumen ||--o{ dokumen_file : "punya berkas"
+dokumen ||--o{ dokumen_log : "punya log"
+
+users ||--o{ pengajuan_file : "unggah"
+users ||--o{ pengajuan_log : "catat"
+users ||--o{ dokumen_file : "unggah"
+users ||--o{ dokumen_log : "catat"
+
+note "master_ruang_lingkup dipakai\nvia array ruang_lingkup_ids\ndi pengajuan & dokumen_kerjasama" as N1
+ruang_lingkup .. N1
+
+@enduml
