@@ -16,6 +16,9 @@ import {
   Upload,
   Trash2,
   GripVertical,
+  X,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getAdminNotifications,
@@ -34,6 +37,11 @@ import {
   uploadCarouselImage,
   type CarouselImageItem,
 } from '@/services/carouselService';
+
+type ToastState = {
+  type: 'success' | 'error';
+  message: string;
+};
 
 const AdminDashboardCharts = dynamic(() => import('./components/AdminDashboardCharts'), {
   ssr: false,
@@ -72,6 +80,9 @@ export default function AdminDashboard() {
   const regionalDistribution = getRegionalDistribution();
   const documentTypeDistribution = getDocumentTypeDistribution();
   const popularSchemes = getPopularSchemes();
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CarouselImageItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const syncNotifications = () => {
@@ -100,6 +111,30 @@ export default function AdminDashboard() {
     setCarouselImages(items);
   };
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!deleteTarget) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeleting) {
+        setDeleteTarget(null);
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [deleteTarget, isDeleting]);
+
   const handleUploadCarousel = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -117,26 +152,36 @@ export default function AdminDashboard() {
 
       setCarouselTitle('');
       await refreshCarouselImages();
-      alert('Gambar carousel berhasil diupload.');
+      setToast({ type: 'success', message: 'Gambar carousel berhasil diupload.' });
     } catch (error) {
-      setCarouselError(error instanceof Error ? error.message : 'Upload gambar carousel gagal.');
+      const msg = error instanceof Error ? error.message : 'Upload gambar carousel gagal.';
+      setCarouselError(msg);
+      setToast({ type: 'error', message: msg });
     } finally {
       setIsUploadingCarousel(false);
       event.target.value = '';
     }
   };
 
-  const handleDeleteCarousel = async (image: CarouselImageItem) => {
-    const confirmed = window.confirm(`Hapus gambar carousel${image.title ? ` "${image.title}"` : ''}?`);
-    if (!confirmed) {
-      return;
-    }
+  const handleDeleteCarousel = (image: CarouselImageItem) => {
+    setDeleteTarget(image);
+  };
 
+  const confirmDeleteCarousel = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
     try {
-      await deleteCarouselImage(image.id);
+      await deleteCarouselImage(deleteTarget.id);
       await refreshCarouselImages();
+      setToast({ type: 'success', message: 'Gambar carousel berhasil dihapus.' });
+      setDeleteTarget(null);
     } catch (error) {
-      setCarouselError(error instanceof Error ? error.message : 'Gagal menghapus gambar carousel.');
+      const msg = error instanceof Error ? error.message : 'Gagal menghapus gambar carousel.';
+      setCarouselError(msg);
+      setToast({ type: 'error', message: msg });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -377,6 +422,144 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="pointer-events-none fixed bottom-5 right-5 z-[90]">
+          <div
+            className={`pointer-events-auto w-[360px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border bg-white shadow-2xl ring-1 ring-black/5 toast-enter ${
+              toast.type === 'success' ? 'border-emerald-200' : 'border-rose-200'
+            }`}
+          >
+            <div
+              className={`h-1.5 w-full ${
+                toast.type === 'success'
+                  ? 'bg-gradient-to-r from-emerald-400 to-emerald-600'
+                  : 'bg-gradient-to-r from-rose-400 to-rose-600'
+              }`}
+            />
+            <div className="flex items-start gap-3 p-4">
+              <div
+                className={`mt-0.5 rounded-full p-2 ${
+                  toast.type === 'success'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-900">
+                  {toast.type === 'success' ? 'Berhasil' : 'Terjadi Kesalahan'}
+                </p>
+                <p className="mt-0.5 text-sm text-slate-600">{toast.message}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Tutup notifikasi"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 p-4 backdrop-blur-sm"
+          onClick={() => !isDeleting && setDeleteTarget(null)}
+        >
+          <div
+            className="modal-enter w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.35)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-rose-50 to-white px-5 py-4 border-b border-slate-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-rose-100 p-2.5 text-rose-700">
+                    <AlertCircle size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Hapus Gambar Carousel</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">Aksi ini permanen dan tidak dapat dibatalkan.</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-700"
+                  aria-label="Tutup modal"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              <p className="text-sm text-slate-600">Item yang akan dihapus:</p>
+              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                  {deleteTarget.title || 'Tanpa Judul'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCarousel}
+                disabled={isDeleting}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        .toast-enter {
+          animation: toastIn 0.25s ease-out;
+        }
+        .modal-enter {
+          animation: modalIn 0.2s ease-out;
+        }
+        @keyframes toastIn {
+          from { transform: translateY(8px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes modalIn {
+          from { transform: scale(0.96); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+
+      <style jsx global>{`
+        @keyframes toastbar {
+          from {
+            transform: scaleX(1);
+          }
+          to {
+            transform: scaleX(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
