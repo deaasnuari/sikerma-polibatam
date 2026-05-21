@@ -21,6 +21,7 @@ import {
   type DokumenData,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
+import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 export default function RekapDataPage() {
@@ -37,6 +38,7 @@ export default function RekapDataPage() {
   const [editingItem, setEditingItem] = useState<RekapDokumen | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<RekapDokumen | null>(null);
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
+  const [masterUnitOptions, setMasterUnitOptions] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -50,8 +52,48 @@ export default function RekapDataPage() {
     return () => window.removeEventListener('rekap-data-updated', syncRekapData);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMasterUnitOptions() {
+      try {
+        const [jurusanRows, unitRows] = await Promise.all([
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const mergedFromMaster = Array.from(
+          new Set([...jurusanRows.map((item) => item.nama), ...unitRows.map((item) => item.nama)].filter(Boolean))
+        );
+
+        setMasterUnitOptions(mergedFromMaster);
+      } catch {
+        // fallback tetap dari service lokal bila API belum siap.
+      }
+    }
+
+    loadMasterUnitOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const jenisOptions = getRekapJenisOptions(rekapData);
-  const unitOptions = getRekapUnitOptions(rekapData);
+  const unitOptions = useMemo(() => {
+    const localOptions = getRekapUnitOptions(rekapData);
+    const merged = Array.from(new Set([...localOptions, ...masterUnitOptions]));
+
+    if (!merged.includes('Semua Jurusan/unit')) {
+      return ['Semua Jurusan/unit', ...merged];
+    }
+
+    return merged;
+  }, [rekapData, masterUnitOptions]);
   const statusOptions = rekapStatusOptions;
   const availableYears = useMemo(() => getAvailableYears(rekapData), [rekapData]);
   const currentYear = new Date().getFullYear();

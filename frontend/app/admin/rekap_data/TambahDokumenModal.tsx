@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, FileText, Upload, X } from 'lucide-react';
 import { rekapJurusanOptions, rekapUnitOptions, type DokumenData } from '@/services/adminRekapDataService';
+import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 interface TambahDokumenModalProps {
@@ -83,12 +84,14 @@ export default function TambahDokumenModal({
   submitLabel = 'Tambah Dokumen',
 }: TambahDokumenModalProps) {
   const [formData, setFormData] = useState<DokumenData>(emptyFormData);
+  const [jurusanOptions, setJurusanOptions] = useState<string[]>(rekapJurusanOptions);
+  const [unitOptions, setUnitOptions] = useState<string[]>(rekapUnitOptions);
   const [errors, setErrors] = useState<Partial<Record<keyof DokumenData, string>>>({});
   const [uploadErrors, setUploadErrors] = useState<{ fileDokumen?: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const pilihanUnit = useMemo(
-    () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...rekapJurusanOptions] : ['Pilih Unit', ...rekapUnitOptions]),
-    [formData.asalKategori]
+    () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...jurusanOptions] : ['Pilih Unit', ...unitOptions]),
+    [formData.asalKategori, jurusanOptions, unitOptions]
   );
   const selectedTemplate = formData.jenisDokumen && formData.jenisDokumen in defaultTemplateDokumenMap
     ? defaultTemplateDokumenMap[formData.jenisDokumen as TemplateKey]
@@ -104,6 +107,45 @@ export default function TambahDokumenModal({
     setUploadErrors({});
     setSelectedFile(null);
   }, [initialData, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadMasterOptions() {
+      try {
+        const [jurusanRows, unitRows] = await Promise.all([
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextJurusan = Array.from(new Set(jurusanRows.map((item) => item.nama).filter(Boolean)));
+        const nextUnit = Array.from(new Set(unitRows.map((item) => item.nama).filter(Boolean)));
+
+        if (nextJurusan.length > 0) {
+          setJurusanOptions(nextJurusan);
+        }
+        if (nextUnit.length > 0) {
+          setUnitOptions(nextUnit);
+        }
+      } catch {
+        // fallback tetap gunakan opsi service lokal.
+      }
+    }
+
+    loadMasterOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;

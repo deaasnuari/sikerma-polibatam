@@ -5,7 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
-import { deleteRekapDokumen, getRekapData, type RekapDokumen } from '@/services/adminRekapDataService';
+import {
+  deleteRekapDokumen,
+  getRekapData,
+  rekapJurusanOptions,
+  type RekapDokumen,
+} from '@/services/adminRekapDataService';
+import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
@@ -50,7 +56,6 @@ const statusBadgeMap: Record<ApprovalStatus, string> = {
   Ditolak: 'bg-red-500 text-white',
 };
 
-const jurusanOptions = ['Semua Jurusan', 'Teknik Informatika', 'Teknik Elektro', 'Teknik Mesin', 'Teknik Multimedia', 'Jurusan Teknik'];
 const jenisOptions = ['Semua Jenis', 'MoU', 'MoA', 'IA'];
 const statusOptions = ['Semua Status', 'Menunggu', 'Disetujui', 'Ditolak'];
 
@@ -66,10 +71,40 @@ export default function InternalRekapDataPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
+  const [masterJurusanOptions, setMasterJurusanOptions] = useState<string[]>([]);
+
+  const jurusanOptions = useMemo(() => {
+    const merged = Array.from(new Set([...rekapJurusanOptions, ...masterJurusanOptions]));
+    return ['Semua Jurusan', ...merged];
+  }, [masterJurusanOptions]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMasterJurusans() {
+      try {
+        const jurusanRows = await getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true });
+        if (!isMounted) {
+          return;
+        }
+
+        const names = Array.from(new Set(jurusanRows.map((item) => item.nama).filter(Boolean)));
+        setMasterJurusanOptions(names);
+      } catch {
+        // fallback tetap gunakan opsi lokal dari service.
+      }
+    }
+
+    loadMasterJurusans();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const sync = () => {
-      const { rekapJurusanOptions } = require('@/services/adminRekapDataService');
+      const jurusanMaster = new Set(masterJurusanOptions);
       // Filter data sesuai role user login
       const role = user?.role;
       let filteredData = getRekapData();
@@ -80,10 +115,10 @@ export default function InternalRekapDataPage() {
           }
           // Fallback lama: internal = jurusan, eksternal = tidak termasuk jurusan/unit
           if (role === 'internal') {
-            return item.kategoriUnit === 'Jurusan' || rekapJurusanOptions.includes(item.unit);
+            return item.kategoriUnit === 'Jurusan' || jurusanMaster.has(item.unit) || rekapJurusanOptions.includes(item.unit);
           }
           if (role === 'eksternal') {
-            return item.kategoriUnit !== 'Jurusan' && !rekapJurusanOptions.includes(item.unit);
+            return item.kategoriUnit !== 'Jurusan' && !jurusanMaster.has(item.unit) && !rekapJurusanOptions.includes(item.unit);
           }
           return true;
         });
@@ -93,7 +128,7 @@ export default function InternalRekapDataPage() {
     sync();
     window.addEventListener('rekap-data-updated', sync);
     return () => window.removeEventListener('rekap-data-updated', sync);
-  }, [user]);
+  }, [user, masterJurusanOptions]);
 
 function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;

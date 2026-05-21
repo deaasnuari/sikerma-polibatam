@@ -7,6 +7,7 @@ import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
 } from '@/services/adminPengajuanService';
+import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { submitInternalPengajuan } from '@/services/internalPengajuanService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
@@ -46,9 +47,9 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
   },
 };
 
-const jurusanOptions = pengajuanJurusanOptions;
+const fallbackJurusanOptions = pengajuanJurusanOptions;
 
-const unitOptions = pengajuanUnitOptions;
+const fallbackUnitOptions = pengajuanUnitOptions;
 
 const defaultRuangLingkupOptions = [
   'Penelitian',
@@ -194,6 +195,8 @@ export default function InternalAjukanKerjasamaForm({
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
+  const [jurusanOptions, setJurusanOptions] = useState<string[]>(fallbackJurusanOptions);
+  const [unitOptions, setUnitOptions] = useState<string[]>(fallbackUnitOptions);
   const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
@@ -205,12 +208,46 @@ export default function InternalAjukanKerjasamaForm({
   const [juOpen, setJuOpen] = useState(false);
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
-  const [jurusanUnitInput, setJurusanUnitInput] = useState('');
 
-  const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
-  const allUnitOptions = [...unitOptions, ...customUnitOpts];
+  const allJurusanOptions = Array.from(new Set([...jurusanOptions, ...customJurusanOpts]));
+  const allUnitOptions = Array.from(new Set([...unitOptions, ...customUnitOpts]));
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
   const allRlOptions = [...defaultRuangLingkupOptions, ...customRuangLingkupOpts];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMasterOptions() {
+      try {
+        const [nextJurusanRows, nextUnitRows] = await Promise.all([
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextJurusan = Array.from(new Set(nextJurusanRows.map((item) => item.nama).filter(Boolean)));
+        const nextUnit = Array.from(new Set(nextUnitRows.map((item) => item.nama).filter(Boolean)));
+
+        if (nextJurusan.length > 0) {
+          setJurusanOptions(nextJurusan);
+        }
+        if (nextUnit.length > 0) {
+          setUnitOptions(nextUnit);
+        }
+      } catch {
+        // Tetap gunakan fallback statis jika API master belum tersedia.
+      }
+    }
+
+    loadMasterOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -334,31 +371,6 @@ export default function InternalAjukanKerjasamaForm({
   const removeRlCustomOption = (option: string) => {
     setCustomRuangLingkupOpts((prev) => prev.filter((item) => item !== option));
     setSelectedRuangLingkup((prev) => prev.filter((item) => item !== option));
-  };
-
-  const addJurusanUnitOption = () => {
-    const trimmed = jurusanUnitInput.trim();
-    if (!trimmed) return;
-    if (asal === 'Jurusan') {
-      if (!allJurusanOptions.includes(trimmed)) setCustomJurusanOpts((prev) => [...prev, trimmed]);
-    } else {
-      if (!allUnitOptions.includes(trimmed)) setCustomUnitOpts((prev) => [...prev, trimmed]);
-    }
-    handleChange('unitPelaksana', trimmed);
-    setJuOpen(false);
-    setJurusanUnitInput('');
-  };
-
-  const removeJurusanUnitCustomOption = (option: string) => {
-    if (asal === 'Jurusan') {
-      setCustomJurusanOpts((prev) => prev.filter((item) => item !== option));
-    } else {
-      setCustomUnitOpts((prev) => prev.filter((item) => item !== option));
-    }
-
-    if (formData.unitPelaksana === option) {
-      handleChange('unitPelaksana', '');
-    }
   };
 
   const handleJenisDokumenChange = (value: string) => {
@@ -715,8 +727,6 @@ export default function InternalAjukanKerjasamaForm({
                     <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
                       <div className="max-h-48 overflow-y-auto p-1">
                         {asalOptions.map((option) => {
-                          const isCustom = asal === 'Jurusan' ? customJurusanOpts.includes(option) : customUnitOpts.includes(option);
-
                           return (
                             <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
                               <button
@@ -732,43 +742,9 @@ export default function InternalAjukanKerjasamaForm({
                                 <span>{option}</span>
                                 {formData.unitPelaksana === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
                               </button>
-                              {isCustom && (
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeJurusanUnitCustomOption(option);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      removeJurusanUnitCustomOption(option);
-                                    }
-                                  }}
-                                  className="mr-2 inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
-                                  aria-label={`Hapus opsi ${option}`}
-                                >
-                                  <X size={12} />
-                                </span>
-                              )}
                             </div>
                           );
                         })}
-                      </div>
-                      <div className="flex gap-2 border-t border-slate-100 p-2">
-                        <input
-                          type="text"
-                          value={jurusanUnitInput}
-                          onChange={(e) => setJurusanUnitInput(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addJurusanUnitOption(); } }}
-                          placeholder={`Tambah ${asal} baru...`}
-                          className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
-                        />
-                        <button type="button" onClick={addJurusanUnitOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
-                          <Plus size={12} />Tambah
-                        </button>
                       </div>
                     </div>
                   </>

@@ -7,6 +7,13 @@ import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 import {
+  createMasterUnitProdi,
+  deleteMasterUnitProdi,
+  getMasterUnitProdi,
+  updateMasterUnitProdi,
+  type MasterUnitProdi,
+} from '@/services/masterUnitProdiService';
+import {
   deletePengajuanItem,
   getFilteredPengajuanData,
   getPengajuanData,
@@ -182,6 +189,20 @@ export default function PengajuanKerjasama() {
   const [reviewDecision, setReviewDecision] = useState<PengajuanStatus>('Disetujui');
   const [reviewComment, setReviewComment] = useState('');
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
+  const [masterModalOpen, setMasterModalOpen] = useState(false);
+  const [masterJenis, setMasterJenis] = useState<'jurusan' | 'unit_kerja'>('jurusan');
+  const [masterKode, setMasterKode] = useState('');
+  const [masterNama, setMasterNama] = useState('');
+  const [masterSaving, setMasterSaving] = useState(false);
+  const [masterMessage, setMasterMessage] = useState<string | null>(null);
+  const [masterSearch, setMasterSearch] = useState('');
+  const [masterJurusanRows, setMasterJurusanRows] = useState<MasterUnitProdi[]>([]);
+  const [masterUnitRows, setMasterUnitRows] = useState<MasterUnitProdi[]>([]);
+  const [masterProdiRows, setMasterProdiRows] = useState<MasterUnitProdi[]>([]);
+  const [prodiDraftByJurusan, setProdiDraftByJurusan] = useState<Record<number, { kode: string; nama: string }>>({});
+  const [editingProdiId, setEditingProdiId] = useState<number | null>(null);
+  const [editingProdiKode, setEditingProdiKode] = useState('');
+  const [editingProdiNama, setEditingProdiNama] = useState('');
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
 
@@ -216,6 +237,70 @@ export default function PengajuanKerjasama() {
       setAjukanModalOpen(true);
     }
   }, [isAjukanView]);
+
+  useEffect(() => {
+    if (!masterModalOpen) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadMasterReferenceData() {
+      try {
+        const [jurusanRows, unitRows, prodiRows] = await Promise.all([
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+          getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setMasterJurusanRows(jurusanRows);
+        setMasterUnitRows(unitRows);
+        setMasterProdiRows(prodiRows);
+      } catch {
+        if (isMounted) {
+          setMasterMessage('Gagal memuat data master. Pastikan backend aktif.');
+        }
+      }
+    }
+
+    loadMasterReferenceData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [masterModalOpen]);
+
+  const setProdiDraftField = (jurusanId: number, field: 'kode' | 'nama', value: string) => {
+    setProdiDraftByJurusan((prev) => {
+      const current = prev[jurusanId] || { kode: '', nama: '' };
+      return {
+        ...prev,
+        [jurusanId]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const filteredJurusanRows = masterJurusanRows.filter((jurusan) => {
+    const keyword = masterSearch.trim().toLowerCase();
+    if (!keyword) {
+      return true;
+    }
+
+    const jurusanText = `${jurusan.kode || ''} ${jurusan.nama}`.toLowerCase();
+    if (jurusanText.includes(keyword)) {
+      return true;
+    }
+
+    const prodis = masterProdiRows.filter((prodi) => prodi.parent_id === jurusan.id);
+    return prodis.some((prodi) => `${prodi.kode || ''} ${prodi.nama}`.toLowerCase().includes(keyword));
+  });
 
   const { totalPengajuan, menunggu, diproses, disetujui } = getPengajuanStats(pengajuanData);
 
@@ -570,7 +655,222 @@ export default function PengajuanKerjasama() {
     return true;
   }
 
-    return (
+  async function handleSubmitMasterReference() {
+    const nama = masterNama.trim();
+    if (!nama) {
+      setMasterMessage('Nama master wajib diisi.');
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      await createMasterUnitProdi({
+        parent_id: null,
+        jenis_node: 'unit',
+        kategori_unit: masterJenis,
+        kode: masterKode.trim() || undefined,
+        nama,
+        aktif: true,
+      });
+
+      const [jurusanRows, unitRows, prodiRows] = await Promise.all([
+        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+        getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
+      ]);
+
+      setMasterJurusanRows(jurusanRows);
+      setMasterUnitRows(unitRows);
+      setMasterProdiRows(prodiRows);
+      setMasterKode('');
+      setMasterNama('');
+      setMasterMessage('Master berhasil disimpan.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menyimpan master.';
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  async function handleAddProdiToJurusan(jurusanId: number) {
+    const draft = prodiDraftByJurusan[jurusanId] || { kode: '', nama: '' };
+    const nama = draft.nama.trim();
+
+    if (!nama) {
+      setMasterMessage('Nama prodi wajib diisi.');
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      await createMasterUnitProdi({
+        parent_id: jurusanId,
+        jenis_node: 'prodi',
+        kategori_unit: null,
+        kode: draft.kode.trim() || undefined,
+        nama,
+        aktif: true,
+      });
+
+      const prodiRows = await getMasterUnitProdi({ jenis_node: 'prodi', aktif: true });
+      setMasterProdiRows(prodiRows);
+      setProdiDraftByJurusan((prev) => ({
+        ...prev,
+        [jurusanId]: { kode: '', nama: '' },
+      }));
+      setMasterMessage('Prodi berhasil ditambahkan.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menyimpan prodi.';
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  function startEditProdi(prodi: MasterUnitProdi) {
+    setEditingProdiId(prodi.id);
+    setEditingProdiKode(prodi.kode || '');
+    setEditingProdiNama(prodi.nama || '');
+  }
+
+  function cancelEditProdi() {
+    setEditingProdiId(null);
+    setEditingProdiKode('');
+    setEditingProdiNama('');
+  }
+
+  async function saveEditProdi(prodiId: number) {
+    const nama = editingProdiNama.trim();
+    if (!nama) {
+      setMasterMessage('Nama prodi wajib diisi.');
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      await updateMasterUnitProdi(prodiId, {
+        kode: editingProdiKode.trim() || '',
+        nama,
+      });
+
+      const prodiRows = await getMasterUnitProdi({ jenis_node: 'prodi', aktif: true });
+      setMasterProdiRows(prodiRows);
+      cancelEditProdi();
+      setMasterMessage('Prodi berhasil diperbarui.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui prodi.';
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  async function handleDeleteProdi(prodiId: number) {
+    const confirmed = window.confirm('Yakin ingin menghapus prodi ini?');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      const deleted = await deleteMasterUnitProdi(prodiId);
+      if (!deleted) {
+        throw new Error('Gagal menghapus prodi.');
+      }
+      const prodiRows = await getMasterUnitProdi({ jenis_node: 'prodi', aktif: true });
+      if (prodiRows.some((item) => item.id === prodiId)) {
+        throw new Error('Delete prodi tidak tersinkron ke backend. Silakan refresh halaman lalu coba lagi.');
+      }
+      setMasterProdiRows(prodiRows);
+      setMasterMessage('Prodi berhasil dihapus.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus prodi.';
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  async function handleDeleteJurusan(jurusanId: number) {
+    const confirmed = window.confirm('Yakin ingin menghapus jurusan ini? Semua prodi di bawah jurusan ini juga akan ikut dihapus.');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      const deleted = await deleteMasterUnitProdi(jurusanId);
+      if (!deleted) {
+        throw new Error('Gagal menghapus jurusan.');
+      }
+
+      const [jurusanRows, prodiRows] = await Promise.all([
+        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+        getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
+      ]);
+
+      if (jurusanRows.some((item) => item.id === jurusanId)) {
+        throw new Error('Delete jurusan tidak tersinkron ke backend. Silakan refresh halaman lalu coba lagi.');
+      }
+
+      setMasterJurusanRows(jurusanRows);
+      setMasterProdiRows(prodiRows);
+      setMasterMessage('Jurusan berhasil dihapus beserta prodi terkait.');
+    } catch (error) {
+      let message = 'Gagal menghapus jurusan.';
+      if (error instanceof Error && error.message) {
+        message = error.message;
+      }
+      if (message.toLowerCase().includes('children')) {
+        message = 'Jurusan masih memiliki prodi turunan. Silakan coba lagi atau hapus prodi terlebih dahulu.';
+      }
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  async function handleDeleteUnitKerja(unitId: number) {
+    const confirmed = window.confirm('Yakin ingin menghapus unit kerja ini?');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setMasterSaving(true);
+      setMasterMessage(null);
+
+      const deleted = await deleteMasterUnitProdi(unitId);
+      if (!deleted) {
+        throw new Error('Gagal menghapus unit kerja.');
+      }
+
+      const unitRows = await getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true });
+      if (unitRows.some((item) => item.id === unitId)) {
+        throw new Error('Delete unit kerja tidak tersinkron ke backend. Silakan refresh halaman lalu coba lagi.');
+      }
+      setMasterUnitRows(unitRows);
+      setMasterMessage('Unit kerja berhasil dihapus.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus unit kerja.';
+      setMasterMessage(message);
+    } finally {
+      setMasterSaving(false);
+    }
+  }
+
+  return (
     <div className="space-y-6">
 
       {/* Header */}
@@ -579,14 +879,24 @@ export default function PengajuanKerjasama() {
           <h1 className="page-title">Pengajuan Kerjasama</h1>
           <p className="page-subtitle mt-2">Kelola data pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setAjukanModalOpen(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm flex-shrink-0"
-        >
-          <Plus size={18} />
-          Ajukan Kerjasama Baru
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMasterModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+          >
+            <Plus size={16} />
+            Referensi Kampus
+          </button>
+          <button
+            type="button"
+            onClick={() => setAjukanModalOpen(true)}
+            className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm flex-shrink-0"
+          >
+            <Plus size={18} />
+            Ajukan Kerjasama Baru
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -1099,6 +1409,231 @@ export default function PengajuanKerjasama() {
                 >
                   Simpan dan kirim notifikasi
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {masterModalOpen && (
+        <div className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center" onClick={() => setMasterModalOpen(false)}>
+          <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Kelola Referensi Kampus</h3>
+                <p className="text-xs text-slate-500">Tambah Jurusan/Unit kampus di atas, lalu kelola Prodi langsung per jurusan.</p>
+              </div>
+              <button type="button" onClick={() => setMasterModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5 bg-slate-50/70">
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="mb-3 text-xs font-semibold text-slate-700">Tambah Jurusan / Unit Kerja</p>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <select
+                  value={masterJenis}
+                  onChange={(e) => setMasterJenis(e.target.value as 'jurusan' | 'unit_kerja')}
+                  className="input-field h-10 rounded-lg px-3 text-sm"
+                >
+                  <option value="jurusan">Jurusan</option>
+                  <option value="unit_kerja">Unit</option>
+                </select>
+                <input
+                  value={masterKode}
+                  onChange={(e) => setMasterKode(e.target.value)}
+                  placeholder="Kode"
+                  className="input-field h-10 rounded-lg px-3 text-sm"
+                />
+                <input
+                  value={masterNama}
+                  onChange={(e) => setMasterNama(e.target.value)}
+                  placeholder="Nama master"
+                  className="input-field h-10 rounded-lg px-3 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleSubmitMasterReference();
+                  }}
+                  disabled={masterSaving}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  <Plus size={14} />
+                  {masterSaving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+                </div>
+              </div>
+
+              {masterMessage && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  {masterMessage}
+                </div>
+              )}
+
+              <input
+                value={masterSearch}
+                onChange={(e) => setMasterSearch(e.target.value)}
+                placeholder="Cari jurusan atau prodi..."
+                className="input-field h-10 w-full rounded-lg border-slate-300 bg-white px-3 text-sm"
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-xs font-semibold text-slate-700">Jurusan dan Daftar Prodi</p>
+                <div className="mt-2 space-y-3">
+                  {filteredJurusanRows.map((jurusan) => {
+                    const prodis = masterProdiRows.filter((prodi) => prodi.parent_id === jurusan.id);
+                    const draft = prodiDraftByJurusan[jurusan.id] || { kode: '', nama: '' };
+
+                    return (
+                      <div key={jurusan.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{jurusan.kode || '-'}</span>
+                            <p className="text-sm font-semibold text-[#173B82]">{jurusan.nama}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleDeleteJurusan(jurusan.id);
+                            }}
+                            disabled={masterSaving}
+                            className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Hapus Jurusan
+                          </button>
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-[96px_1fr_auto]">
+                          <input
+                            value={draft.kode}
+                            onChange={(e) => setProdiDraftField(jurusan.id, 'kode', e.target.value)}
+                            placeholder="Kode prodi"
+                            className="input-field h-9 rounded-lg px-2 text-xs"
+                          />
+                          <input
+                            value={draft.nama}
+                            onChange={(e) => setProdiDraftField(jurusan.id, 'nama', e.target.value)}
+                            placeholder="Nama prodi"
+                            className="input-field h-9 rounded-lg px-2 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleAddProdiToJurusan(jurusan.id);
+                            }}
+                            disabled={masterSaving}
+                            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#1E376C] px-3 text-xs font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                          >
+                            + Prodi
+                          </button>
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                          {prodis.length === 0 ? (
+                            <span className="text-[11px] text-slate-400">Belum ada prodi</span>
+                          ) : (
+                            prodis.map((prodi) => {
+                              const isEditing = editingProdiId === prodi.id;
+
+                              if (isEditing) {
+                                return (
+                                  <div key={prodi.id} className="grid gap-1.5 rounded-lg border border-slate-200 bg-white p-2 sm:grid-cols-[96px_1fr_auto_auto]">
+                                    <input
+                                      value={editingProdiKode}
+                                      onChange={(e) => setEditingProdiKode(e.target.value)}
+                                      placeholder="Kode"
+                                      className="input-field h-8 rounded-md px-2 text-[11px]"
+                                    />
+                                    <input
+                                      value={editingProdiNama}
+                                      onChange={(e) => setEditingProdiNama(e.target.value)}
+                                      placeholder="Nama prodi"
+                                      className="input-field h-8 rounded-md px-2 text-[11px]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void saveEditProdi(prodi.id);
+                                      }}
+                                      disabled={masterSaving}
+                                      className="h-8 rounded-md bg-[#1E376C] px-2 text-[11px] font-semibold text-white hover:bg-[#2A4A8F]"
+                                    >
+                                      Simpan
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={cancelEditProdi}
+                                      className="h-8 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                                    >
+                                      Batal
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div key={prodi.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                    {prodi.kode ? `${prodi.kode} - ` : ''}{prodi.nama}
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditProdi(prodi)}
+                                      className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        void handleDeleteProdi(prodi.id);
+                                      }}
+                                      className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                                    >
+                                      Hapus Prodi
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {filteredJurusanRows.length === 0 && (
+                    <div className="rounded-md border border-slate-200 bg-white p-3 text-center text-[11px] text-slate-500">
+                      Tidak ada jurusan/prodi yang cocok dengan pencarian.
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-3 text-xs font-semibold text-slate-700">Daftar Unit Kerja</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {masterUnitRows.length === 0 ? (
+                    <span className="text-[11px] text-slate-400">Belum ada unit kerja.</span>
+                  ) : (
+                    masterUnitRows.map((unit) => (
+                      <div key={unit.id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        <span>{unit.kode ? `${unit.kode} - ` : ''}{unit.nama}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleDeleteUnitKerja(unit.id);
+                          }}
+                          disabled={masterSaving}
+                          className="rounded px-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Hapus Unit
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

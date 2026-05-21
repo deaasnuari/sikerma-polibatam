@@ -68,6 +68,8 @@ export const pengajuanUnitOptions = [
   'SHILAU (Satuan Hilirisasi Inovasi dan Layanan Usaha)',
   'P4M (Pusat Penjaminan Mutu dan Pengembangan Pembelajaran)',
   'P3M (Pusat Penelitian dan Pengabdian Kepada Masyarakat)',
+  'Polibatam Career Development Center',
+  'Kepegawaian',
   'SPI (Satuan Pengawas Internal)',
   'Akademik (Subag Akademik)',
   'SBUM (Sub Bagian Umum)',

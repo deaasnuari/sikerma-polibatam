@@ -16,6 +16,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            MasterUnitProdiSeeder::class,
+        ]);
+
         $users = [
             [
                 'name' => 'Admin Sikerma',

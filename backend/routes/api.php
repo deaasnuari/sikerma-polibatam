@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CarouselImageController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\MasterUnitProdiController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -16,6 +17,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	Route::apiResource('/admin/users', AdminUserController::class)->only(['index', 'store', 'update', 'destroy']);
 	Route::patch('/admin/users/{user}/approval-status', [AdminUserController::class, 'updateApprovalStatus']);
+
+	// Master Unit/Prodi routes
+	Route::get('/master/unit-prodi/tree', [MasterUnitProdiController::class, 'tree']);
+	Route::apiResource('/master/unit-prodi', MasterUnitProdiController::class);
 });
 
 Route::get('/carousel-images', [CarouselImageController::class, 'index']);

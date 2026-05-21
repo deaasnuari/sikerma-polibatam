@@ -52,6 +52,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     try {
       const candidateResponse = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
+        cache: 'no-store',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
