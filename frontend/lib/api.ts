@@ -1,5 +1,9 @@
 const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api/backend';
 
+interface StoredAuthUser {
+  accessToken?: string;
+}
+
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, '');
 }
@@ -23,18 +27,40 @@ function buildApiBaseUrlCandidates(): string[] {
 const API_BASE_URL = normalizeBaseUrl(rawApiBaseUrl);
 const API_BASE_URL_CANDIDATES = buildApiBaseUrlCandidates();
 
+function getAccessTokenFromStorage(): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  const rawUser = window.localStorage.getItem('user');
+  if (!rawUser) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser) as StoredAuthUser;
+    return typeof parsed.accessToken === 'string' && parsed.accessToken.trim().length > 0
+      ? parsed.accessToken
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   let response: Response | null = null;
   let lastError: unknown = null;
+  const accessToken = getAccessTokenFromStorage();
 
   for (const baseUrl of API_BASE_URL_CANDIDATES) {
     try {
       const candidateResponse = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
         headers: {
-            Accept: 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...(options.headers || {}),
         },
       });

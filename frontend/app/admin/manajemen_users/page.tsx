@@ -103,6 +103,7 @@ export default function ManajemenUserPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   // Form state shared by add & edit
   const emptyForm = { nama: '', email: '', role: '' as string, unitInstansi: '', status: 'Aktif' as string, phone: '', username: '', password: '' };
@@ -115,14 +116,24 @@ export default function ManajemenUserPage() {
 
     const loadUsers = async () => {
       try {
+        setLoadError('');
         const result = await getAdminUsers();
         if (mounted) {
           setUsers(result);
         }
-      } catch {
-        console.warn('Gagal memuat data user dari backend, menggunakan data fallback lokal.');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Gagal memuat data user.';
+        const isConnectivityError = /gagal terhubung|failed to fetch|network|load failed|fetch/i.test(message);
+
         if (mounted) {
-          setUsers(fallbackUsers);
+          if (isConnectivityError) {
+            console.warn('Backend tidak dapat diakses, menggunakan data fallback lokal.');
+            setUsers(fallbackUsers);
+            setLoadError('');
+          } else {
+            setUsers([]);
+            setLoadError(message);
+          }
         }
       } finally {
         if (mounted) {
@@ -327,6 +338,12 @@ export default function ManajemenUserPage() {
       </div>
 
       {/* Summary Cards */}
+      {loadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-3 mb-3">

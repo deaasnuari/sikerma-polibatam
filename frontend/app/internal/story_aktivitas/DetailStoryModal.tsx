@@ -364,16 +364,22 @@ function TambahAktivitasForm({
       {/* Row 1: Judul & Jenis */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-              <div className="flex items-center gap-2">
-                {/* Tombol Edit Dokumen dihilangkan untuk internal */}
-                <button
-                  type="button"
-                  className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
-                >
-                  <Download size={14} />
-                  Download
-                </button>
-              </div>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            Judul Aktivitas <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={judul}
+            onChange={(e) => setJudul(e.target.value)}
+            placeholder="Contoh: Penyusunan kurikulum bersama"
+            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+            Jenis Aktivitas <span className="text-red-500">*</span>
+          </label>
+          <select
             value={jenisAktivitas}
             onChange={(e) => setJenisAktivitas(e.target.value)}
             className="input-field h-10 w-full px-3 text-sm text-gray-700"

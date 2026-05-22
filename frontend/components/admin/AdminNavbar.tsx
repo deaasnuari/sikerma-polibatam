@@ -131,9 +131,9 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
         isPublic ? 'border-b border-slate-200' : 'rounded-lg border border-slate-200'
       }`}
     >
-      <div className="px-4 py-3 md:py-3.5 flex justify-between items-center">
+      <div className="px-2.5 py-1.5 md:py-2 flex justify-between items-center">
         <div className="flex items-center gap-2 flex-1">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="flex items-center justify-center flex-shrink-0">
               <Image
                 src="/polibatam_logo.png"
@@ -142,13 +142,13 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                 height={96}
                 quality={100}
                 unoptimized
-                className="h-11 w-11 object-contain"
+                className="h-8 w-8 object-contain"
                 priority
               />
             </div>
             <div className="min-w-0 hidden sm:block">
-              <p className="text-[#091222] font-extrabold text-sm leading-tight tracking-wide">SIKERMA POLIBATAM</p>
-              <p className="text-gray-600 text-[11px] leading-tight">Sistem Informasi Kerjasama</p>
+              <p className="text-[#091222] font-extrabold text-xs leading-tight tracking-wide">SIKERMA POLIBATAM</p>
+              <p className="text-gray-600 text-[9px] leading-tight">Sistem Informasi Kerjasama</p>
             </div>
           </div>
         </div>
@@ -250,12 +250,12 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative text-gray-700 hover:bg-gray-100 rounded-lg p-2 transition-all duration-200"
+                className="relative text-gray-700 hover:bg-gray-100 rounded-lg p-1 transition-all duration-200"
                 title="Notifikasi"
               >
-                <Bell size={20} />
+                <Bell size={16} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -335,14 +335,14 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
             <div className="relative flex-shrink-0" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-3 text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2 transition-all duration-200"
+                className="flex items-center gap-1.5 text-gray-700 hover:bg-gray-100 rounded-lg px-1.5 py-1 transition-all duration-200"
               >
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{userDisplayName}</p>
-                  <p className="text-xs text-gray-600">{userRoleLabel}</p>
+                  <p className="text-xs font-medium text-gray-900">{userDisplayName}</p>
+                  <p className="text-[10px] text-gray-600">{userRoleLabel}</p>
                 </div>
-                <div className="w-9 h-9 bg-[#091222] border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#173B82] transition-all">
-                  <User size={18} />
+                <div className="w-7 h-7 bg-[#091222] border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#173B82] transition-all">
+                  <User size={14} />
                 </div>
               </button>
 
@@ -372,7 +372,7 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
         <svg
           viewBox="0 0 1200 12"
           preserveAspectRatio="none"
-          className="block h-3 w-full"
+          className="block h-2 w-full"
           aria-hidden="true"
         >
           <rect width="1200" height="12" fill="var(--color-primary)" />

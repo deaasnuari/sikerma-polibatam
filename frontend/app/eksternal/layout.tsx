@@ -8,11 +8,13 @@ import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
 import AdminSidebar, { type SidebarMenuItem } from '@/components/admin/AdminSidebar';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useViewportScale } from '@/lib/useViewportScale';
 
 export default function EksternalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const viewportScale = useViewportScale();
 
   useEffect(() => {
     const handleResize = () => {
@@ -24,6 +26,15 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const fixedChromeStyle =
+    viewportScale === 1
+      ? undefined
+      : {
+          transform: `scale(${1 / viewportScale})`,
+          transformOrigin: 'top left',
+          width: `${viewportScale * 100}%`,
+        };
 
   const handleLogout = () => {
     logout();
@@ -51,11 +62,13 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
   return (
     <ProtectedRoute requiredRole="external">
       <div className="flex h-screen flex-col bg-gray-100">
-        <div className="sticky top-0 z-50 px-4 pt-4">
-          <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="sticky top-0 z-50 px-1 pt-1">
+          <div style={fixedChromeStyle}>
+            <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 gap-4 px-4 pt-4 pb-2 overflow-hidden">
+        <div className="flex min-h-0 flex-1 gap-1 px-1 pt-1 pb-1 overflow-hidden">
           <div className="h-full flex-shrink-0 self-stretch">
             <AdminSidebar
               isOpen={sidebarOpen}
@@ -69,14 +82,16 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
           </div>
 
           <main className="flex flex-1 flex-col overflow-hidden pb-4">
-            <div className="flex-1 overflow-y-auto rounded-lg bg-white p-6 shadow-sm">
+            <div className="flex-1 overflow-y-auto rounded-lg bg-white p-3 shadow-sm">
               {children}
             </div>
           </main>
         </div>
 
-        <div className="flex-shrink-0 px-4 pb-4">
-          <AdminFooter />
+        <div className="flex-shrink-0 px-1 pb-1">
+          <div style={fixedChromeStyle}>
+            <AdminFooter />
+          </div>
         </div>
       </div>
     </ProtectedRoute>

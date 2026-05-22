@@ -5,9 +5,11 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useViewportScale } from '@/lib/useViewportScale';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const viewportScale = useViewportScale();
 
   // Handle responsive sidebar behavior
   useEffect(() => {
@@ -26,15 +28,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const fixedChromeStyle =
+    viewportScale === 1
+      ? undefined
+      : {
+          transform: `scale(${1 / viewportScale})`,
+          transformOrigin: 'top left',
+          width: `${viewportScale * 100}%`,
+        };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen bg-gray-100">
-        <div className="sticky top-0 z-50 px-4 pt-4">
-          <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="sticky top-0 z-50 px-1 pt-1">
+          <div style={fixedChromeStyle}>
+            <AdminNavbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          </div>
         </div>
 
         {/* Main Container - Sidebar + Content with gaps */}
-        <div className="flex flex-1 overflow-hidden gap-4 px-4 pt-4 pb-2 min-h-0">
+        <div className="flex flex-1 overflow-hidden gap-1 px-1 pt-1 pb-1 min-h-0">
           {/* Sidebar with gap */}
           <div className="flex-shrink-0 h-full self-stretch">
             <AdminSidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -43,15 +56,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Main Content Area */}
           <main className="flex-1 flex flex-col overflow-hidden pb-4">
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm p-6">
+            <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm p-3">
               {children}
             </div>
           </main>
         </div>
 
         {/* Footer - Full Width at Bottom */}
-        <div className="flex-shrink-0 px-4 pb-4">
-          <AdminFooter />
+        <div className="flex-shrink-0 px-1 pb-1">
+          <div style={fixedChromeStyle}>
+            <AdminFooter />
+          </div>
         </div>
       </div>
     </ProtectedRoute>

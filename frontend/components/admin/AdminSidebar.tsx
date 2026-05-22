@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FileText, RefreshCw, BarChart3,
-  BookOpen, Archive, Users, Menu, X,
+  BookOpen, Archive, Users, ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -69,25 +69,25 @@ export default function AdminSidebar({
 
       {/* Sidebar */}
       <aside className={`fixed md:relative top-0 left-0 h-full md:h-full ${backgroundClassName} text-gray-300 z-30 flex flex-col transition-all duration-300 rounded-lg shadow-md overflow-visible
-        ${isOpen ? 'w-48 md:w-44' : 'w-20'}
+        ${isOpen ? 'w-40 md:w-36' : 'w-14'}
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[#091222] shadow-md transition hover:bg-slate-50 hover:text-[#173B82]"
+          className="absolute -right-2.5 top-2.5 z-40 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-[#091222] shadow-md transition hover:bg-slate-50 hover:text-[#173B82]"
           title={isOpen ? 'Tutup sidebar' : 'Buka sidebar'}
         >
-          {isOpen ? <X size={16} /> : <Menu size={16} />}
+          {isOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
         </button>
 
         {/* Logo */}
-        <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-700/60">
+        <div className="flex items-center justify-between p-2 md:p-2.5 border-b border-slate-700/60">
           <div className="flex items-center gap-2 min-w-0">
-            <img src="/polibatam_logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0" />
+            <img src="/polibatam_logo.png" alt="Logo" className="w-6 h-6 object-contain flex-shrink-0" />
             {isOpen && (
               <div className="text-xs font-bold truncate">
-                <p className="text-white text-sm leading-tight">{portalTitle}</p>
-                <p className="text-gray-400 text-xs leading-tight">{portalSubtitle}</p>
+                <p className="text-white text-xs leading-tight">{portalTitle}</p>
+                <p className="text-gray-400 text-[10px] leading-tight">{portalSubtitle}</p>
               </div>
             )}
           </div>
@@ -103,7 +103,7 @@ export default function AdminSidebar({
               item.children?.length &&
               (pathname === item.href || pathname.startsWith(`${item.href}/`))
             );
-            const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2 px-3 justify-start' : 'justify-center px-2'} rounded-lg border-l-4 py-2.5 transition-all duration-200 text-sm ${
+            const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2 px-2 justify-start' : 'justify-center px-1'} rounded-lg border-l-4 py-1.5 transition-all duration-200 text-sm ${
               active
                 ? activeItemClassName
                 : 'border-l-transparent text-slate-300 hover:bg-white/5 hover:text-white'
@@ -118,8 +118,8 @@ export default function AdminSidebar({
                   title={!isOpen ? item.label : undefined}
                   className={sharedClassName}
                 >
-                  <Icon size={16} className="flex-shrink-0" />
-                  {isOpen && <span className="truncate text-xs font-medium">{item.label}</span>}
+                  <Icon size={14} className="flex-shrink-0" />
+                  {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
                 </button>
               );
             }
@@ -131,8 +131,8 @@ export default function AdminSidebar({
                   title={!isOpen ? item.label : undefined}
                   className={sharedClassName}
                 >
-                  <Icon size={16} className="flex-shrink-0" />
-                  {isOpen && <span className="truncate text-xs font-medium">{item.label}</span>}
+                  <Icon size={14} className="flex-shrink-0" />
+                  {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
                 </Link>
 
                 {showChildren && (
@@ -144,7 +144,7 @@ export default function AdminSidebar({
                         <Link
                           key={child.href}
                           href={child.href}
-                          className={`block rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          className={`block rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
                             childActive
                               ? 'bg-[#57C9E8]/20 text-white'
                               : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -162,7 +162,7 @@ export default function AdminSidebar({
         </nav>
 
         {/* Footer */}
-        <div className="text-gray-500 text-center p-2 md:p-3 border-t border-slate-700/60 text-xs">
+        <div className="text-gray-500 text-center p-1 md:p-1.5 border-t border-slate-700/60 text-[10px]">
           {isOpen ? '© 2026 Politeknik Negeri Batam' : '©'}
         </div>
       </aside>

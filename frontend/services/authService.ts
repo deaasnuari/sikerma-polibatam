@@ -2,6 +2,7 @@ import { apiRequest } from '@/lib/api';
 import type { AuthUser, LoginPayload, RegisterPayload, UserRole } from '@/types/auth';
 
 const STORAGE_KEY = 'user';
+const ENABLE_DEMO_AUTH = process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === 'true';
 
 function normalizeRole(role?: string): UserRole {
   switch (role) {
@@ -105,9 +106,9 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
-    const isNetworkIssue = /fetch|network|failed to fetch|load failed/i.test(message);
+    const isNetworkIssue = /fetch|network|failed to fetch|load failed|gagal terhubung/i.test(message);
 
-    if (!isNetworkIssue) {
+    if (!isNetworkIssue || !ENABLE_DEMO_AUTH) {
       throw error;
     }
 
