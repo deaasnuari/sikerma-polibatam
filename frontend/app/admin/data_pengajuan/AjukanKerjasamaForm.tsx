@@ -2,16 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { CalendarDays, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
   submitPengajuan,
 } from '@/services/adminPengajuanService';
-import {
-  createMasterUnitProdi,
-  getMasterUnitProdi,
-} from '@/services/masterUnitProdiService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 type TemplateDokumenConfig = {
@@ -50,9 +46,9 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
   },
 };
 
-const fallbackJurusanOptions = pengajuanJurusanOptions;
+const jurusanOptions = pengajuanJurusanOptions;
 
-const fallbackUnitOptions = pengajuanUnitOptions;
+const unitOptions = pengajuanUnitOptions;
 
 const defaultRuangLingkupOptions = [
   'Penelitian',
@@ -154,33 +150,33 @@ type FormAppearanceSettings = {
 };
 
 const defaultAppearanceSettings: FormAppearanceSettings = {
-  topBadgeText: 'Pengajuan Kerja Sama Institusional',
-  pageTitle: 'Formulir Pengajuan Kerja Sama Akademik',
-  pageSubtitle: 'Lengkapi formulir berikut untuk mengajukan rencana kerja sama secara resmi.',
-  sectionInformasiMitraTitle: 'Data Institusi Mitra',
-  sectionInformasiMitraSubtitle: 'Informasi kelembagaan mitra kerja sama',
-  sectionDetailKerjasamaTitle: 'Rencana Kerja Sama',
-  sectionDetailKerjasamaSubtitle: 'Ruang lingkup, periode, dan substansi usulan kerja sama',
-  sectionKontakTitle: 'Narahubung Mitra',
-  sectionKontakSubtitle: 'Data penanggung jawab dari institusi mitra',
+  topBadgeText: 'Pengajuan Kerjasama Baru',
+  pageTitle: 'Form Pengajuan Kerjasama',
+  pageSubtitle: 'Isi formulir untuk mengajukan kerja sama baru dari unit internal.',
+  sectionInformasiMitraTitle: 'Informasi Mitra',
+  sectionInformasiMitraSubtitle: 'Data lengkap mitra kerja sama',
+  sectionDetailKerjasamaTitle: 'Detail Kerjasama',
+  sectionDetailKerjasamaSubtitle: 'Informasi dasar kerja sama yang akan diajukan',
+  sectionKontakTitle: 'Kontak Person Mitra',
+  sectionKontakSubtitle: 'Informasi kontak person dari pihak mitra',
   sectionDokumenTitle: 'Dokumen Pendukung',
-  sectionDokumenSubtitle: 'Pilih jenis dokumen kerja sama dan unggah dokumen pendukung resmi.',
-  labelNamaMitra: 'Nama Institusi Mitra',
-  labelJenisMitra: 'Kategori Mitra',
-  labelTeleponMitra: 'Nomor WhatsApp Aktif',
-  labelEmailMitra: 'Alamat Email Mitra',
+  sectionDokumenSubtitle: 'Pilih jenis template lalu langsung upload dokumen pendukung.',
+  labelNamaMitra: 'Nama Mitra',
+  labelJenisMitra: 'Jenis Mitra',
+  labelTeleponMitra: 'WhatsApp Aktif',
+  labelEmailMitra: 'Email Mitra',
   labelAlamatMitra: 'Alamat Lengkap',
-  labelJenisKerjasama: 'Skema Dokumen Kerja Sama',
-  labelDari: 'Unit Pengusul',
+  labelJenisKerjasama: 'Jenis Kerjasama',
+  labelDari: 'Dari',
   labelTanggalMulai: 'Tanggal Mulai',
   labelTanggalBerakhir: 'Tanggal Berakhir',
-  labelJudulKerjasama: 'Judul Program Kerja Sama',
-  labelDeskripsi: 'Uraian Program',
+  labelJudulKerjasama: 'Judul Kerjasama',
+  labelDeskripsi: 'Deskripsi',
   labelRuangLingkup: 'Ruang Lingkup',
-  labelNamaKontak: 'Nama Narahubung',
-  labelJabatanKontak: 'Jabatan Narahubung',
-  labelEmailKontak: 'Alamat Email Narahubung',
-  labelTeleponKontak: 'Nomor WhatsApp Narahubung',
+  labelNamaKontak: 'Nama Lengkap',
+  labelJabatanKontak: 'Jabatan',
+  labelEmailKontak: 'Email',
+  labelTeleponKontak: 'WhatsApp Aktif',
 };
 
 const DEFAULT_APPEARANCE_STORAGE_KEY = 'internal-pengajuan-appearance-v1';
@@ -198,9 +194,6 @@ export default function AdminAjukanKerjasamaForm({
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
-  const [jurusanOptions, setJurusanOptions] = useState<string[]>(fallbackJurusanOptions);
-  const [unitOptions, setUnitOptions] = useState<string[]>(fallbackUnitOptions);
-  const [isSavingJurusanUnit, setIsSavingJurusanUnit] = useState(false);
   const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
@@ -214,69 +207,10 @@ export default function AdminAjukanKerjasamaForm({
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
 
-  const allJurusanOptions = Array.from(new Set([...jurusanOptions, ...customJurusanOpts]));
-  const allUnitOptions = Array.from(new Set([...unitOptions, ...customUnitOpts]));
+  const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
+  const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
   const allRlOptions = [...defaultRuangLingkupOptions, ...customRuangLingkupOpts];
-
-  const getReadableError = (error: unknown, fallback: string) => {
-    if (error instanceof Error && error.message.trim()) {
-      return error.message;
-    }
-    return fallback;
-  };
-
-  const loadMasterOptions = async () => {
-    const [nextJurusanRows, nextUnitRows] = await Promise.all([
-      getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
-      getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
-    ]);
-
-    const nextJurusan = Array.from(new Set(nextJurusanRows.map((item) => item.nama).filter(Boolean)));
-    const nextUnit = Array.from(new Set(nextUnitRows.map((item) => item.nama).filter(Boolean)));
-
-    if (nextJurusan.length > 0) {
-      setJurusanOptions(nextJurusan);
-    }
-    if (nextUnit.length > 0) {
-      setUnitOptions(nextUnit);
-    }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadMasterOptions() {
-      try {
-        const [nextJurusanRows, nextUnitRows] = await Promise.all([
-          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
-          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const nextJurusan = Array.from(new Set(nextJurusanRows.map((item) => item.nama).filter(Boolean)));
-        const nextUnit = Array.from(new Set(nextUnitRows.map((item) => item.nama).filter(Boolean)));
-
-        if (nextJurusan.length > 0) {
-          setJurusanOptions(nextJurusan);
-        }
-        if (nextUnit.length > 0) {
-          setUnitOptions(nextUnit);
-        }
-      } catch {
-        // Tetap gunakan fallback statis jika API master belum tersedia.
-      }
-    }
-
-    loadMasterOptions();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -402,43 +336,28 @@ export default function AdminAjukanKerjasamaForm({
     setSelectedRuangLingkup((prev) => prev.filter((item) => item !== option));
   };
 
-  const addJurusanUnitOption = async () => {
+  const addJurusanUnitOption = () => {
     const trimmed = jurusanUnitInput.trim();
     if (!trimmed) return;
+    if (asal === 'Jurusan') {
+      if (!allJurusanOptions.includes(trimmed)) setCustomJurusanOpts((prev) => [...prev, trimmed]);
+    } else {
+      if (!allUnitOptions.includes(trimmed)) setCustomUnitOpts((prev) => [...prev, trimmed]);
+    }
+    handleChange('unitPelaksana', trimmed);
+    setJuOpen(false);
+    setJurusanUnitInput('');
+  };
 
-    if (asalOptions.includes(trimmed)) {
-      handleChange('unitPelaksana', trimmed);
-      setJuOpen(false);
-      setJurusanUnitInput('');
-      return;
+  const removeJurusanUnitCustomOption = (option: string) => {
+    if (asal === 'Jurusan') {
+      setCustomJurusanOpts((prev) => prev.filter((item) => item !== option));
+    } else {
+      setCustomUnitOpts((prev) => prev.filter((item) => item !== option));
     }
 
-    try {
-      setIsSavingJurusanUnit(true);
-
-      await createMasterUnitProdi({
-        parent_id: null,
-        jenis_node: 'unit',
-        kategori_unit: asal === 'Jurusan' ? 'jurusan' : 'unit_kerja',
-        nama: trimmed,
-        aktif: true,
-      });
-
-      await loadMasterOptions();
-
-      if (asal === 'Jurusan') {
-        setCustomJurusanOpts((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
-      } else {
-        setCustomUnitOpts((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
-      }
-
-      handleChange('unitPelaksana', trimmed);
-      setJuOpen(false);
-      setJurusanUnitInput('');
-    } catch (error) {
-      alert(getReadableError(error, `Gagal menambahkan ${asal}. Coba lagi.`));
-    } finally {
-      setIsSavingJurusanUnit(false);
+    if (formData.unitPelaksana === option) {
+      handleChange('unitPelaksana', '');
     }
   };
 
@@ -796,6 +715,8 @@ export default function AdminAjukanKerjasamaForm({
                     <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
                       <div className="max-h-48 overflow-y-auto p-1">
                         {asalOptions.map((option) => {
+                          const isCustom = asal === 'Jurusan' ? customJurusanOpts.includes(option) : customUnitOpts.includes(option);
+
                           return (
                             <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
                               <button
@@ -811,6 +732,27 @@ export default function AdminAjukanKerjasamaForm({
                                 <span>{option}</span>
                                 {formData.unitPelaksana === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
                               </button>
+                              {isCustom && (
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeJurusanUnitCustomOption(option);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeJurusanUnitCustomOption(option);
+                                    }
+                                  }}
+                                  className="mr-2 inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                  aria-label={`Hapus opsi ${option}`}
+                                >
+                                  <X size={12} />
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -823,10 +765,9 @@ export default function AdminAjukanKerjasamaForm({
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addJurusanUnitOption(); } }}
                           placeholder={`Tambah ${asal} baru...`}
                           className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
-                          disabled={isSavingJurusanUnit}
                         />
-                        <button type="button" onClick={addJurusanUnitOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61] disabled:cursor-not-allowed disabled:bg-slate-300" disabled={isSavingJurusanUnit}>
-                          <Plus size={12} />{isSavingJurusanUnit ? 'Simpan...' : 'Tambah'}
+                        <button type="button" onClick={addJurusanUnitOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
+                          <Plus size={12} />Tambah
                         </button>
                       </div>
                     </div>
@@ -1125,7 +1066,6 @@ export default function AdminAjukanKerjasamaForm({
           </button>
         </div>
       </form>
-
     </div>
   );
 }

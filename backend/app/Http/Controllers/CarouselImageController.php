@@ -12,7 +12,12 @@ class CarouselImageController extends Controller
 {
     private const MAX_IMAGES = 7;
 
-    public function index(): JsonResponse
+    private function toPublicImageUrl(Request $request, string $imagePath): string
+    {
+        return $request->getSchemeAndHttpHost() . '/storage/' . ltrim($imagePath, '/');
+    }
+
+    public function index(Request $request): JsonResponse
     {
         $images = CarouselImage::query()
             ->where('is_active', true)
@@ -23,7 +28,7 @@ class CarouselImageController extends Controller
                 'id' => $image->id,
                 'title' => $image->title,
                 'image_path' => $image->image_path,
-                'image_url' => Storage::disk('public')->url($image->image_path),
+                'image_url' => $this->toPublicImageUrl($request, $image->image_path),
                 'sort_order' => $image->sort_order,
                 'is_active' => $image->is_active,
             ]);
@@ -65,7 +70,7 @@ class CarouselImageController extends Controller
                 'id' => $image->id,
                 'title' => $image->title,
                 'image_path' => $image->image_path,
-                'image_url' => Storage::disk('public')->url($image->image_path),
+                'image_url' => $this->toPublicImageUrl($request, $image->image_path),
                 'sort_order' => $image->sort_order,
                 'is_active' => $image->is_active,
             ],
