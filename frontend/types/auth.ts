@@ -28,6 +28,7 @@ export interface RegisterPayload {
   email: string;
   role?: string;
   institution_name?: string;
+  negara?: string;
   phone?: string;
   position?: string;
   account_type?: string;

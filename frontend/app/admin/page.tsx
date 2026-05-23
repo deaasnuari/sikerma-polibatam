@@ -29,6 +29,7 @@ import {
   getRegionalDistribution,
   markNotificationAsRead,
 } from '@/services/adminService';
+import { getMasterMitra } from '@/services/masterMitraService';
 import type { AdminNotification } from '@/types/admin';
 import {
   deleteCarouselImage,
@@ -66,6 +67,26 @@ const actionIcons = {
   trending: TrendingUp,
 };
 
+function getMitraStatHref(label: string): string | null {
+  if (label === 'Dalam Negeri') {
+    return '/admin/master_mitra?wilayah=dalam-negeri';
+  }
+
+  if (label === 'Luar Negeri') {
+    return '/admin/master_mitra?wilayah=luar-negeri';
+  }
+
+  if (label === 'Mitra Aktif') {
+    return '/admin/master_mitra?status=aktif';
+  }
+
+  if (label === 'Total Mitra') {
+    return '/admin/master_mitra';
+  }
+
+  return null;
+}
+
 export default function AdminDashboard() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [carouselImages, setCarouselImages] = useState<CarouselImageItem[]>([]);
@@ -75,9 +96,9 @@ export default function AdminDashboard() {
   const [isDraggingOver, setIsDraggingOver] = useState<number | null>(null);
   const dragIndexRef = useRef<number | null>(null);
   const router = useRouter();
-  const dashboardStats = getDashboardStats();
+  const [dashboardStats, setDashboardStats] = useState(getDashboardStats());
   const quickActions = getQuickActions();
-  const regionalDistribution = getRegionalDistribution();
+  const [regionalDistribution, setRegionalDistribution] = useState(getRegionalDistribution());
   const documentTypeDistribution = getDocumentTypeDistribution();
   const popularSchemes = getPopularSchemes();
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -99,6 +120,55 @@ export default function AdminDashboard() {
     getCarouselImages()
       .then((items) => setCarouselImages(items))
       .catch(() => setCarouselImages([]));
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMitraDistribution = async () => {
+      try {
+        const mitraRows = await getMasterMitra();
+
+        if (!mounted) {
+          return;
+        }
+
+        const domesticCount = mitraRows.filter((item) => (item.negara || '').trim().toLowerCase() === 'indonesia').length;
+        const foreignCount = Math.max(mitraRows.length - domesticCount, 0);
+        const totalMitra = mitraRows.length;
+
+        setRegionalDistribution([
+          { name: 'Dalam Negeri', value: domesticCount, fill: '#3B82F6' },
+          { name: 'Luar Negeri', value: foreignCount, fill: '#A78BFA' },
+        ]);
+
+        setDashboardStats((prev) =>
+          prev.map((stat) => {
+            if (stat.label === 'Dalam Negeri') {
+              return { ...stat, value: String(domesticCount) };
+            }
+
+            if (stat.label === 'Luar Negeri') {
+              return { ...stat, value: String(foreignCount) };
+            }
+
+            if (stat.label === 'Total Mitra') {
+              return { ...stat, value: String(totalMitra) };
+            }
+
+            return stat;
+          })
+        );
+      } catch {
+        // Fallback ke nilai default dashboard bila API belum tersedia.
+      }
+    };
+
+    loadMitraDistribution();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleOpenNotification = (notification: AdminNotification) => {
@@ -284,8 +354,17 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {dashboardStats.map((stat, idx) => {
           const IconComponent = statIcons[stat.iconKey];
+          const href = getMitraStatHref(stat.label);
+          const isClickable = Boolean(href);
+
           return (
-            <button key={idx} className={`${stat.color} rounded-lg p-3 md:p-4 text-center hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer`}>
+            <button
+              key={idx}
+              type="button"
+              onClick={() => href && router.push(href)}
+              disabled={!isClickable}
+              className={`${stat.color} rounded-lg p-3 md:p-4 text-center transition-all duration-200 ${isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-105' : 'cursor-default opacity-90'}`}
+            >
               <div className="flex justify-center mb-2">
                 <IconComponent size={24} className={stat.textColor} />
               </div>

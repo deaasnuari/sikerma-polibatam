@@ -1,0 +1,491 @@
+'use client';
+
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Building2, ChevronDown, Globe, Pencil, Plus, Search, Trash2, Users, type LucideIcon } from 'lucide-react';
+import {
+  createMasterMitra,
+  deleteMasterMitra,
+  getMasterMitra,
+  updateMasterMitra,
+  type MasterMitra,
+} from '@/services/masterMitraService';
+
+type FormState = {
+  nama_mitra: string;
+  kategori_mitra: string;
+  negara: string;
+  website: string;
+  alamat: string;
+  email_mitra: string;
+  telepon_mitra: string;
+  nama_kontak_utama: string;
+  jabatan_kontak_utama: string;
+  email_kontak_utama: string;
+  telepon_kontak_utama: string;
+  aktif: boolean;
+};
+
+const emptyForm: FormState = {
+  nama_mitra: '',
+  kategori_mitra: '',
+  negara: 'Indonesia',
+  website: '',
+  alamat: '',
+  email_mitra: '',
+  telepon_mitra: '',
+  nama_kontak_utama: '',
+  jabatan_kontak_utama: '',
+  email_kontak_utama: '',
+  telepon_kontak_utama: '',
+  aktif: true,
+};
+
+const kategoriOptions = ['Industri', 'Institusi Pendidikan', 'Instansi Pemerintah', 'Organisasi/Lembaga'] as const;
+const wilayahOptions = ['Semua Wilayah', 'Dalam Negeri', 'Luar Negeri'] as const;
+
+function getWilayahLabel(negara?: string | null): 'Dalam Negeri' | 'Luar Negeri' {
+  return (negara || '').trim().toLowerCase() === 'indonesia' ? 'Dalam Negeri' : 'Luar Negeri';
+}
+
+export default function MasterMitraPage() {
+  const searchParams = useSearchParams();
+  const [rows, setRows] = useState<MasterMitra[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filterKategori, setFilterKategori] = useState('Semua Kategori');
+  const [filterWilayah, setFilterWilayah] = useState<(typeof wilayahOptions)[number]>('Semua Wilayah');
+  const [filterStatus, setFilterStatus] = useState('Semua Status');
+  const [showModal, setShowModal] = useState(false);
+  const [editingRow, setEditingRow] = useState<MasterMitra | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRows = async () => {
+      try {
+        setError(null);
+        const data = await getMasterMitra();
+        if (mounted) {
+          setRows(data);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : 'Gagal memuat master mitra.');
+          setRows([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadRows();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const wilayahParam = (searchParams.get('wilayah') || '').trim().toLowerCase();
+    const kategoriParam = (searchParams.get('kategori') || '').trim();
+    const statusParam = (searchParams.get('status') || '').trim().toLowerCase();
+
+    if (wilayahParam === 'dalam-negeri' || wilayahParam === 'dalam negeri') {
+      setFilterWilayah('Dalam Negeri');
+    } else if (wilayahParam === 'luar-negeri' || wilayahParam === 'luar negeri') {
+      setFilterWilayah('Luar Negeri');
+    } else if (kategoriParam === 'Dalam Negeri' || kategoriParam === 'Luar Negeri') {
+      setFilterWilayah(kategoriParam);
+    } else {
+      setFilterWilayah('Semua Wilayah');
+    }
+
+    if (kategoriOptions.includes(kategoriParam as (typeof kategoriOptions)[number])) {
+      setFilterKategori(kategoriParam);
+    } else {
+      setFilterKategori('Semua Kategori');
+    }
+
+    if (statusParam === 'aktif') {
+      setFilterStatus('Aktif');
+    } else if (statusParam === 'nonaktif' || statusParam === 'non-aktif') {
+      setFilterStatus('NonAktif');
+    } else {
+      setFilterStatus('Semua Status');
+    }
+  }, [searchParams]);
+
+  const openCreate = () => {
+    setEditingRow(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (item: MasterMitra) => {
+    setEditingRow(item);
+    setForm({
+      nama_mitra: item.nama_mitra,
+      kategori_mitra: item.kategori_mitra || '',
+      negara: item.negara || '',
+      website: item.website || '',
+      alamat: item.alamat || '',
+      email_mitra: item.email_mitra || '',
+      telepon_mitra: item.telepon_mitra || '',
+      nama_kontak_utama: item.nama_kontak_utama || '',
+      jabatan_kontak_utama: item.jabatan_kontak_utama || '',
+      email_kontak_utama: item.email_kontak_utama || '',
+      telepon_kontak_utama: item.telepon_kontak_utama || '',
+      aktif: item.aktif,
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    if (submitting) {
+      return;
+    }
+
+    setShowModal(false);
+    setEditingRow(null);
+    setForm(emptyForm);
+  };
+
+  const handleSave = async () => {
+    if (!form.nama_mitra.trim()) {
+      setError('Nama mitra wajib diisi.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const payload = {
+        ...form,
+        kategori_mitra: form.kategori_mitra.trim() || null,
+        negara: form.negara.trim() || null,
+        website: form.website.trim() || null,
+        alamat: form.alamat.trim() || null,
+        email_mitra: form.email_mitra.trim() || null,
+        telepon_mitra: form.telepon_mitra.trim() || null,
+        nama_kontak_utama: form.nama_kontak_utama.trim() || null,
+        jabatan_kontak_utama: form.jabatan_kontak_utama.trim() || null,
+        email_kontak_utama: form.email_kontak_utama.trim() || null,
+        telepon_kontak_utama: form.telepon_kontak_utama.trim() || null,
+      };
+
+      const saved = editingRow
+        ? await updateMasterMitra(editingRow.id, payload)
+        : await createMasterMitra(payload);
+
+      setRows((prev) => {
+        if (editingRow) {
+          return prev.map((item) => (item.id === editingRow.id ? saved : item));
+        }
+
+        return [saved, ...prev];
+      });
+
+      closeModal();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan master mitra.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (item: MasterMitra) => {
+    if (!confirm(`Yakin ingin menghapus mitra "${item.nama_mitra}"?`)) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      await deleteMasterMitra(item.id);
+      setRows((prev) => prev.filter((row) => row.id !== item.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menghapus master mitra.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredRows = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    return rows.filter((item) => {
+      const matchSearch =
+        !keyword ||
+        item.nama_mitra.toLowerCase().includes(keyword) ||
+        (item.kategori_mitra || '').toLowerCase().includes(keyword) ||
+        (item.negara || '').toLowerCase().includes(keyword) ||
+        (item.email_mitra || '').toLowerCase().includes(keyword);
+      const matchKategori =
+        filterKategori === 'Semua Kategori' ||
+        item.kategori_mitra === filterKategori ||
+        (filterKategori === 'Industri' && item.kategori_mitra === 'Perusahaan');
+      const matchWilayah = filterWilayah === 'Semua Wilayah' || getWilayahLabel(item.negara) === filterWilayah;
+      const matchStatus = filterStatus === 'Semua Status' || (filterStatus === 'Aktif' ? item.aktif : !item.aktif);
+
+      return matchSearch && matchKategori && matchWilayah && matchStatus;
+    });
+  }, [rows, search, filterKategori, filterWilayah, filterStatus]);
+
+  const summary = {
+    total: rows.length,
+    aktif: rows.filter((item) => item.aktif).length,
+    domestik: rows.filter((item) => (item.negara || '').toLowerCase() === 'indonesia').length,
+    luarNegeri: rows.filter((item) => (item.negara || '').toLowerCase() !== 'indonesia').length,
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Data Kemitraan</h1>
+          <p className="page-subtitle mt-1">Kelola data referensi mitra kerja sama Polibatam</p>
+        </div>
+
+        <button onClick={openCreate} className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
+          <Plus size={16} />
+          Tambah Mitra
+        </button>
+      </div>
+
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard icon={Building2} label="Total Mitra" value={summary.total} />
+        <SummaryCard icon={Users} label="Mitra Aktif" value={summary.aktif} />
+        <SummaryCard icon={Globe} label="Domestik" value={summary.domestik} />
+        <SummaryCard icon={Globe} label="Luar Negeri" value={summary.luarNegeri} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Cari nama, kategori, negara, atau email..."
+            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
+          />
+        </div>
+
+        <div className="relative min-w-[180px]">
+          <select value={filterKategori} onChange={(event) => setFilterKategori(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+            <option>Semua Kategori</option>
+            {kategoriOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+
+        <div className="relative min-w-[170px]">
+          <select value={filterWilayah} onChange={(event) => setFilterWilayah(event.target.value as (typeof wilayahOptions)[number])} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+            {wilayahOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+
+        <div className="relative min-w-[160px]">
+          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+            <option>Semua Status</option>
+            <option>Aktif</option>
+            <option>NonAktif</option>
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+      </div>
+
+      <div className="table-shell overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="table-head border-b border-gray-200">
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama Mitra</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Kategori</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Negara</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Kontak Utama</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-gray-500">Memuat data master mitra...</td>
+                </tr>
+              )}
+
+              {!loading && filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-gray-400">Tidak ada data ditemukan</td>
+                </tr>
+              )}
+
+              {!loading && filteredRows.map((item) => (
+                <tr key={item.id} className="border-b border-gray-100 transition hover:bg-gray-50/60">
+                  <td className="px-4 py-3">
+                    <div>
+                      <p className="font-medium text-gray-900">{item.nama_mitra}</p>
+                      <p className="text-xs text-gray-500">{item.email_mitra || '-'}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{item.kategori_mitra || '-'}</td>
+                  <td className="px-4 py-3 text-gray-600">{item.negara || '-'}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    <div>
+                      <p className="font-medium text-gray-800">{item.nama_kontak_utama || '-'}</p>
+                      <p className="text-xs text-gray-500">{item.telepon_kontak_utama || item.telepon_mitra || '-'}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${item.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                      {item.aktif ? 'Aktif' : 'NonAktif'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(item)} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Edit">
+                        <Pencil size={14} />
+                      </button>
+                      <button onClick={() => handleDelete(item)} disabled={submitting} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Hapus">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">{editingRow ? 'Edit Master Mitra' : 'Tambah Master Mitra'}</h2>
+                <p className="text-sm text-gray-500">Lengkapi data mitra kerja sama secara terstruktur</p>
+              </div>
+              <button onClick={closeModal} className="rounded-lg border border-gray-200 px-3 py-1.5 text-gray-500 transition hover:bg-gray-50">Tutup</button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nama Mitra *">
+                <input value={form.nama_mitra} onChange={(event) => setForm((prev) => ({ ...prev, nama_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <Field label="Kategori Mitra">
+                <select
+                  value={form.kategori_mitra}
+                  onChange={(event) => setForm((prev) => ({ ...prev, kategori_mitra: event.target.value }))}
+                  className="input-field w-full px-4 py-2.5 text-sm"
+                >
+                  <option value="">Pilih kategori mitra</option>
+                  {kategoriOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Negara">
+                <input value={form.negara} onChange={(event) => setForm((prev) => ({ ...prev, negara: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <p className="text-xs text-slate-500">Wilayah otomatis: {getWilayahLabel(form.negara)}</p>
+              </Field>
+              <Field label="Website">
+                <input value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" placeholder="https://..." />
+              </Field>
+              <Field label="Email Mitra">
+                <input type="email" value={form.email_mitra} onChange={(event) => setForm((prev) => ({ ...prev, email_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <Field label="Telepon Mitra">
+                <input value={form.telepon_mitra} onChange={(event) => setForm((prev) => ({ ...prev, telepon_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Alamat">
+                  <textarea value={form.alamat} onChange={(event) => setForm((prev) => ({ ...prev, alamat: event.target.value }))} className="input-field min-h-24 w-full px-4 py-2.5 text-sm" />
+                </Field>
+              </div>
+
+              <div className="md:col-span-2 border-t border-gray-100 pt-4">
+                <p className="mb-3 text-sm font-semibold text-gray-700">Kontak Utama</p>
+              </div>
+              <Field label="Nama Kontak Utama">
+                <input value={form.nama_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, nama_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <Field label="Jabatan Kontak Utama">
+                <input value={form.jabatan_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, jabatan_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <Field label="Email Kontak Utama">
+                <input type="email" value={form.email_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, email_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+              <Field label="Telepon Kontak Utama">
+                <input value={form.telepon_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, telepon_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+              </Field>
+
+              <div className="md:col-span-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Status aktif</p>
+                  <p className="text-xs text-gray-500">Tandai apakah mitra ini masih digunakan di sistem</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, aktif: !prev.aktif }))}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${form.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}
+                >
+                  {form.aktif ? 'Aktif' : 'NonAktif'}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+              <button onClick={closeModal} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                Batal
+              </button>
+              <button onClick={handleSave} disabled={submitting} className="btn-primary px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60">
+                {submitting ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SummaryCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100">
+          <Icon size={18} className="text-sky-700" />
+        </div>
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+      </div>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block space-y-1.5 text-sm font-medium text-gray-700">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}

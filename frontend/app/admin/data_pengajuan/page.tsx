@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload } from 'lucide-react';
 import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
@@ -238,28 +238,26 @@ export default function PengajuanKerjasama() {
     }
   }, [isAjukanView]);
 
-  useEffect(() => {
-    if (!masterModalOpen) {
-      return;
-    }
+  const refreshMasterReferenceData = useCallback(async () => {
+    const [jurusanRows, unitRows, prodiRows] = await Promise.all([
+      getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
+      getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
+      getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
+    ]);
 
+    setMasterJurusanRows(jurusanRows);
+    setMasterUnitRows(unitRows);
+    setMasterProdiRows(prodiRows);
+
+    return { jurusanRows, unitRows, prodiRows };
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function loadMasterReferenceData() {
       try {
-        const [jurusanRows, unitRows, prodiRows] = await Promise.all([
-          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
-          getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
-          getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setMasterJurusanRows(jurusanRows);
-        setMasterUnitRows(unitRows);
-        setMasterProdiRows(prodiRows);
+        await refreshMasterReferenceData();
       } catch {
         if (isMounted) {
           setMasterMessage('Gagal memuat data master. Pastikan backend aktif.');
@@ -272,7 +270,7 @@ export default function PengajuanKerjasama() {
     return () => {
       isMounted = false;
     };
-  }, [masterModalOpen]);
+  }, [refreshMasterReferenceData]);
 
   const setProdiDraftField = (jurusanId: number, field: 'kode' | 'nama', value: string) => {
     setProdiDraftByJurusan((prev) => {
@@ -675,15 +673,7 @@ export default function PengajuanKerjasama() {
         aktif: true,
       });
 
-      const [jurusanRows, unitRows, prodiRows] = await Promise.all([
-        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
-        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true }),
-        getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
-      ]);
-
-      setMasterJurusanRows(jurusanRows);
-      setMasterUnitRows(unitRows);
-      setMasterProdiRows(prodiRows);
+      await refreshMasterReferenceData();
       setMasterKode('');
       setMasterNama('');
       setMasterMessage('Master berhasil disimpan.');
@@ -815,17 +805,11 @@ export default function PengajuanKerjasama() {
         throw new Error('Gagal menghapus jurusan.');
       }
 
-      const [jurusanRows, prodiRows] = await Promise.all([
-        getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
-        getMasterUnitProdi({ jenis_node: 'prodi', aktif: true }),
-      ]);
+      const { jurusanRows } = await refreshMasterReferenceData();
 
       if (jurusanRows.some((item) => item.id === jurusanId)) {
         throw new Error('Delete jurusan tidak tersinkron ke backend. Silakan refresh halaman lalu coba lagi.');
       }
-
-      setMasterJurusanRows(jurusanRows);
-      setMasterProdiRows(prodiRows);
       setMasterMessage('Jurusan berhasil dihapus beserta prodi terkait.');
     } catch (error) {
       let message = 'Gagal menghapus jurusan.';
@@ -856,11 +840,10 @@ export default function PengajuanKerjasama() {
         throw new Error('Gagal menghapus unit kerja.');
       }
 
-      const unitRows = await getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'unit_kerja', aktif: true });
+      const { unitRows } = await refreshMasterReferenceData();
       if (unitRows.some((item) => item.id === unitId)) {
         throw new Error('Delete unit kerja tidak tersinkron ke backend. Silakan refresh halaman lalu coba lagi.');
       }
-      setMasterUnitRows(unitRows);
       setMasterMessage('Unit kerja berhasil dihapus.');
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus unit kerja.';

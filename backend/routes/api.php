@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CarouselImageController;
+use App\Http\Controllers\MasterMitraController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MasterUnitProdiController;
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	// Master Unit/Prodi routes
 	Route::get('/master/unit-prodi/tree', [MasterUnitProdiController::class, 'tree']);
 	Route::apiResource('/master/unit-prodi', MasterUnitProdiController::class);
+	Route::apiResource('/master/mitra', MasterMitraController::class);
 });
 
 Route::get('/carousel-images', [CarouselImageController::class, 'index']);

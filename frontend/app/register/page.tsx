@@ -8,6 +8,7 @@ import {
   Building2,
   CheckCircle2,
   ChevronDown,
+  Globe,
   Lock,
   Mail,
   Phone,
@@ -18,11 +19,27 @@ import {
 import { apiRequest } from '@/lib/api';
 import OtpStep from './OtpStep';
 
+const negaraOptions = [
+  'Indonesia',
+  'Malaysia',
+  'Singapura',
+  'Amerika Serikat',
+  'Jepang',
+  'Korea Selatan',
+  'Australia',
+  'Jerman',
+  'Belanda',
+  'Inggris',
+  'Tiongkok',
+  'Lainnya',
+];
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     name: '',
     institution_name: '',
+    negara: 'Indonesia',
     username: '',
     email: '',
     phone: '',
@@ -198,6 +215,33 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">Negara Mitra</label>
+                    <div className="relative">
+                      <Globe className="pointer-events-none absolute left-3 top-3 text-slate-400" size={18} />
+                      <select
+                        name="negara"
+                        value={form.negara}
+                        onChange={handleChange}
+                        required
+                        className="input-field h-11 w-full appearance-none rounded-xl pl-10 pr-10 text-sm text-slate-700"
+                      >
+                        <option value="" disabled>
+                          Pilih negara mitra
+                        </option>
+                        {negaraOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={18}
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#173B82]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">WA Aktif Pengusul</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 text-slate-400" size={18} />
@@ -285,9 +329,9 @@ export default function RegisterPage() {
                         className="input-field h-11 w-full appearance-none rounded-xl px-4 pr-10 text-sm text-slate-600"
                       >
                         <option value="" disabled>
-                          Pilih jenis akun
+                          Pilih Kategori Mitra
                         </option>
-                        <option value="Perusahaan">Perusahaan</option>
+                        <option value="Industri">Industri</option>
                         <option value="Institusi Pendidikan">Institusi Pendidikan</option>
                         <option value="Instansi Pemerintah">Instansi Pemerintah</option>
                         <option value="Organisasi/Lembaga">Organisasi/Lembaga</option>

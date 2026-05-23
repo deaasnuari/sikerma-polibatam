@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FileText, RefreshCw, BarChart3,
-  BookOpen, Archive, Users, ChevronLeft, ChevronRight,
+  BookOpen, Archive, Users, Handshake, ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -39,6 +39,7 @@ const defaultMenuItems: SidebarMenuItem[] = [
   { icon: BookOpen, label: 'Story & Aktivitas', href: '/admin/story_aktivitas' },
   { icon: Archive, label: 'Arsip Dokumen', href: '/admin/arsip_dokumen' },
   { icon: Users, label: 'Manajemen User', href: '/admin/manajemen_users' },
+  { icon: Handshake, label: 'Data Kemitraan', href: '/admin/master_mitra' },
 ];
 
 export default function AdminSidebar({

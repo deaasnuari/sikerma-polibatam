@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MasterMitra;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -39,6 +41,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'institution_name' => ['required', 'string', 'max:255'],
+            'negara' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'min:4', 'max:50', 'alpha_dash', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:30'],
@@ -59,18 +62,39 @@ class AuthController extends Controller
             ]);
         }
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'institution_name' => $validated['institution_name'],
-            'username' => Str::lower($validated['username']),
-            'email' => Str::lower($validated['email']),
-            'phone' => $validated['phone'],
-            'position' => $validated['position'],
-            'role' => 'external',
-            'account_type' => $validated['account_type'],
-            'approval_status' => 'active',
-            'password' => Hash::make($validated['password']),
-        ]);
+        $user = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'institution_name' => $validated['institution_name'],
+                'username' => Str::lower($validated['username']),
+                'email' => Str::lower($validated['email']),
+                'phone' => $validated['phone'],
+                'position' => $validated['position'],
+                'role' => 'external',
+                'account_type' => $validated['account_type'],
+                'approval_status' => 'active',
+                'password' => Hash::make($validated['password']),
+            ]);
+
+            MasterMitra::updateOrCreate(
+                ['nama_mitra' => $validated['institution_name']],
+                [
+                    'kategori_mitra' => $validated['account_type'],
+                    'negara' => $validated['negara'],
+                    'website' => null,
+                    'alamat' => null,
+                    'email_mitra' => Str::lower($validated['email']),
+                    'telepon_mitra' => $validated['phone'],
+                    'nama_kontak_utama' => $validated['name'],
+                    'jabatan_kontak_utama' => $validated['position'],
+                    'email_kontak_utama' => Str::lower($validated['email']),
+                    'telepon_kontak_utama' => $validated['phone'],
+                    'aktif' => true,
+                ]
+            );
+
+            return $user;
+        });
 
         return response()->json([
             'message' => 'Registrasi mitra berhasil. Akun Anda sudah aktif dan bisa langsung login.',
@@ -181,9 +205,9 @@ class AuthController extends Controller
         ]);
     }
 
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
-        $user = request()->user();
+        $user = $request->user();
 
         if ($user && $user->currentAccessToken()) {
             $user->currentAccessToken()->delete();

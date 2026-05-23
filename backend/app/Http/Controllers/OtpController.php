@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Mail\SendOtpMail;
+use App\Models\MasterMitra;
 use App\Models\OtpCode;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -23,6 +25,7 @@ class OtpController extends Controller
         $validated = $request->validate([
             'name'                  => ['required', 'string', 'max:255'],
             'institution_name'      => ['required', 'string', 'max:255'],
+            'negara'                => ['required', 'string', 'max:100'],
             'username'              => ['required', 'string', 'min:4', 'max:50', 'alpha_dash'],
             'email'                 => ['required', 'string', 'email', 'max:255'],
             'phone'                 => ['required', 'string', 'max:30'],
@@ -102,22 +105,41 @@ class OtpController extends Controller
         // Ambil data form yang disimpan saat send-otp
         $formData = $otpRecord->form_data;
 
-        // Buat user baru
-        $user = User::create([
-            'name'             => $formData['name'],
-            'institution_name' => $formData['institution_name'],
-            'username'         => Str::lower($formData['username']),
-            'email'            => $emailLower,
-            'phone'            => $formData['phone'],
-            'position'         => $formData['position'],
-            'role'             => 'external',
-            'account_type'     => $formData['account_type'],
-            'approval_status'  => 'active',
-            'password'         => Hash::make($formData['password']),
-        ]);
+        $user = DB::transaction(function () use ($formData, $emailLower, $otpRecord) {
+            $user = User::create([
+                'name'             => $formData['name'],
+                'institution_name' => $formData['institution_name'],
+                'username'         => Str::lower($formData['username']),
+                'email'            => $emailLower,
+                'phone'            => $formData['phone'],
+                'position'         => $formData['position'],
+                'role'             => 'external',
+                'account_type'     => $formData['account_type'],
+                'approval_status'  => 'active',
+                'password'         => Hash::make($formData['password']),
+            ]);
 
-        // Tandai OTP sudah dipakai
-        $otpRecord->update(['is_used' => true]);
+            MasterMitra::updateOrCreate(
+                ['nama_mitra' => $formData['institution_name']],
+                [
+                    'kategori_mitra' => $formData['account_type'],
+                    'negara' => $formData['negara'],
+                    'website' => null,
+                    'alamat' => null,
+                    'email_mitra' => $emailLower,
+                    'telepon_mitra' => $formData['phone'],
+                    'nama_kontak_utama' => $formData['name'],
+                    'jabatan_kontak_utama' => $formData['position'],
+                    'email_kontak_utama' => $emailLower,
+                    'telepon_kontak_utama' => $formData['phone'],
+                    'aktif' => true,
+                ]
+            );
+
+            $otpRecord->update(['is_used' => true]);
+
+            return $user;
+        });
 
         return response()->json([
             'message' => 'Registrasi mitra berhasil. Akun Anda sudah aktif dan bisa langsung login.',
@@ -129,6 +151,7 @@ class OtpController extends Controller
                 'phone'           => $user->phone,
                 'position'        => $user->position,
                 'institution_name'=> $user->institution_name,
+                'negara'          => $formData['negara'],
                 'account_type'    => $user->account_type,
                 'approval_status' => $user->approval_status,
                 'role'            => $user->role,
