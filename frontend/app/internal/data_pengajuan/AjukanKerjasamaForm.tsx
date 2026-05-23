@@ -7,6 +7,9 @@ import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
 } from '@/services/adminPengajuanService';
+import {
+  getMasterRuangLingkup,
+} from '@/services/masterRuangLingkupService';
 import { submitInternalPengajuan } from '@/services/internalPengajuanService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
@@ -199,9 +202,9 @@ export default function InternalAjukanKerjasamaForm({
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
+  const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>([]);
   const [customRuangLingkupOpts, setCustomRuangLingkupOpts] = useState<string[]>([]);
   const [rlOpen, setRlOpen] = useState(false);
-  const [rlInput, setRlInput] = useState('');
   const [juOpen, setJuOpen] = useState(false);
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
@@ -210,7 +213,33 @@ export default function InternalAjukanKerjasamaForm({
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
-  const allRlOptions = [...defaultRuangLingkupOptions, ...customRuangLingkupOpts];
+  const allRlOptions = Array.from(new Set([...masterRuangLingkupOpts, ...defaultRuangLingkupOptions, ...customRuangLingkupOpts]));
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMasterRuangLingkup = async () => {
+      try {
+        const rows = await getMasterRuangLingkup({ aktif: true });
+
+        if (!mounted) {
+          return;
+        }
+
+        setMasterRuangLingkupOpts(rows.map((item) => item.nama_ruang_lingkup));
+      } catch {
+        if (mounted) {
+          setMasterRuangLingkupOpts([]);
+        }
+      }
+    };
+
+    loadMasterRuangLingkup();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -304,7 +333,24 @@ export default function InternalAjukanKerjasamaForm({
       customUnitOpts,
     };
 
-    window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
+    let idleId: number | null = null;
+    const timer = window.setTimeout(() => {
+      const writeDraft = () => window.localStorage.setItem(INTERNAL_PENGAJUAN_DRAFT_KEY, JSON.stringify(draft));
+
+      if (typeof window.requestIdleCallback === 'function') {
+        idleId = window.requestIdleCallback(writeDraft, { timeout: 1200 });
+        return;
+      }
+
+      writeDraft();
+    }, 900);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (idleId !== null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+    };
   }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
 
   useEffect(() => {
@@ -312,7 +358,13 @@ export default function InternalAjukanKerjasamaForm({
       return;
     }
 
-    window.localStorage.setItem(appearanceStorageKey, JSON.stringify(appearanceSettings));
+    const timer = window.setTimeout(() => {
+      window.localStorage.setItem(appearanceStorageKey, JSON.stringify(appearanceSettings));
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [appearanceSettings, appearanceStorageKey, enableAppearanceEdit]);
 
   const updateAppearance = (field: keyof FormAppearanceSettings, value: string) => {
@@ -321,19 +373,6 @@ export default function InternalAjukanKerjasamaForm({
 
   const resetAppearance = () => {
     setAppearanceSettings(defaultAppearanceSettings);
-  };
-
-  const addRlOption = () => {
-    const trimmed = rlInput.trim();
-    if (!trimmed || allRlOptions.includes(trimmed)) return;
-    setCustomRuangLingkupOpts((prev) => [...prev, trimmed]);
-    setSelectedRuangLingkup((prev) => [...prev, trimmed]);
-    setRlInput('');
-  };
-
-  const removeRlCustomOption = (option: string) => {
-    setCustomRuangLingkupOpts((prev) => prev.filter((item) => item !== option));
-    setSelectedRuangLingkup((prev) => prev.filter((item) => item !== option));
   };
 
   const addJurusanUnitOption = () => {
@@ -843,8 +882,6 @@ export default function InternalAjukanKerjasamaForm({
                     <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
                       <div className="max-h-48 overflow-y-auto p-1">
                         {allRlOptions.map((opt) => {
-                          const isCustom = customRuangLingkupOpts.includes(opt);
-
                           return (
                           <label key={opt} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
                             <input
@@ -855,45 +892,10 @@ export default function InternalAjukanKerjasamaForm({
                             />
                             <span className="flex flex-1 items-center justify-between gap-2 text-sm text-slate-800">
                               <span>{opt}</span>
-                              {isCustom && (
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    removeRlCustomOption(opt);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      removeRlCustomOption(opt);
-                                    }
-                                  }}
-                                  className="inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
-                                  aria-label={`Hapus opsi ${opt}`}
-                                >
-                                  <X size={12} />
-                                </span>
-                              )}
                             </span>
                           </label>
                           );
                         })}
-                      </div>
-                      <div className="flex gap-2 border-t border-slate-100 p-2">
-                        <input
-                          type="text"
-                          value={rlInput}
-                          onChange={(e) => setRlInput(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRlOption(); } }}
-                          placeholder="Tambah opsi baru..."
-                          className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
-                        />
-                        <button type="button" onClick={addRlOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
-                          <Plus size={12} />Tambah
-                        </button>
                       </div>
                     </div>
                   </>
