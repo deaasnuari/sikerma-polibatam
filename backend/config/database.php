@@ -100,19 +100,19 @@ return [
         ],
 
         'mysql_old' => [
-    'driver' => 'mysql',
-    'host' => '127.0.0.1',
-    'port' => '3306',
-    'database' => 'sikerma_old',
-    'username' => 'root',
-    'password' => '',
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'prefix' => '',
-    'prefix_indexes' => true,
-    'strict' => true,
-    'engine' => null,
-],
+            'driver' => 'mysql',
+            'host' => env('OLD_DB_HOST', '127.0.0.1'),
+            'port' => env('OLD_DB_PORT', '3306'),
+            'database' => env('OLD_DB_DATABASE', 'sikerma_old'),
+            'username' => env('OLD_DB_USERNAME', 'root'),
+            'password' => env('OLD_DB_PASSWORD', ''),
+            'charset' => env('OLD_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('OLD_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
 
 
         'sqlsrv' => [
