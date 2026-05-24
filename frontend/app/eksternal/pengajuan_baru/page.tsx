@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
-import { submitPengajuan } from '@/services/adminPengajuanService';
+import { submitPengajuanApi } from '@/services/adminPengajuanService';
 
 type UploadedDokumenLike = File | { file: File; dataUrl?: string };
 
@@ -40,34 +40,28 @@ export default function PengajuanBaruEksternalPage() {
         onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
 
-          try {
-            await submitPengajuan({
-              judul: formData.judulKerjasama,
-              pengusul: formData.namaKontak || 'Mitra Eksternal',
-              mitra: formData.namaMitra,
-              jenisDokumen: formData.jenisKerjasama,
-              jurusan: formData.unitPelaksana,
-              kategori: 'Eksternal',
-              negara: formData.negara,
-              tanggalMulai: formData.tanggalMulai,
-              tanggalBerakhir: formData.tanggalBerakhir,
-              emailPengusul: formData.emailKontak,
-              whatsappPengusul: formData.teleponKontak,
-              alamatMitra: formData.alamatMitra,
-              ruangLingkup: selectedRuangLingkup,
-              fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
-              fileAttachments: normalizedDokumen.map((item) => ({
-                name: item.file.name,
-                type: item.file.type,
-                size: item.file.size,
-                url: item.dataUrl,
-              })),
-            }, false, 'eksternal');
-          } catch (error) {
-            const message = error instanceof Error && error.message ? error.message : 'Gagal mengirim pengajuan ke server.';
-            alert(message);
-            return false;
-          }
+          await submitPengajuanApi({
+            judul: formData.judulKerjasama,
+            pengusul: formData.namaKontak || 'Mitra Eksternal',
+            mitra: formData.namaMitra,
+            jenisDokumen: formData.jenisKerjasama,
+            jurusan: formData.unitPelaksana,
+            kategori: 'Eksternal',
+            negara: formData.negara,
+            tanggalMulai: formData.tanggalMulai,
+            tanggalBerakhir: formData.tanggalBerakhir,
+            emailPengusul: formData.emailKontak,
+            whatsappPengusul: formData.teleponKontak,
+            alamatMitra: formData.alamatMitra,
+            ruangLingkup: selectedRuangLingkup,
+            fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
+            fileAttachments: normalizedDokumen.map((item) => ({
+              name: item.file.name,
+              type: item.file.type,
+              size: item.file.size,
+              url: item.dataUrl,
+            })),
+          }, false, 'eksternal');
 
           setIsSuccessModalOpen(true);
           return false;
