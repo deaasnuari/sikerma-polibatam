@@ -5,40 +5,46 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Pengajuan extends Model
+class DokumenKerjasama extends Model
 {
-    protected $table = 'pengajuan';
+    protected $table = 'dokumen_kerjasama';
 
     protected $fillable = [
-        'nomor_pengajuan',
-        'user_pengusul_id',
-        'nama_pengusul',
-        'jabatan_pengusul',
-        'email_pengusul',
-        'whatsapp_pengusul',
-        'unit_prodi_id',
-        'mitra_id',
-        'judul_pengajuan',
-        'deskripsi_pengajuan',
+        'nomor_dokumen',
+        'no_permohonan',
+        'no_dokumen',
+        'nama_dokumen',
         'jenis_dokumen',
-        'kategori_pengajuan',
+        'judul_dokumen',
         'ruang_lingkup_ids',
         'tanggal_mulai',
         'tanggal_berakhir',
-        'status_pengajuan',
-        'diajukan_pada',
-        'email_terverifikasi_pada',
+        'tanggal_ttd',
+        'status_siklus',
+        'diarsipkan_pada',
+        'alasan_arsip',
+        'sumber_pengajuan_id',
+        'unit_prodi_id',
+        'mitra_id',
+        'dibuat_oleh_user_id',
+        'file',
+        'keterangan',
     ];
 
     protected $casts = [
         'ruang_lingkup_ids' => 'array',
         'tanggal_mulai' => 'date',
         'tanggal_berakhir' => 'date',
-        'diajukan_pada' => 'datetime',
-        'email_terverifikasi_pada' => 'datetime',
+        'tanggal_ttd' => 'date',
+        'diarsipkan_pada' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function pengajuan(): BelongsTo
+    {
+        return $this->belongsTo(Pengajuan::class, 'sumber_pengajuan_id');
+    }
 
     public function unitProdi(): BelongsTo
     {
