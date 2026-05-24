@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CarouselImageController;
+use App\Http\Controllers\DokumenKerjasamaController;
 use App\Http\Controllers\MasterMitraController;
 use App\Http\Controllers\MasterRuangLingkupController;
 use App\Http\Controllers\OtpController;
@@ -27,11 +28,10 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::apiResource('/master/mitra', MasterMitraController::class);
 	Route::apiResource('/master/ruang-lingkup', MasterRuangLingkupController::class)
 		->parameters(['ruang-lingkup' => 'ruang_lingkup']);
-	Route::get('/pengajuan', [PengajuanController::class, 'index']);
-	Route::post('/pengajuan', [PengajuanController::class, 'store']);
-	Route::put('/pengajuan/{pengajuan}', [PengajuanController::class, 'update']);
-	Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
-	Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy']);
+
+	Route::apiResource('/pengajuan', PengajuanController::class);
+	Route::apiResource('/dokumen-kerjasama', DokumenKerjasamaController::class)
+		->parameters(['dokumen-kerjasama' => 'dokumen_kerjasama']);
 });
 
 Route::get('/carousel-images', [CarouselImageController::class, 'index']);
