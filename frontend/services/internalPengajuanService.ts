@@ -1,42 +1,28 @@
-import {
-  getPengajuanData,
-  type PengajuanFileAttachment,
-  type PengajuanFilterOptions,
-  type PengajuanItem,
-  type PengajuanStatus,
-  pengajuanJurusanOptions,
-  pengajuanJurusanUnitOptions,
-  pengajuanUnitOptions,
-  submitPengajuan,
-} from './adminPengajuanService';
+import { PengajuanItem, PengajuanStatus, getPengajuanData, submitPengajuanApi } from './adminPengajuanService';
 
-export function getInternalPengajuanData(): PengajuanItem[] {
-  return getPengajuanData({ excludeAdmin: true }).filter((item) => item.kategori === 'Internal' || !item.kategori);
+// Key localStorage khusus internal, benar-benar terpisah dari admin
+const STORAGE_KEY = 'pengajuanKerjasamaDataInternal';
+
+// Ambil seluruh data pengajuan, hanya data internal (bukan admin)
+export function getInternalPengajuanData(options?: { filterAdmin?: boolean }): PengajuanItem[] {
+  if (typeof window === 'undefined') return [];
+  const storedRaw = window.localStorage.getItem(STORAGE_KEY);
+  if (!storedRaw) return [];
+  try {
+    const stored = JSON.parse(storedRaw) as PengajuanItem[];
+    if (!Array.isArray(stored)) return [];
+    // Data internal hanya dari storage internal
+    return stored;
+  } catch {
+    return [];
+  }
 }
 
 // Submit pengajuan internal
-export async function submitInternalPengajuan(
+export function submitInternalPengajuan(
   data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'>
 ): Promise<PengajuanItem> {
-  const persisted = await submitPengajuan(data, false, 'internal');
-
-  // Juga simpan ke rekap data internal
-  try {
-    const { saveRekapData } = require('./internalRekapDataService');
-    if (typeof saveRekapData === 'function') {
-      saveRekapData(persisted);
-    }
-  } catch {}
-
-  // Juga simpan ke story aktivitas internal
-  try {
-    const { saveAktivitasByKerjasamaId } = require('./internalStoryAktivitasService');
-    if (typeof saveAktivitasByKerjasamaId === 'function') {
-      saveAktivitasByKerjasamaId(persisted.id, []);
-    }
-  } catch {}
-
-  return persisted;
+  return submitPengajuanApi(data, false, 'internal');
 }
 
 // Fungsi lain (statistik, update status, dsb) dapat di-copy sesuai kebutuhan
@@ -47,7 +33,38 @@ export async function submitInternalPengajuan(
  * Menggabungkan data dari internal storage + admin storage (berdasarkan id yang sama).
  */
 export function getInternalPengajuanDisetujui(): PengajuanItem[] {
-  return getPengajuanData({ excludeAdmin: true }).filter(
-    (item) => item.status === 'Disetujui' && (item.kategori === 'Internal' || !item.kategori)
+  if (typeof window === 'undefined') return [];
+
+  // Baca dari admin storage — filter yang bukan dari admin (isFromAdmin false)
+  // dan yang kategorinya Internal ATAU tidak punya kategori (data lama)
+  const adminData = getPengajuanData();
+  const fromAdmin = adminData.filter(
+    (item) => !item.isFromAdmin && item.status === 'Disetujui' &&
+    (item.kategori === 'Internal' || !item.kategori)
   );
+
+  // Baca dari internal storage untuk menangkap data yang mungkin tidak tersimpan di admin storage
+  const internalData = getInternalPengajuanData();
+
+  // Sinkronkan status internal storage dari admin storage berdasarkan id
+  const adminMap = new Map(adminData.map((item) => [item.id, item]));
+  const fromInternal = internalData
+    .map((item) => {
+      const adminItem = adminMap.get(item.id);
+      if (adminItem) return { ...item, status: adminItem.status as PengajuanStatus };
+      return item;
+    })
+    .filter((item) => item.status === 'Disetujui');
+
+  // Gabungkan dan deduplikasi berdasarkan id
+  const combined = [...fromAdmin, ...fromInternal];
+  const seen = new Set<number>();
+  const unique: PengajuanItem[] = [];
+  for (const item of combined) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      unique.push(item);
+    }
+  }
+  return unique;
 }
