@@ -37,31 +37,37 @@ export default function PengajuanBaruEksternalPage() {
       <InternalAjukanKerjasamaForm
         disableDraftPersistence
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
-        onSubmitOverride={({ formData, selectedRuangLingkup, dokumen }) => {
+        onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
 
-          submitPengajuan({
-            judul: formData.judulKerjasama,
-            pengusul: formData.namaKontak || 'Mitra Eksternal',
-            mitra: formData.namaMitra,
-            jenisDokumen: formData.jenisKerjasama,
-            jurusan: formData.unitPelaksana,
-            kategori: 'Eksternal',
-            negara: formData.negara,
-            tanggalMulai: formData.tanggalMulai,
-            tanggalBerakhir: formData.tanggalBerakhir,
-            emailPengusul: formData.emailKontak,
-            whatsappPengusul: formData.teleponKontak,
-            alamatMitra: formData.alamatMitra,
-            ruangLingkup: selectedRuangLingkup,
-            fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
-            fileAttachments: normalizedDokumen.map((item) => ({
-              name: item.file.name,
-              type: item.file.type,
-              size: item.file.size,
-              url: item.dataUrl,
-            })),
-          }, false, 'eksternal');
+          try {
+            await submitPengajuan({
+              judul: formData.judulKerjasama,
+              pengusul: formData.namaKontak || 'Mitra Eksternal',
+              mitra: formData.namaMitra,
+              jenisDokumen: formData.jenisKerjasama,
+              jurusan: formData.unitPelaksana,
+              kategori: 'Eksternal',
+              negara: formData.negara,
+              tanggalMulai: formData.tanggalMulai,
+              tanggalBerakhir: formData.tanggalBerakhir,
+              emailPengusul: formData.emailKontak,
+              whatsappPengusul: formData.teleponKontak,
+              alamatMitra: formData.alamatMitra,
+              ruangLingkup: selectedRuangLingkup,
+              fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
+              fileAttachments: normalizedDokumen.map((item) => ({
+                name: item.file.name,
+                type: item.file.type,
+                size: item.file.size,
+                url: item.dataUrl,
+              })),
+            }, false, 'eksternal');
+          } catch (error) {
+            const message = error instanceof Error && error.message ? error.message : 'Gagal mengirim pengajuan ke server.';
+            alert(message);
+            return false;
+          }
 
           setIsSuccessModalOpen(true);
           return false;

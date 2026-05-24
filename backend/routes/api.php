@@ -8,6 +8,7 @@ use App\Http\Controllers\MasterRuangLingkupController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MasterUnitProdiController;
+use App\Http\Controllers\PengajuanController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -26,6 +27,11 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::apiResource('/master/mitra', MasterMitraController::class);
 	Route::apiResource('/master/ruang-lingkup', MasterRuangLingkupController::class)
 		->parameters(['ruang-lingkup' => 'ruang_lingkup']);
+	Route::get('/pengajuan', [PengajuanController::class, 'index']);
+	Route::post('/pengajuan', [PengajuanController::class, 'store']);
+	Route::put('/pengajuan/{pengajuan}', [PengajuanController::class, 'update']);
+	Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
+	Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy']);
 });
 
 Route::get('/carousel-images', [CarouselImageController::class, 'index']);

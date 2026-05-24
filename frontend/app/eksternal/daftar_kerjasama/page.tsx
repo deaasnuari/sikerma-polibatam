@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Filter, Search, X } from 'lucide-react';
-import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { getPengajuanData, refreshPengajuanDataFromApi, type PengajuanItem } from '../../../services/adminPengajuanService';
 
 interface KerjasamaItem {
   id: number;
@@ -64,15 +64,26 @@ export default function DaftarKerjasamaEksternalPage() {
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
   useEffect(() => {
+    let isMounted = true;
+
     const sync = () => {
+      if (!isMounted) {
+        return;
+      }
+
       const eksternalItems = getPengajuanData()
         .filter((item) => item.kategori === 'Eksternal')
         .map(mapPengajuanToItem);
       setData(eksternalItems);
     };
-    sync();
+
+    void refreshPengajuanDataFromApi(true).finally(sync);
     window.addEventListener('pengajuan-data-updated', sync);
-    return () => window.removeEventListener('pengajuan-data-updated', sync);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('pengajuan-data-updated', sync);
+    };
   }, []);
 
   const filteredItems = useMemo(() => {

@@ -108,16 +108,16 @@ export default function InternalRekapDataPage() {
       // Filter data sesuai role user login
       const role = user?.role;
       let filteredData = getRekapData();
-      if (role === 'internal' || role === 'eksternal' || role === 'pimpinan') {
+      if (role === 'internal' || role === 'external' || role === 'pimpinan') {
         filteredData = filteredData.filter((item) => {
           if ('rolePengaju' in item) {
             return item.rolePengaju === role;
           }
-          // Fallback lama: internal = jurusan, eksternal = tidak termasuk jurusan/unit
+          // Fallback lama: internal = jurusan, external = tidak termasuk jurusan/unit
           if (role === 'internal') {
             return item.kategoriUnit === 'Jurusan' || jurusanMaster.has(item.unit) || rekapJurusanOptions.includes(item.unit);
           }
-          if (role === 'eksternal') {
+          if (role === 'external') {
             return item.kategoriUnit !== 'Jurusan' && !jurusanMaster.has(item.unit) && !rekapJurusanOptions.includes(item.unit);
           }
           return true;

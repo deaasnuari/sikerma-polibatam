@@ -24,6 +24,9 @@
       }
     ],
     "paths": {
+      "@/services/adminPengajuanService": [
+        "./services/adminPengajuanService.ts"
+      ],
       "@/*": [
         "./*"
       ]

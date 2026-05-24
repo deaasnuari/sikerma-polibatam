@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
 import { getHiddenStoryIds, getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
-import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { getPengajuanData, refreshPengajuanDataFromApi, type PengajuanItem } from '../../../services/adminPengajuanService';
 
 interface Kerjasama {
   id: number;
@@ -119,21 +119,32 @@ export default function StoryAktivitasPage() {
   const [selectedLaporan, setSelectedLaporan] = useState<Kerjasama | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const syncData = () => {
+      if (!isMounted) {
+        return;
+      }
+
       setSourceData(getPengajuanData().map(mapPengajuanToKerjasama));
     };
 
     const syncHiddenStoryIds = () => {
+      if (!isMounted) {
+        return;
+      }
+
       setHiddenStoryIds(getHiddenStoryIds());
     };
 
-    syncData();
+    void refreshPengajuanDataFromApi(true).finally(syncData);
     syncHiddenStoryIds();
 
     window.addEventListener('pengajuan-data-updated', syncData);
     window.addEventListener('story-data-updated', syncHiddenStoryIds);
 
     return () => {
+      isMounted = false;
       window.removeEventListener('pengajuan-data-updated', syncData);
       window.removeEventListener('story-data-updated', syncHiddenStoryIds);
     };

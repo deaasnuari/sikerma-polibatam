@@ -241,29 +241,6 @@ Route::get('/migrate-m-moa', function () {
     return 'Data m_moa berhasil dipindahkan: ' . count($data) . ' baris';
 });
 
-// db prodi migration dari mysql lama ke postgre baru
-Route::get('/migrate-prodi', function () {
-
-    $data = DB::connection('mysql_old')
-                ->table('prodi')
-                ->get();
-
-    foreach ($data as $item) {
-
-        DB::table('prodi')->updateOrInsert(
-
-            ['kode' => $item->kode],
-
-            [
-                'nama'  => $item->nama,
-                'unit'  => $item->unit,
-            ]
-        );
-    }
-
-    return 'Data prodi berhasil dipindahkan: ' . count($data) . ' baris';
-});
-
 // db progres migration dari mysql lama ke postgre baru
 Route::get('/migrate-progres', function () {
 

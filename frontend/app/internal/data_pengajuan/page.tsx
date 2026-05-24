@@ -25,6 +25,7 @@ import {
   pengajuanDokumenBadge,
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
+  refreshPengajuanDataFromApi,
   updatePengajuanItem,
   type PengajuanItem,
   type PengajuanStatus,
@@ -104,9 +105,14 @@ export default function InternalDataPengajuanPage() {
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
 
     // Ambil data internal saja, exclude admin, dan deduplikasi berdasarkan id
     const syncPengajuan = () => {
+      if (!isMounted) {
+        return;
+      }
+
       const internalOnly = getPengajuanData({ excludeAdmin: true }).filter(
         (item) => item.kategori === 'Internal'
       );
@@ -122,9 +128,13 @@ export default function InternalDataPengajuanPage() {
       setPengajuanData(unique);
     };
 
-    syncPengajuan();
+    // Hard refresh awal dari API agar daftar internal langsung up-to-date.
+    void refreshPengajuanDataFromApi(true).finally(syncPengajuan);
     window.addEventListener('pengajuan-data-updated', syncPengajuan);
-    return () => window.removeEventListener('pengajuan-data-updated', syncPengajuan);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('pengajuan-data-updated', syncPengajuan);
+    };
   }, []);
 
   const jurusanOptions = useMemo(() => {
@@ -182,7 +192,7 @@ export default function InternalDataPengajuanPage() {
     });
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!editForm) return;
     if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
       setInfoModalMessage('Judul, mitra, dan jurusan wajib diisi.');
@@ -192,30 +202,40 @@ export default function InternalDataPengajuanPage() {
       setInfoModalMessage('Pilih minimal 1 ruang lingkup.');
       return;
     }
-    const next = updatePengajuanItem(editForm.id, {
-      judul: editForm.judul.trim(),
-      mitra: editForm.mitra.trim(),
-      jurusan: editForm.jurusan.trim(),
-      jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
-      tanggalMulai: editForm.tanggalMulai || undefined,
-      tanggalBerakhir: editForm.tanggalBerakhir || undefined,
-      ruangLingkup: editForm.ruangLingkup,
-    });
-    const internalOnly = next.filter((i) => i.kategori === 'Internal');
-    setPengajuanData(internalOnly);
-    setEditForm(null);
-    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+    try {
+      const next = await updatePengajuanItem(editForm.id, {
+        judul: editForm.judul.trim(),
+        mitra: editForm.mitra.trim(),
+        jurusan: editForm.jurusan.trim(),
+        jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
+        tanggalMulai: editForm.tanggalMulai || undefined,
+        tanggalBerakhir: editForm.tanggalBerakhir || undefined,
+        ruangLingkup: editForm.ruangLingkup,
+      });
+      const internalOnly = next.filter((i) => i.kategori === 'Internal');
+      setPengajuanData(internalOnly);
+      setEditForm(null);
+      setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui pengajuan.';
+      setInfoModalMessage(message);
+    }
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
     const deletedId = deleteTarget.id;
-    const next = deletePengajuanItem(deletedId);
-    setPengajuanData(next.filter((i) => i.kategori === 'Internal'));
-    setDeleteTarget(null);
-    if (detailItem?.id === deletedId) setDetailItem(null);
-    if (reviewItem?.id === deletedId) setReviewItem(null);
-    setInfoModalMessage('Data pengajuan berhasil dihapus.');
+    try {
+      const next = await deletePengajuanItem(deletedId);
+      setPengajuanData(next.filter((i) => i.kategori === 'Internal'));
+      setDeleteTarget(null);
+      if (detailItem?.id === deletedId) setDetailItem(null);
+      if (reviewItem?.id === deletedId) setReviewItem(null);
+      setInfoModalMessage('Data pengajuan berhasil dihapus.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus pengajuan.';
+      setInfoModalMessage(message);
+    }
   }
 
   if (isAjukanView) {

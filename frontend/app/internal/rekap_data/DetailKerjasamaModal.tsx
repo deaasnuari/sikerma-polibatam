@@ -121,7 +121,7 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
                   item.jenis,
                   item.unit,
                   item.tanggalMulai,
-item.berlakuUntil,
+                  item.berlakuHingga,
                   item.status,
                 ],
               ]

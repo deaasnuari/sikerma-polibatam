@@ -123,7 +123,7 @@ type InternalAjukanKerjasamaFormProps = {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
-  }) => boolean | void;
+  }) => boolean | void | Promise<boolean | void>;
 };
 
 type FormAppearanceSettings = {
@@ -589,11 +589,11 @@ export default function AdminAjukanKerjasamaForm({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (onSubmitOverride) {
-      const submitResult = onSubmitOverride({
+      const submitResult = await onSubmitOverride({
         formData,
         asal,
         selectedRuangLingkup,
@@ -612,22 +612,28 @@ export default function AdminAjukanKerjasamaForm({
       return;
     }
 
-    submitPengajuan({
-      judul: formData.judulKerjasama,
-      pengusul: formData.namaKontak || 'Internal Polibatam',
-      mitra: formData.namaMitra,
-      jenisDokumen: formData.jenisKerjasama,
-      jurusan: formData.unitPelaksana,
-      kategori: 'Internal',
-      negara: formData.negara,
-      tanggalMulai: formData.tanggalMulai,
-      tanggalBerakhir: formData.tanggalBerakhir,
-      emailPengusul: formData.emailKontak,
-      whatsappPengusul: formData.teleponKontak,
-      ruangLingkup: selectedRuangLingkup,
-      fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
-      fileAttachments: buildFileAttachments(),
-    }, true); // <--- Penting: isFromAdmin true
+    try {
+      await submitPengajuan({
+        judul: formData.judulKerjasama,
+        pengusul: formData.namaKontak || 'Internal Polibatam',
+        mitra: formData.namaMitra,
+        jenisDokumen: formData.jenisKerjasama,
+        jurusan: formData.unitPelaksana,
+        kategori: 'Internal',
+        negara: formData.negara,
+        tanggalMulai: formData.tanggalMulai,
+        tanggalBerakhir: formData.tanggalBerakhir,
+        emailPengusul: formData.emailKontak,
+        whatsappPengusul: formData.teleponKontak,
+        ruangLingkup: selectedRuangLingkup,
+        fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
+        fileAttachments: buildFileAttachments(),
+      }, true);
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal mengirim pengajuan ke server.';
+      alert(message);
+      return;
+    }
 
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);

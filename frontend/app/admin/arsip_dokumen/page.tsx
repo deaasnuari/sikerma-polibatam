@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
-import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
+import { getPengajuanData, refreshPengajuanDataFromApi, type PengajuanItem } from '../../../services/adminPengajuanService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 interface ArsipDokumen {
@@ -122,14 +122,23 @@ export default function ArsipDokumenPage() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const syncArsip = () => {
+      if (!isMounted) {
+        return;
+      }
+
       setData(getPengajuanData().map(mapPengajuanToArsip));
     };
 
-    syncArsip();
+    void refreshPengajuanDataFromApi(true).finally(syncArsip);
     window.addEventListener('pengajuan-data-updated', syncArsip);
 
-    return () => window.removeEventListener('pengajuan-data-updated', syncArsip);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('pengajuan-data-updated', syncArsip);
+    };
   }, []);
 
   const handleDelete = (id: number) => {

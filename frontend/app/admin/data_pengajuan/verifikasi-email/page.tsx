@@ -31,13 +31,18 @@ export default function VerifikasiEmailPage() {
   const pengajuanId = Number(searchParams.get('id') || '0');
   const emailAction = getEmailAction(email);
 
-  const handleVerified = () => {
-    if (pengajuanId) {
-      markPengajuanEmailVerified(pengajuanId);
-    }
+  const handleVerified = async () => {
+    try {
+      if (pengajuanId) {
+        await markPengajuanEmailVerified(pengajuanId);
+      }
 
-    alert('Verifikasi email dikonfirmasi. Pengajuan siap diproses lebih lanjut.');
-    router.push('/admin/data_pengajuan');
+      alert('Verifikasi email dikonfirmasi. Pengajuan siap diproses lebih lanjut.');
+      router.push('/admin/data_pengajuan');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui status verifikasi email.';
+      alert(message);
+    }
   };
 
   return (

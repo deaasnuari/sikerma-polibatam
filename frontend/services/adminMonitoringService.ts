@@ -301,6 +301,27 @@ function saveMonitoringData(items: Kerjasama[]) {
   emitMonitoringUpdate();
 }
 
+function normalizeMonitoringData(items: Kerjasama[]): Kerjasama[] {
+  const byId = new Map<number, Kerjasama>();
+
+  for (const item of items) {
+    const existing = byId.get(item.id);
+
+    if (!existing) {
+      byId.set(item.id, item);
+      continue;
+    }
+
+    // Prefer synced rows from pengajuan when duplicate IDs exist.
+    const chooseIncoming = Boolean(item.sourcePengajuanId) && !existing.sourcePengajuanId;
+    if (chooseIncoming) {
+      byId.set(item.id, item);
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
 function formatDisplayDate(dateValue?: string): string {
   if (!dateValue) {
     return '-';
@@ -349,26 +370,33 @@ function resolveStatusAndSisa(tanggalBerakhir?: string): { status: StatusKerjasa
 // Ambil seluruh data kerjasama untuk monitoring.
 export function getMonitoringData(): Kerjasama[] {
   if (!canUseStorage()) {
-    return defaultMonitoringData;
+    return normalizeMonitoringData(defaultMonitoringData);
   }
 
   const storedRaw = window.localStorage.getItem(STORAGE_KEY);
 
   if (!storedRaw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultMonitoringData));
-    return defaultMonitoringData;
+    const normalizedDefaults = normalizeMonitoringData(defaultMonitoringData);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedDefaults));
+    return normalizedDefaults;
   }
 
   try {
     const stored = JSON.parse(storedRaw) as Kerjasama[];
 
     if (!Array.isArray(stored)) {
-      return defaultMonitoringData;
+      return normalizeMonitoringData(defaultMonitoringData);
     }
 
-    return stored;
+    const normalized = normalizeMonitoringData(stored);
+
+    if (normalized.length !== stored.length) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+
+    return normalized;
   } catch {
-    return defaultMonitoringData;
+    return normalizeMonitoringData(defaultMonitoringData);
   }
 }
 
@@ -515,13 +543,16 @@ export function upsertMonitoringFromPengajuan(payload: PengajuanSyncPayload): Ke
   };
 
   const current = getMonitoringData();
-  const hasExisting = current.some((item) => item.sourcePengajuanId === payload.id);
+  const hasExisting = current.some((item) => item.sourcePengajuanId === payload.id || item.id === payload.id);
   const updated = hasExisting
-    ? current.map((item) => (item.sourcePengajuanId === payload.id ? nextItem : item))
+    ? current.map((item) => (
+      item.sourcePengajuanId === payload.id || item.id === payload.id ? nextItem : item
+    ))
     : [nextItem, ...current];
 
-  saveMonitoringData(updated);
-  return updated;
+  const normalized = normalizeMonitoringData(updated);
+  saveMonitoringData(normalized);
+  return normalized;
 }
 
 // Hapus data monitoring yang berasal dari pengajuan tertentu.

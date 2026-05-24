@@ -5,19 +5,11 @@ namespace Database\Seeders;
 use App\Models\MasterUnitProdi;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MasterUnitProdiSeeder extends Seeder
 {
-    private const JURUSAN_CODE_TO_NAME = [
-        'MB' => 'Manajemen dan Bisnis',
-        'EL' => 'Teknik Elektro',
-        'IF' => 'Teknik Informatika',
-        'TM' => 'Teknik Mesin',
-    ];
-
     /**
-     * Seed master_unit_prodi using frontend unit options and existing prodi table.
+     * Seed master_unit_prodi using frontend unit and jurusan options.
      */
     public function run(): void
     {
@@ -105,74 +97,6 @@ class MasterUnitProdiSeeder extends Seeder
 
                 $unitIdByName[$unit->nama] = $unit->id;
             }
-
-            if (!Schema::hasTable('prodi')) {
-                $this->command?->warn('Tabel prodi tidak ditemukan. Seeder hanya mengisi data unit frontend.');
-                return;
-            }
-
-            // 3) Seed prodi children from legacy prodi table.
-            $prodiRows = DB::table('prodi')
-                ->select(['kode', 'nama', 'unit'])
-                ->orderBy('id')
-                ->get();
-
-            $createdOrUpdated = 0;
-
-            foreach ($prodiRows as $row) {
-                $prodiName = trim((string) ($row->nama ?? ''));
-                if ($prodiName === '') {
-                    continue;
-                }
-
-                $legacyUnit = strtoupper(trim((string) ($row->unit ?? '')));
-                $parentName = self::JURUSAN_CODE_TO_NAME[$legacyUnit] ?? trim((string) ($row->unit ?? ''));
-
-                // Kolom prodi.unit diperlakukan sebagai jurusan.
-                if (!in_array($parentName, $frontendJurusan, true)) {
-                    continue;
-                }
-
-                $parentId = null;
-
-                if ($parentName !== '') {
-                    if (!isset($unitIdByName[$parentName])) {
-                        $fallbackUnit = MasterUnitProdi::query()->updateOrCreate(
-                            [
-                                'parent_id' => null,
-                                'nama' => $parentName,
-                            ],
-                            [
-                                'jenis_node' => 'unit',
-                                'kategori_unit' => 'jurusan',
-                                'kode' => null,
-                                'aktif' => true,
-                            ]
-                        );
-
-                        $unitIdByName[$parentName] = $fallbackUnit->id;
-                    }
-
-                    $parentId = $unitIdByName[$parentName];
-                }
-
-                MasterUnitProdi::query()->updateOrCreate(
-                    [
-                        'parent_id' => $parentId,
-                        'nama' => $prodiName,
-                    ],
-                    [
-                        'jenis_node' => 'prodi',
-                        'kategori_unit' => null,
-                        'kode' => $row->kode ? trim((string) $row->kode) : null,
-                        'aktif' => true,
-                    ]
-                );
-
-                $createdOrUpdated++;
-            }
-
-            $this->command?->info('MasterUnitProdiSeeder selesai. Prodi diproses: ' . $createdOrUpdated);
         });
     }
 }
