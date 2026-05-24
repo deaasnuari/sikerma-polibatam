@@ -209,6 +209,8 @@ export default function InternalAjukanKerjasamaForm({
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
@@ -467,27 +469,34 @@ export default function InternalAjukanKerjasamaForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (onSubmitOverride) {
-      const submitResult = await onSubmitOverride({
-        formData,
-        asal,
-        selectedRuangLingkup,
-        dokumen: dokumen.map((item) => item.file),
-      });
-
-      if (submitResult === false) {
-        return;
-      }
-
-      if (onSubmitted) {
-        onSubmitted();
-        return;
-      }
-
+    if (isSubmitting) {
       return;
     }
 
+    setSubmitError(null);
+    setIsSubmitting(true);
+
     try {
+      if (onSubmitOverride) {
+        const submitResult = await Promise.resolve(onSubmitOverride({
+          formData,
+          asal,
+          selectedRuangLingkup,
+          dokumen: dokumen.map((item) => item.file),
+        }));
+
+        if (submitResult === false) {
+          return;
+        }
+
+        if (onSubmitted) {
+          onSubmitted();
+          return;
+        }
+
+        return;
+      }
+
       await submitInternalPengajuan({
         judul: formData.judulKerjasama,
         pengusul: formData.namaKontak || 'Internal Polibatam',
@@ -504,24 +513,24 @@ export default function InternalAjukanKerjasamaForm({
         fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
         fileAttachments: buildFileAttachments(),
       });
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
+      }
+
+      alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
+
+      if (onSubmitted) {
+        onSubmitted();
+        return;
+      }
+
+      router.push('/internal/data_pengajuan');
     } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Gagal mengirim pengajuan ke server.';
-      alert(message);
-      return;
+      const message = error instanceof Error ? error.message : 'Gagal mengirim pengajuan ke server.';
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
-    }
-
-    alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
-
-    if (onSubmitted) {
-      onSubmitted();
-      return;
-    }
-
-    router.push('/internal/data_pengajuan');
   };
 
   return (
@@ -1051,6 +1060,12 @@ export default function InternalAjukanKerjasamaForm({
           </div>
         </section>
 
+        {submitError && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {submitError}
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
           <button
             type="button"
@@ -1068,9 +1083,10 @@ export default function InternalAjukanKerjasamaForm({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
+            disabled={isSubmitting}
+            className="rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitButtonLabel}
+            {isSubmitting ? 'Mengirim...' : submitButtonLabel}
           </button>
         </div>
       </form>
