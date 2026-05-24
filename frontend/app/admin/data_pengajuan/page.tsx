@@ -14,20 +14,19 @@ import {
   type MasterUnitProdi,
 } from '@/services/masterUnitProdiService';
 import {
-  deletePengajuanItem,
+  deletePengajuanItemApi,
+  fetchPengajuanDataFromApi,
   getFilteredPengajuanData,
-  getPengajuanData,
   getPengajuanStats,
   getPengajuanYearOptions,
   pengajuanDokumenBadge,
-  refreshPengajuanDataFromApi,
-  savePengajuanReview,
-  updatePengajuanItem,
+  savePengajuanReviewApi,
+  updatePengajuanItemApi,
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
   type PengajuanItem,
   type PengajuanStatus,
-} from '../../../services/adminPengajuanService';
+} from '@/services/adminPengajuanService';
 
 type EditFormState = {
   id: number;
@@ -223,23 +222,26 @@ export default function PengajuanKerjasama() {
   const [editingItem, setEditingItem] = useState<PengajuanItem | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const syncPengajuan = () => {
-      if (!isMounted) {
-        return;
+    const loadFromApi = async () => {
+      try {
+        const rows = await fetchPengajuanDataFromApi({ perPage: 500 });
+        if (mounted) {
+          setPengajuanData(rows);
+        }
+      } catch {
+        if (mounted) {
+          setPengajuanData([]);
+          setInfoModalMessage('Gagal memuat data pengajuan dari server.');
+        }
       }
-
-      setPengajuanData(getPengajuanData());
     };
 
-    // Hard refresh awal dari API agar data terbaru langsung tampil saat halaman dibuka.
-    void refreshPengajuanDataFromApi(true).finally(syncPengajuan);
-    window.addEventListener('pengajuan-data-updated', syncPengajuan);
+    loadFromApi();
 
     return () => {
-      isMounted = false;
-      window.removeEventListener('pengajuan-data-updated', syncPengajuan);
+      mounted = false;
     };
   }, []);
 
@@ -404,15 +406,16 @@ export default function PengajuanKerjasama() {
     if (!reviewItem) return;
 
     try {
-      const next = await savePengajuanReview(reviewItem.id, reviewDecision, reviewComment);
-      setPengajuanData(next);
-      setReviewItem(null);
-      setReviewComment('');
-      setInfoModalMessage('Review pengajuan berhasil disimpan.');
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Gagal menyimpan review pengajuan.';
-      setInfoModalMessage(message);
+      const updated = await savePengajuanReviewApi(reviewItem.id, reviewDecision, reviewComment);
+      setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+    } catch {
+      setInfoModalMessage('Gagal menyimpan review ke server.');
+      return;
     }
+
+    setReviewItem(null);
+    setReviewComment('');
+    setInfoModalMessage('Review pengajuan berhasil disimpan.');
   }
 
   function openEdit(item: PengajuanItem) {
@@ -555,32 +558,34 @@ export default function PengajuanKerjasama() {
       ? await buildPersistentFileAttachments(editUploadedFiles)
       : [];
 
-    try {
-      const next = await updatePengajuanItem(editForm.id, {
-        judul: editForm.judul.trim(),
-        mitra: editForm.mitra.trim(),
-        jurusan: editForm.jurusan.trim(),
-        jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
-        tanggalMulai: editForm.tanggalMulai || undefined,
-        tanggalBerakhir: editForm.tanggalBerakhir || undefined,
-        ruangLingkup: editForm.ruangLingkup,
-        ...(editUploadedFiles.length > 0
-          ? {
-              fileName: editUploadedFiles.map((file) => file.name).join(', '),
-              fileAttachments: persistentAttachments,
-            }
-          : {}),
-      });
+    const editPayload = {
+      judul: editForm.judul.trim(),
+      mitra: editForm.mitra.trim(),
+      jurusan: editForm.jurusan.trim(),
+      jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
+      tanggalMulai: editForm.tanggalMulai || undefined,
+      tanggalBerakhir: editForm.tanggalBerakhir || undefined,
+      ruangLingkup: editForm.ruangLingkup,
+      ...(editUploadedFiles.length > 0
+        ? {
+            fileName: editUploadedFiles.map((file) => file.name).join(', '),
+            fileAttachments: persistentAttachments,
+          }
+        : {}),
+    };
 
-      setPengajuanData(next);
-      setEditForm(null);
-      setEditUploadedFiles([]);
-      setEditFileError(null);
-      setInfoModalMessage('Data pengajuan berhasil diperbarui.');
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui pengajuan.';
-      setInfoModalMessage(message);
+    try {
+      const updated = await updatePengajuanItemApi(editForm.id, editPayload);
+      setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+    } catch {
+      setInfoModalMessage('Gagal memperbarui data pengajuan di server.');
+      return;
     }
+
+    setEditForm(null);
+    setEditUploadedFiles([]);
+    setEditFileError(null);
+    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
   }
 
   async function confirmDelete() {
@@ -588,27 +593,27 @@ export default function PengajuanKerjasama() {
 
     const deletedId = deleteTarget.id;
     try {
-      const next = await deletePengajuanItem(deletedId);
-
-      setPengajuanData(next);
-      setDeleteTarget(null);
-
-      if (detailItem?.id === deletedId) {
-        setDetailItem(null);
-      }
-
-      if (reviewItem?.id === deletedId) {
-        setReviewItem(null);
-      }
-
-      setInfoModalMessage('Data pengajuan berhasil dihapus.');
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus pengajuan.';
-      setInfoModalMessage(message);
+      await deletePengajuanItemApi(deletedId);
+      setPengajuanData((prev) => prev.filter((item) => item.id !== deletedId));
+    } catch {
+      setInfoModalMessage('Gagal menghapus pengajuan di server.');
+      return;
     }
+
+    setDeleteTarget(null);
+
+    if (detailItem?.id === deletedId) {
+      setDetailItem(null);
+    }
+
+    if (reviewItem?.id === deletedId) {
+      setReviewItem(null);
+    }
+
+    setInfoModalMessage('Data pengajuan berhasil dihapus.');
   }
 
-  async function handleSubmitEditFromAjukan(payload: {
+  function handleSubmitEditFromAjukan(payload: {
     formData: {
       namaMitra: string;
       jenisMitra: string;
@@ -632,7 +637,7 @@ export default function PengajuanKerjasama() {
     selectedRuangLingkup: string[];
     dokumen: File[];
     dokumenAttachments: { file: File; dataUrl: string }[];
-  }): Promise<boolean> {
+  }): boolean {
     if (!editingItem) {
       return false;
     }
@@ -647,41 +652,42 @@ export default function PengajuanKerjasama() {
       return false;
     }
 
-    try {
-      const next = await updatePengajuanItem(editingItem.id, {
-        judul: payload.formData.judulKerjasama.trim(),
-        mitra: payload.formData.namaMitra.trim(),
-        jurusan: payload.formData.unitPelaksana.trim(),
-        jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
-        tanggalMulai: payload.formData.tanggalMulai || undefined,
-        tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,
-        ruangLingkup: payload.selectedRuangLingkup,
-        emailPengusul: payload.formData.emailKontak || editingItem.emailPengusul,
-        whatsappPengusul: payload.formData.teleponKontak || editingItem.whatsappPengusul,
-        alamatMitra: payload.formData.alamatMitra || editingItem.alamatMitra,
-        negara: payload.formData.negara || editingItem.negara,
-        ...(payload.dokumen.length > 0
-          ? {
-              fileName: payload.dokumen.map((file) => file.name).join(', '),
-              fileAttachments: payload.dokumenAttachments.map((item) => ({
-                name: item.file.name,
-                type: item.file.type,
-                size: item.file.size,
-                url: item.dataUrl,
-              })),
-            }
-          : {}),
+    const editPayload = {
+      judul: payload.formData.judulKerjasama.trim(),
+      mitra: payload.formData.namaMitra.trim(),
+      jurusan: payload.formData.unitPelaksana.trim(),
+      jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
+      tanggalMulai: payload.formData.tanggalMulai || undefined,
+      tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,
+      ruangLingkup: payload.selectedRuangLingkup,
+      emailPengusul: payload.formData.emailKontak || editingItem.emailPengusul,
+      whatsappPengusul: payload.formData.teleponKontak || editingItem.whatsappPengusul,
+      alamatMitra: payload.formData.alamatMitra || editingItem.alamatMitra,
+      negara: payload.formData.negara || editingItem.negara,
+      ...(payload.dokumen.length > 0
+        ? {
+            fileName: payload.dokumen.map((file) => file.name).join(', '),
+            fileAttachments: payload.dokumenAttachments.map((item) => ({
+              name: item.file.name,
+              type: item.file.type,
+              size: item.file.size,
+              url: item.dataUrl,
+            })),
+          }
+        : {}),
+    };
+
+    updatePengajuanItemApi(editingItem.id, editPayload)
+      .then((updated) => {
+        setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      })
+      .catch(() => {
+        setInfoModalMessage('Gagal memperbarui data pengajuan di server.');
       });
 
-      setPengajuanData(next);
-      setEditingItem(null);
-      setInfoModalMessage('Data pengajuan berhasil diperbarui.');
-      return true;
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui pengajuan.';
-      setInfoModalMessage(message);
-      return false;
-    }
+    setEditingItem(null);
+    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+    return true;
   }
 
   async function handleSubmitMasterReference() {

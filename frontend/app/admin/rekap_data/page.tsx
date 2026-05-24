@@ -21,6 +21,7 @@ import {
   type DokumenData,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
+import { fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
@@ -42,14 +43,26 @@ export default function RekapDataPage() {
 
 
   useEffect(() => {
-    const syncRekapData = () => {
-      setRekapData(getRekapData());
+    let mounted = true;
+
+    const loadFromApi = async () => {
+      try {
+        const rows = await fetchRekapDokumenFromApi();
+        if (mounted) {
+          setRekapData(rows);
+        }
+      } catch {
+        if (mounted) {
+          setRekapData([]);
+        }
+      }
     };
 
-    syncRekapData();
-    window.addEventListener('rekap-data-updated', syncRekapData);
+    loadFromApi();
 
-    return () => window.removeEventListener('rekap-data-updated', syncRekapData);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {

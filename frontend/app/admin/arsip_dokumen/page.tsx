@@ -10,8 +10,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
-import { getPengajuanData, refreshPengajuanDataFromApi, type PengajuanItem } from '../../../services/adminPengajuanService';
-import { generateNoDokumen } from '@/services/adminMonitoringService';
+import { fetchArsipDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
 
 interface ArsipDokumen {
   id: number;
@@ -35,30 +34,6 @@ function toDisplayDate(value?: string): string {
   }
 
   return parsed.toLocaleDateString('en-GB');
-}
-
-function toDocumentType(value: string): ArsipDokumen['jenis'] {
-  if (value === 'MoA' || value === 'MoU' || value === 'IA') {
-    return value;
-  }
-
-  return 'MoU';
-}
-
-function mapPengajuanToArsip(item: PengajuanItem): ArsipDokumen {
-  const tahun = Number(item.tanggal?.slice(0, 4)) || new Date().getFullYear();
-  const jenis = toDocumentType(item.jenisDokumen);
-
-  return {
-    id: item.id,
-    noDokumen: generateNoDokumen({ urutan: item.id, jenis, tanggal: item.tanggalMulai }),
-    namaMitra: item.mitra,
-    jenis,
-    tanggalMulai: toDisplayDate(item.tanggalMulai),
-    berlakuHingga: toDisplayDate(item.tanggalBerakhir),
-    statusFollowUp: item.status === 'Disetujui' ? 'Menunggu' : 'Tidak Direspon',
-    buktiFollowUp: null,
-  };
 }
 
 const followUpColor: Record<string, { bg: string; text: string }> = {
@@ -122,22 +97,38 @@ export default function ArsipDokumenPage() {
   };
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const syncArsip = () => {
-      if (!isMounted) {
-        return;
+    const loadArsip = async () => {
+      try {
+        const rows = await fetchArsipDokumenFromApi();
+        if (!mounted) {
+          return;
+        }
+
+        setData(
+          rows.map((item) => ({
+            id: item.id,
+            noDokumen: item.noDokumen,
+            namaMitra: item.namaMitra,
+            jenis: item.jenis,
+            tanggalMulai: item.tanggalMulai,
+            berlakuHingga: item.berlakuHingga,
+            statusFollowUp: 'Menunggu',
+            buktiFollowUp: null,
+          }))
+        );
+      } catch {
+        if (mounted) {
+          setData([]);
+        }
       }
-
-      setData(getPengajuanData().map(mapPengajuanToArsip));
     };
 
-    void refreshPengajuanDataFromApi(true).finally(syncArsip);
-    window.addEventListener('pengajuan-data-updated', syncArsip);
+    loadArsip();
 
     return () => {
-      isMounted = false;
-      window.removeEventListener('pengajuan-data-updated', syncArsip);
+      mounted = false;
     };
   }, []);
 
