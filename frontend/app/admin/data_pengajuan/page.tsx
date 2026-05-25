@@ -742,6 +742,7 @@ export default function PengajuanKerjasama() {
     selectedRuangLingkup: string[];
     dokumen: File[];
     dokumenAttachments: { file: File; dataUrl: string }[];
+    selectedProdiId: number | null;
   }): boolean {
     if (!editingItem) {
       return false;
@@ -761,6 +762,7 @@ export default function PengajuanKerjasama() {
       judul: payload.formData.judulKerjasama.trim(),
       mitra: payload.formData.namaMitra.trim(),
       jurusan: payload.formData.unitPelaksana.trim(),
+      unitProdiId: payload.selectedProdiId,
       jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
       tanggalMulai: payload.formData.tanggalMulai || undefined,
       tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,

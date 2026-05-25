@@ -256,7 +256,9 @@ export async function savePengajuanReviewApi(id: number, status: PengajuanStatus
 
 export async function updatePengajuanItemApi(
   id: number,
-  updates: Partial<Omit<PengajuanItem, 'id' | 'tanggal'>>
+  updates: Partial<Omit<PengajuanItem, 'id' | 'tanggal'>> & {
+    unitProdiId?: number | null;
+  }
 ): Promise<PengajuanItem> {
   const payload: Record<string, unknown> = {};
   if (typeof updates.judul === 'string') payload.judul_pengajuan = updates.judul;
@@ -267,6 +269,7 @@ export async function updatePengajuanItemApi(
   if (typeof updates.pengusul === 'string') payload.pengusul = updates.pengusul;
   if (typeof updates.emailPengusul === 'string') payload.email_pengusul = updates.emailPengusul;
   if (typeof updates.whatsappPengusul === 'string') payload.whatsapp_pengusul = updates.whatsappPengusul;
+  if (updates.unitProdiId !== undefined) payload.unit_prodi_id = updates.unitProdiId;
   if (typeof updates.jenisDokumen === 'string') payload.jenis_dokumen = mapJenisDokumenToApi(updates.jenisDokumen);
   if (typeof updates.tanggalMulai === 'string') payload.tanggal_mulai = updates.tanggalMulai;
   if (typeof updates.tanggalBerakhir === 'string') payload.tanggal_berakhir = updates.tanggalBerakhir;
@@ -295,7 +298,9 @@ function buildNomorPengajuan(prefix: 'ADM' | 'INT' | 'EXT'): string {
 }
 
 export async function submitPengajuanApi(
-  data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'>,
+  data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'> & {
+    unitProdiId?: number | null;
+  },
   isFromAdmin?: boolean,
   source: 'admin' | 'internal' | 'eksternal' = 'internal'
 ): Promise<PengajuanItem> {
@@ -314,6 +319,7 @@ export async function submitPengajuanApi(
     jenis_dokumen: mapJenisDokumenToApi(data.jenisDokumen),
     mitra: data.mitra,
     jurusan: data.jurusan,
+    unit_prodi_id: data.unitProdiId ?? null,
     kategori: data.kategori || (source === 'eksternal' ? 'Eksternal' : 'Internal'),
     kategori_pengajuan: (data.kategori || (source === 'eksternal' ? 'Eksternal' : 'Internal')).toLowerCase(),
     tanggal: new Date().toISOString().slice(0, 10),

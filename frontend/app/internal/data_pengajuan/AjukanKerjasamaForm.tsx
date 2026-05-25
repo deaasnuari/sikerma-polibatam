@@ -8,6 +8,10 @@ import {
   pengajuanUnitOptions,
 } from '@/services/adminPengajuanService';
 import {
+  getMasterUnitProdiTree,
+  type MasterUnitProdi,
+} from '@/services/masterUnitProdiService';
+import {
   getMasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
 import { submitInternalPengajuan } from '@/services/internalPengajuanService';
@@ -52,6 +56,8 @@ const defaultTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
 const jurusanOptions = pengajuanJurusanOptions;
 
 const unitOptions = pengajuanUnitOptions;
+
+const normalizeText = (value: string) => value.trim().toLowerCase();
 
 const initialForm = {
   namaMitra: '',
@@ -107,6 +113,7 @@ type InternalAjukanKerjasamaFormProps = {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
+    selectedProdiId: number | null;
   }) => boolean | void | Promise<boolean | void>;
 };
 
@@ -191,6 +198,9 @@ export default function InternalAjukanKerjasamaForm({
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
   const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>([]);
+  const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>([]);
+  const [selectedJurusanId, setSelectedJurusanId] = useState<number | null>(null);
+  const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null);
   const [rlOpen, setRlOpen] = useState(false);
   const [rlSearch, setRlSearch] = useState('');
   const [juOpen, setJuOpen] = useState(false);
@@ -202,6 +212,11 @@ export default function InternalAjukanKerjasamaForm({
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
+  const allJurusanRows = masterUnitProdiTree.filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'jurusan' && item.aktif);
+  const selectedJurusanNode = allJurusanRows.find((item) => item.id === selectedJurusanId) ?? null;
+  const jurusanSelectValue = selectedJurusanNode?.id ?? '';
+  const prodiOptionsForJurusan = (selectedJurusanNode?.children ?? []).filter((child) => child.jenis_node === 'prodi' && child.aktif);
+  const selectedProdiOption = prodiOptionsForJurusan.find((item) => item.id === selectedProdiId) ?? null;
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
   const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
   const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
@@ -231,6 +246,56 @@ export default function InternalAjukanKerjasamaForm({
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMasterUnitProdiTree = async () => {
+      try {
+        const rows = await getMasterUnitProdiTree();
+
+        if (!mounted) {
+          return;
+        }
+
+        setMasterUnitProdiTree(rows);
+      } catch {
+        if (mounted) {
+          setMasterUnitProdiTree([]);
+        }
+      }
+    };
+
+    loadMasterUnitProdiTree();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (asal !== 'Jurusan') {
+      if (selectedJurusanId !== null) {
+        setSelectedJurusanId(null);
+      }
+      if (selectedProdiId !== null) {
+        setSelectedProdiId(null);
+      }
+      return;
+    }
+
+    if (!selectedJurusanNode) {
+      if (selectedProdiId !== null) {
+        setSelectedProdiId(null);
+      }
+      return;
+    }
+
+    const prodiStillAvailable = prodiOptionsForJurusan.some((item) => item.id === selectedProdiId);
+    if (!prodiStillAvailable && selectedProdiId !== null) {
+      setSelectedProdiId(null);
+    }
+  }, [asal, prodiOptionsForJurusan, selectedJurusanNode, selectedJurusanId, selectedProdiId]);
 
   useEffect(() => {
     if (initialData) {
@@ -470,6 +535,7 @@ export default function InternalAjukanKerjasamaForm({
           asal,
           selectedRuangLingkup,
           dokumen: dokumen.map((item) => item.file),
+          selectedProdiId,
         }));
 
         if (submitResult === false) {
@@ -490,6 +556,7 @@ export default function InternalAjukanKerjasamaForm({
         mitra: formData.namaMitra,
         jenisDokumen: formData.jenisKerjasama,
         jurusan: formData.unitPelaksana,
+        unitProdiId: selectedProdiId,
         kategori: 'Internal',
         negara: formData.negara,
         tanggalMulai: formData.tanggalMulai,
@@ -689,6 +756,7 @@ export default function InternalAjukanKerjasamaForm({
                     setAsal('Jurusan');
                     setJuOpen(false);
                     handleChange('unitPelaksana', '');
+                    setSelectedProdiId(null);
                   }}
                   className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                     asal === 'Jurusan'
@@ -704,6 +772,7 @@ export default function InternalAjukanKerjasamaForm({
                     setAsal('Unit');
                     setJuOpen(false);
                     handleChange('unitPelaksana', '');
+                    setSelectedProdiId(null);
                   }}
                   className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                     asal === 'Unit'
@@ -714,107 +783,126 @@ export default function InternalAjukanKerjasamaForm({
                   Unit
                 </button>
               </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setJuOpen(!juOpen)}
-                  className="input-field flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    {formData.unitPelaksana ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
-                        {formData.unitPelaksana}
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleChange('unitPelaksana', '');
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
+              {asal === 'Jurusan' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-700">Jurusan</label>
+                    <select
+                      value={jurusanSelectValue}
+                      onChange={(e) => {
+                        const nextId = e.target.value ? Number(e.target.value) : null;
+                        setSelectedJurusanId(nextId);
+                        setSelectedProdiId(null);
+                        const nextJurusan = allJurusanRows.find((item) => item.id === nextId);
+                        handleChange('unitPelaksana', nextJurusan?.nama ?? '');
+                      }}
+                      className="input-field h-10 w-full rounded-lg px-3 text-sm"
+                      required
+                    >
+                      <option value="">Pilih jurusan</option>
+                      {allJurusanRows.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-700">Prodi</label>
+                    <select
+                      value={selectedProdiId ?? ''}
+                      onChange={(e) => setSelectedProdiId(e.target.value ? Number(e.target.value) : null)}
+                      className="input-field h-10 w-full rounded-lg px-3 text-sm"
+                      disabled={!selectedJurusanNode || prodiOptionsForJurusan.length === 0}
+                      required
+                    >
+                      <option value="">
+                        {!selectedJurusanNode
+                          ? '-- Pilih jurusan terlebih dahulu --'
+                          : prodiOptionsForJurusan.length === 0
+                            ? '-- Tidak ada prodi untuk jurusan ini --'
+                            : 'Pilih prodi'}
+                      </option>
+                      {prodiOptionsForJurusan.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.nama}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedProdiOption && <p className="mt-1 text-xs text-slate-500">Prodi terpilih: {selectedProdiOption.nama}</p>}
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setJuOpen(!juOpen)}
+                    className="input-field flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      {formData.unitPelaksana ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#173B82] px-2 py-0.5 text-xs font-semibold text-white">
+                          {formData.unitPelaksana}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
                               e.stopPropagation();
                               handleChange('unitPelaksana', '');
-                            }
-                          }}
-                          className="cursor-pointer hover:opacity-75"
-                          aria-label={`Hapus ${asal}`}
-                        >
-                          <X size={10} />
+                              setSelectedProdiId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleChange('unitPelaksana', '');
+                                setSelectedProdiId(null);
+                              }
+                            }}
+                            className="cursor-pointer hover:opacity-75"
+                            aria-label={`Hapus ${asal}`}
+                          >
+                            <X size={10} />
+                          </span>
                         </span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">-- Pilih {asal} --</span>
-                    )}
-                  </div>
-                  <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${juOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {juOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setJuOpen(false)} />
-                    <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
-                      <div className="max-h-48 overflow-y-auto p-1">
-                        {asalOptions.map((option) => {
-                          const isCustom = asal === 'Jurusan' ? customJurusanOpts.includes(option) : customUnitOpts.includes(option);
-
-                          return (
-                            <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleChange('unitPelaksana', option);
-                                  setJuOpen(false);
-                                }}
-                                className={`flex flex-1 items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
-                                  formData.unitPelaksana === option ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'
-                                }`}
-                              >
-                                <span>{option}</span>
-                                {formData.unitPelaksana === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
-                              </button>
-                              {isCustom && (
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeJurusanUnitCustomOption(option);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      removeJurusanUnitCustomOption(option);
-                                    }
-                                  }}
-                                  className="mr-2 inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
-                                  aria-label={`Hapus opsi ${option}`}
-                                >
-                                  <X size={12} />
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex gap-2 border-t border-slate-100 p-2">
-                        <input
-                          type="text"
-                          value={jurusanUnitInput}
-                          onChange={(e) => setJurusanUnitInput(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addJurusanUnitOption(); } }}
-                          placeholder={`Tambah ${asal} baru...`}
-                          className="input-field h-8 flex-1 rounded-lg px-2 text-xs"
-                        />
-                        <button type="button" onClick={addJurusanUnitOption} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
-                          <Plus size={12} />Tambah
-                        </button>
-                      </div>
+                      ) : (
+                        <span className="text-slate-400">-- Pilih {asal} --</span>
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
+                    <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${juOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {juOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setJuOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                        <div className="max-h-48 overflow-y-auto p-1">
+                          {asalOptions.map((option) => {
+                            return (
+                              <div key={option} className="flex items-center gap-2 rounded-lg hover:bg-slate-50">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleChange('unitPelaksana', option);
+                                    setSelectedProdiId(null);
+                                    setJuOpen(false);
+                                  }}
+                                  className={`flex flex-1 items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
+                                    formData.unitPelaksana === option ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'
+                                  }`}
+                                >
+                                  <span>{option}</span>
+                                  {formData.unitPelaksana === option && <span className="text-xs text-[#173B82]">Dipilih</span>}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalMulai}</label>

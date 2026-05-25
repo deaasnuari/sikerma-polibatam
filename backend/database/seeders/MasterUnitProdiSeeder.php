@@ -41,7 +41,34 @@ class MasterUnitProdiSeeder extends Seeder
             ['nama' => 'Kepegawaian', 'kode' => 'KPG1'],
         ];
 
-        DB::transaction(function () use ($frontendJurusan, $frontendUnits) {
+        $canonicalProdiRows = [
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF01', 'nama' => 'Diploma 3 Teknik Informatika'],
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF02', 'nama' => 'Sarjana Terapan Teknologi Rekayasa Multimedia'],
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF03', 'nama' => 'Sarjana Terapan Animasi'],
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF04', 'nama' => 'Sarjana Terapan Rekayasa Keamanan Siber'],
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF05', 'nama' => 'Sarjana Terapan Rekayasa Perangkat Lunak'],
+            ['parent' => 'Teknik Informatika', 'kode' => 'IF06', 'nama' => 'Diploma 3 Teknologi Geomatika'],
+
+            ['parent' => 'Manajemen dan Bisnis', 'kode' => 'MB01', 'nama' => 'Diploma 3 Akuntansi'],
+            ['parent' => 'Manajemen dan Bisnis', 'kode' => 'MB02', 'nama' => 'Sarjana Terapan Akuntansi Manajerial'],
+            ['parent' => 'Manajemen dan Bisnis', 'kode' => 'MB03', 'nama' => 'Sarjana Terapan Administrasi Bisnis Terapan'],
+            ['parent' => 'Manajemen dan Bisnis', 'kode' => 'MB04', 'nama' => 'Sarjana Terapan Logistik Perdagangan Internasional'],
+            ['parent' => 'Manajemen dan Bisnis', 'kode' => 'MB05', 'nama' => 'Sarjana Terapan Administrasi Bisnis Terapan (International)'],
+
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL01', 'nama' => 'Diploma 3 Teknik Elektronika Manufaktur'],
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL02', 'nama' => 'Sarjana Terapan Teknologi Rekayasa Elektronika'],
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL03', 'nama' => 'Diploma 3 Teknik Instrumentasi'],
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL04', 'nama' => 'Sarjana Terapan Teknik Mekatronika'],
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL05', 'nama' => 'Sarjana Terapan Teknologi Rekayasa Pembangkit Energi'],
+            ['parent' => 'Teknik Elektro', 'kode' => 'EL06', 'nama' => 'Sarjana Terapan Teknik Robotika'],
+
+            ['parent' => 'Teknik Mesin', 'kode' => 'TM01', 'nama' => 'Diploma 3 Teknik Mesin'],
+            ['parent' => 'Teknik Mesin', 'kode' => 'TM02', 'nama' => 'Diploma 3 Teknik Perawatan Pesawat Udara'],
+            ['parent' => 'Teknik Mesin', 'kode' => 'TM03', 'nama' => 'Sarjana Terapan Teknologi Rekayasa Konstruksi Perkapalan'],
+            ['parent' => 'Teknik Mesin', 'kode' => 'TM04', 'nama' => 'Sarjana Terapan Teknologi Rekayasa Pengelasan dan Fabrikasi'],
+        ];
+
+        DB::transaction(function () use ($frontendJurusan, $frontendUnits, $canonicalProdiRows) {
             $frontendUnitNames = array_values(array_unique(array_map(
                 static fn (array $item): string => $item['nama'],
                 $frontendUnits
@@ -150,7 +177,31 @@ class MasterUnitProdiSeeder extends Seeder
                 return $candidate;
             };
 
-            // 3) Seed prodi dari data legacy (ajuan) agar bukan jurusan saja.
+            // 3) Seed prodi kanonik dari daftar resmi agar data tidak hilang.
+            foreach ($canonicalProdiRows as $prodiItem) {
+                $parentId = $unitIdByName[$prodiItem['parent']] ?? null;
+
+                if ($parentId === null) {
+                    continue;
+                }
+
+                MasterUnitProdi::query()->updateOrCreate(
+                    [
+                        'parent_id' => $parentId,
+                        'nama' => $prodiItem['nama'],
+                    ],
+                    [
+                        'jenis_node' => 'prodi',
+                        'kategori_unit' => null,
+                        'kode' => $prodiItem['kode'],
+                        'aktif' => true,
+                    ]
+                );
+
+                $usedProdiCodes[strtoupper($prodiItem['kode'])] = true;
+            }
+
+            // 4) Seed prodi dari data legacy (ajuan) agar bukan jurusan saja.
             if (\Illuminate\Support\Facades\Schema::hasTable('ajuan')) {
                 $legacyRows = DB::table('ajuan')
                     ->select(['unit', 'prodi'])

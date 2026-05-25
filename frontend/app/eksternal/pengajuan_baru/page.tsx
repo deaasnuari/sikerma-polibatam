@@ -37,7 +37,7 @@ export default function PengajuanBaruEksternalPage() {
       <InternalAjukanKerjasamaForm
         disableDraftPersistence
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
-        onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen }) => {
+        onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen, selectedProdiId }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
 
           await submitPengajuanApi({
@@ -46,6 +46,7 @@ export default function PengajuanBaruEksternalPage() {
             mitra: formData.namaMitra,
             jenisDokumen: formData.jenisKerjasama,
             jurusan: formData.unitPelaksana,
+            unitProdiId: selectedProdiId,
             kategori: 'Eksternal',
             negara: formData.negara,
             tanggalMulai: formData.tanggalMulai,
