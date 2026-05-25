@@ -60,6 +60,39 @@ class MasterUnitProdiSeeder extends Seeder
                 ->delete();
 
             $unitIdByName = [];
+            $unitIdByNormalizedName = [];
+            $usedProdiCodes = [];
+            $nextCounterByPrefix = [];
+            $legacyJurusanByCode = [
+                'MB' => 'Manajemen dan Bisnis',
+                'EL' => 'Teknik Elektro',
+                'TI' => 'Teknik Informatika',
+                'TM' => 'Teknik Mesin',
+            ];
+            $legacyJurusanPrefix = [
+                'Manajemen dan Bisnis' => 'MB',
+                'Teknik Elektro' => 'EL',
+                'Teknik Informatika' => 'IF',
+                'Teknik Mesin' => 'TM',
+            ];
+            $placeholderValues = ['-', '--', '---pilih---', 'pilih...', 'n/a', 'null'];
+
+            $existingProdiCodes = MasterUnitProdi::query()
+                ->where('jenis_node', 'prodi')
+                ->whereNotNull('kode')
+                ->pluck('kode')
+                ->map(static fn ($value) => strtoupper(trim((string) $value)))
+                ->filter()
+                ->values();
+
+            foreach ($existingProdiCodes as $code) {
+                $usedProdiCodes[$code] = true;
+                if (preg_match('/^([A-Z0-9]+)(\d{2})$/', $code, $matches) === 1) {
+                    $prefix = $matches[1];
+                    $number = (int) $matches[2];
+                    $nextCounterByPrefix[$prefix] = max($nextCounterByPrefix[$prefix] ?? 0, $number);
+                }
+            }
 
             // 1) Seed jurusan parents (4 jurusan).
             foreach ($frontendJurusan as $jurusanName) {
@@ -77,6 +110,7 @@ class MasterUnitProdiSeeder extends Seeder
                 );
 
                 $unitIdByName[$jurusan->nama] = $jurusan->id;
+                $unitIdByNormalizedName[strtolower(trim($jurusan->nama))] = $jurusan->id;
             }
 
             // 2) Seed unit kerja parents from frontend options.
@@ -96,6 +130,122 @@ class MasterUnitProdiSeeder extends Seeder
                 );
 
                 $unitIdByName[$unit->nama] = $unit->id;
+                $unitIdByNormalizedName[strtolower(trim($unit->nama))] = $unit->id;
+            }
+
+            $generateProdiCode = static function (string $prefixRaw) use (&$usedProdiCodes, &$nextCounterByPrefix): ?string {
+                $prefix = strtoupper(preg_replace('/[^A-Z0-9]/', '', $prefixRaw));
+                if ($prefix === '') {
+                    return null;
+                }
+
+                $nextCounterByPrefix[$prefix] = $nextCounterByPrefix[$prefix] ?? 0;
+
+                do {
+                    $nextCounterByPrefix[$prefix]++;
+                    $candidate = sprintf('%s%02d', $prefix, $nextCounterByPrefix[$prefix]);
+                } while (isset($usedProdiCodes[$candidate]));
+
+                $usedProdiCodes[$candidate] = true;
+                return $candidate;
+            };
+
+            // 3) Seed prodi dari data legacy (ajuan) agar bukan jurusan saja.
+            if (\Illuminate\Support\Facades\Schema::hasTable('ajuan')) {
+                $legacyRows = DB::table('ajuan')
+                    ->select(['unit', 'prodi'])
+                    ->whereNotNull('prodi')
+                    ->get();
+
+                foreach ($legacyRows as $legacyRow) {
+                    $legacyUnit = trim((string) ($legacyRow->unit ?? ''));
+                    $legacyProdi = trim((string) ($legacyRow->prodi ?? ''));
+
+                    if ($legacyProdi === '') {
+                        continue;
+                    }
+
+                    $normalizedProdi = strtolower($legacyProdi);
+                    if (in_array($normalizedProdi, $placeholderValues, true)) {
+                        continue;
+                    }
+
+                    $parentId = null;
+
+                    if ($legacyUnit !== '') {
+                        $legacyUnitUpper = strtoupper($legacyUnit);
+                        if (isset($legacyJurusanByCode[$legacyUnitUpper])) {
+                            $mappedName = $legacyJurusanByCode[$legacyUnitUpper];
+                            $parentId = $unitIdByName[$mappedName] ?? null;
+                        }
+
+                        if ($parentId === null) {
+                            $parentId = $unitIdByNormalizedName[strtolower($legacyUnit)] ?? null;
+                        }
+
+                        // Jika unit legacy belum ada, buat sebagai unit_kerja agar parent prodi tetap valid.
+                        if ($parentId === null && !in_array(strtolower($legacyUnit), $placeholderValues, true)) {
+                            $newUnit = MasterUnitProdi::query()->updateOrCreate(
+                                [
+                                    'parent_id' => null,
+                                    'nama' => $legacyUnit,
+                                ],
+                                [
+                                    'jenis_node' => 'unit',
+                                    'kategori_unit' => 'unit_kerja',
+                                    'kode' => null,
+                                    'aktif' => true,
+                                ]
+                            );
+
+                            $parentId = $newUnit->id;
+                            $unitIdByName[$newUnit->nama] = $newUnit->id;
+                            $unitIdByNormalizedName[strtolower(trim($newUnit->nama))] = $newUnit->id;
+                        }
+                    }
+
+                    if ($parentId === null) {
+                        continue;
+                    }
+
+                    $existingProdi = MasterUnitProdi::query()
+                        ->where('parent_id', $parentId)
+                        ->where('jenis_node', 'prodi')
+                        ->where('nama', $legacyProdi)
+                        ->first();
+
+                    $resolvedCode = $existingProdi?->kode;
+                    if ($resolvedCode !== null && trim((string) $resolvedCode) !== '') {
+                        $normalizedCode = strtoupper(trim((string) $resolvedCode));
+                        $usedProdiCodes[$normalizedCode] = true;
+                    } else {
+                        $prefix = strtoupper(trim($legacyUnit));
+
+                        if (isset($legacyJurusanByCode[$prefix])) {
+                            $mappedJurusan = $legacyJurusanByCode[$prefix];
+                            $prefix = $legacyJurusanPrefix[$mappedJurusan] ?? $prefix;
+                        }
+
+                        if (strlen($prefix) < 2) {
+                            $prefix = strtoupper(preg_replace('/[^A-Z0-9]/', '', substr($legacyUnit, 0, 4)));
+                        }
+
+                        $resolvedCode = $generateProdiCode($prefix);
+                    }
+
+                    MasterUnitProdi::query()->updateOrCreate(
+                        [
+                            'parent_id' => $parentId,
+                            'nama' => $legacyProdi,
+                        ],
+                        [
+                            'jenis_node' => 'prodi',
+                            'kategori_unit' => null,
+                            'kode' => $resolvedCode,
+                            'aktif' => true,
+                        ]
+                    );
+                }
             }
         });
     }

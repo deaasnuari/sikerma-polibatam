@@ -6,9 +6,33 @@ use App\Models\Pengajuan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 
 class PengajuanController extends Controller
 {
+    private static array $pengajuanColumnCache = [];
+
+    private function hasPengajuanColumn(string $column): bool
+    {
+        if (array_key_exists($column, self::$pengajuanColumnCache)) {
+            return self::$pengajuanColumnCache[$column];
+        }
+
+        self::$pengajuanColumnCache[$column] = Schema::hasColumn('pengajuan', $column);
+
+        return self::$pengajuanColumnCache[$column];
+    }
+
+    private function useNewPengajuanSchema(): bool
+    {
+        return $this->hasPengajuanColumn('nomor_pengajuan');
+    }
+
+    private function shouldLoadPengajuanRelations(): bool
+    {
+        return $this->hasPengajuanColumn('unit_prodi_id') && $this->hasPengajuanColumn('mitra_id');
+    }
+
     private function ensureAdmin(Request $request): ?Response
     {
         $user = $request->user();
@@ -44,12 +68,174 @@ class PengajuanController extends Controller
         return array_values(array_unique(array_map('intval', $values)));
     }
 
+    private function normalizeLegacyStatus(string $status): string
+    {
+        return strtolower(trim($status));
+    }
+
+    private function normalizeLegacyKategori(?string $kategori): ?string
+    {
+        if ($kategori === null || trim($kategori) === '') {
+            return null;
+        }
+
+        return strtolower(trim($kategori)) === 'eksternal' ? 'Eksternal' : 'Internal';
+    }
+
+    private function validateLegacyStore(Request $request): array
+    {
+        $validated = $request->validate([
+            'judul' => ['required', 'string', 'max:255'],
+            'deskripsi' => ['nullable', 'string'],
+            'pengusul' => ['required', 'string', 'max:200'],
+            'tanggal' => ['nullable', 'date'],
+            'mitra' => ['required', 'string', 'max:255'],
+            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
+            'jurusan' => ['nullable', 'string', 'max:150'],
+            'kategori' => ['nullable', 'string', 'in:Internal,Eksternal'],
+            'tanggal_mulai' => ['nullable', 'date'],
+            'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+            'email_pengusul' => ['nullable', 'email', 'max:255'],
+            'whatsapp_pengusul' => ['nullable', 'string', 'max:50'],
+            'ruang_lingkup' => ['nullable', 'array'],
+            'status' => ['nullable', 'in:menunggu,diproses,disetujui,ditolak'],
+            'is_from_admin' => ['nullable', 'boolean'],
+            'source_role' => ['nullable', 'string', 'max:50'],
+            'created_by_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'review_comment' => ['nullable', 'string'],
+            'reviewed_at' => ['nullable', 'date'],
+            'reviewed_by' => ['nullable', 'string', 'max:200'],
+            'file_name' => ['nullable', 'string', 'max:500'],
+            'file_attachments' => ['nullable', 'array'],
+            'alamat_mitra' => ['nullable', 'string'],
+            'negara' => ['nullable', 'string', 'max:100'],
+            'email_terverifikasi' => ['nullable', 'boolean'],
+        ]);
+
+        $validated['jenis_dokumen'] = strtoupper((string) $validated['jenis_dokumen']);
+        $validated['tanggal'] = $validated['tanggal'] ?? now()->toDateString();
+        $validated['status'] = $this->normalizeLegacyStatus((string) ($validated['status'] ?? 'menunggu'));
+        $validated['kategori'] = $this->normalizeLegacyKategori($validated['kategori'] ?? null);
+        $validated['email_terverifikasi'] = (bool) ($validated['email_terverifikasi'] ?? false);
+
+        return $validated;
+    }
+
+    private function validateLegacyUpdate(Request $request): array
+    {
+        $validated = $request->validate([
+            'judul' => ['sometimes', 'required', 'string', 'max:255'],
+            'deskripsi' => ['nullable', 'string'],
+            'pengusul' => ['sometimes', 'required', 'string', 'max:200'],
+            'tanggal' => ['nullable', 'date'],
+            'mitra' => ['sometimes', 'required', 'string', 'max:255'],
+            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
+            'jurusan' => ['nullable', 'string', 'max:150'],
+            'kategori' => ['nullable', 'string', 'in:Internal,Eksternal'],
+            'tanggal_mulai' => ['nullable', 'date'],
+            'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+            'email_pengusul' => ['nullable', 'email', 'max:255'],
+            'whatsapp_pengusul' => ['nullable', 'string', 'max:50'],
+            'ruang_lingkup' => ['nullable', 'array'],
+            'status' => ['nullable', 'in:menunggu,diproses,disetujui,ditolak'],
+            'is_from_admin' => ['nullable', 'boolean'],
+            'source_role' => ['nullable', 'string', 'max:50'],
+            'created_by_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'review_comment' => ['nullable', 'string'],
+            'reviewed_at' => ['nullable', 'date'],
+            'reviewed_by' => ['nullable', 'string', 'max:200'],
+            'file_name' => ['nullable', 'string', 'max:500'],
+            'file_attachments' => ['nullable', 'array'],
+            'alamat_mitra' => ['nullable', 'string'],
+            'negara' => ['nullable', 'string', 'max:100'],
+            'email_terverifikasi' => ['nullable', 'boolean'],
+        ]);
+
+        if (array_key_exists('jenis_dokumen', $validated)) {
+            $validated['jenis_dokumen'] = strtoupper((string) $validated['jenis_dokumen']);
+        }
+
+        if (array_key_exists('status', $validated)) {
+            $validated['status'] = $this->normalizeLegacyStatus((string) $validated['status']);
+        }
+
+        if (array_key_exists('kategori', $validated)) {
+            $validated['kategori'] = $this->normalizeLegacyKategori($validated['kategori']);
+        }
+
+        if (array_key_exists('email_terverifikasi', $validated)) {
+            $validated['email_terverifikasi'] = (bool) $validated['email_terverifikasi'];
+        }
+
+        return $validated;
+    }
+
+    private function legacyPayloadFromRequest(Request $request): array
+    {
+        $currentUser = $request->user();
+        $defaultSourceRole = $currentUser?->role ? (string) $currentUser->role : 'internal';
+
+        $legacyPayload = [
+            'status' => $request->input('status_pengajuan', $request->input('status', 'menunggu')),
+            'review_comment' => $request->input('review_comment', null),
+            'reviewed_at' => $request->input('reviewed_at', null),
+            'reviewed_by' => $request->input('reviewed_by', null),
+            'is_from_admin' => $request->input('is_from_admin', false),
+            'source_role' => $request->input('source_role', $defaultSourceRole),
+            'created_by_user_id' => $request->input('created_by_user_id', $currentUser?->id),
+            'email_terverifikasi' => $request->filled('email_terverifikasi_pada')
+                ? true
+                : $request->input('email_terverifikasi', false),
+        ];
+
+        $conditionalFields = [
+            'judul' => 'judul_pengajuan',
+            'deskripsi' => 'deskripsi_pengajuan',
+            'pengusul' => 'nama_pengusul',
+            'tanggal' => 'diajukan_pada',
+            'mitra' => 'mitra',
+            'jenis_dokumen' => 'jenis_dokumen',
+            'jurusan' => 'jurusan',
+            'kategori' => 'kategori',
+            'tanggal_mulai' => 'tanggal_mulai',
+            'tanggal_berakhir' => 'tanggal_berakhir',
+            'email_pengusul' => 'email_pengusul',
+            'whatsapp_pengusul' => 'whatsapp_pengusul',
+            'ruang_lingkup' => 'ruang_lingkup',
+            'file_name' => 'file_name',
+            'file_attachments' => 'file_attachments',
+            'alamat_mitra' => 'alamat_mitra',
+            'negara' => 'negara',
+        ];
+
+        foreach ($conditionalFields as $legacyKey => $requestKey) {
+            if ($request->has($requestKey)) {
+                $legacyPayload[$legacyKey] = $request->input($requestKey);
+            }
+        }
+
+        if (array_key_exists('tanggal', $legacyPayload)) {
+            if (is_string($legacyPayload['tanggal']) && trim($legacyPayload['tanggal']) !== '') {
+                $legacyPayload['tanggal'] = trim($legacyPayload['tanggal']);
+            } else {
+                $legacyPayload['tanggal'] = null;
+            }
+        }
+
+        return $legacyPayload;
+    }
+
     public function index(Request $request): Response
     {
-        $query = Pengajuan::query()->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+        $query = Pengajuan::query();
+
+        if ($this->shouldLoadPengajuanRelations()) {
+            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+        }
 
         if ($request->filled('status_pengajuan')) {
-            $query->where('status_pengajuan', $request->string('status_pengajuan')->toString());
+            $statusColumn = $this->hasPengajuanColumn('status_pengajuan') ? 'status_pengajuan' : 'status';
+            $query->where($statusColumn, $request->string('status_pengajuan')->toString());
         }
 
         if ($request->filled('jenis_dokumen')) {
@@ -58,15 +244,26 @@ class PengajuanController extends Controller
 
         if ($request->filled('search')) {
             $keyword = strtolower($request->string('search')->trim()->toString());
-            $query->where(function ($builder) use ($keyword) {
+            $nomorColumn = $this->hasPengajuanColumn('nomor_pengajuan') ? 'nomor_pengajuan' : null;
+            $namaColumn = $this->hasPengajuanColumn('nama_pengusul') ? 'nama_pengusul' : 'pengusul';
+            $judulColumn = $this->hasPengajuanColumn('judul_pengajuan') ? 'judul_pengajuan' : 'judul';
+
+            $query->where(function ($builder) use ($keyword, $nomorColumn, $namaColumn, $judulColumn) {
+                if ($nomorColumn) {
+                    $builder->whereRaw("LOWER({$nomorColumn}) LIKE ?", ['%' . $keyword . '%']);
+                }
+
                 $builder
-                    ->whereRaw('LOWER(nomor_pengajuan) LIKE ?', ['%' . $keyword . '%'])
-                    ->orWhereRaw('LOWER(nama_pengusul) LIKE ?', ['%' . $keyword . '%'])
-                    ->orWhereRaw('LOWER(judul_pengajuan) LIKE ?', ['%' . $keyword . '%']);
+                    ->orWhereRaw("LOWER({$namaColumn}) LIKE ?", ['%' . $keyword . '%'])
+                    ->orWhereRaw("LOWER({$judulColumn}) LIKE ?", ['%' . $keyword . '%']);
             });
         }
 
-        $data = $query->orderByDesc('diajukan_pada')->paginate((int) $request->integer('per_page', 20));
+        $orderColumn = $this->hasPengajuanColumn('diajukan_pada')
+            ? 'diajukan_pada'
+            : ($this->hasPengajuanColumn('tanggal') ? 'tanggal' : 'created_at');
+
+        $data = $query->orderByDesc($orderColumn)->paginate((int) $request->integer('per_page', 20));
 
         return response([
             'success' => true,
@@ -77,7 +274,9 @@ class PengajuanController extends Controller
 
     public function show(Pengajuan $pengajuan): Response
     {
-        $pengajuan->load(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+        if ($this->shouldLoadPengajuanRelations()) {
+            $pengajuan->load(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+        }
 
         return response([
             'success' => true,
@@ -90,6 +289,28 @@ class PengajuanController extends Controller
     {
         if ($response = $this->ensureAdmin($request)) {
             return $response;
+        }
+
+        if (! $this->useNewPengajuanSchema()) {
+            $legacyRequest = new Request($this->legacyPayloadFromRequest($request));
+            $legacyRequest->setUserResolver(fn () => $request->user());
+            $validated = $this->validateLegacyStore($legacyRequest);
+
+            try {
+                $pengajuan = Pengajuan::create($validated);
+            } catch (QueryException $exception) {
+                return response([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan pengajuan.',
+                    'error' => $exception->getMessage(),
+                ], 422);
+            }
+
+            return response([
+                'success' => true,
+                'data' => $pengajuan,
+                'message' => 'Pengajuan created successfully',
+            ], 201);
         }
 
         $ruangLingkupIds = $this->normalizeRuangLingkupIds($request);
@@ -138,6 +359,28 @@ class PengajuanController extends Controller
     {
         if ($response = $this->ensureAdmin($request)) {
             return $response;
+        }
+
+        if (! $this->useNewPengajuanSchema()) {
+            $legacyRequest = new Request($this->legacyPayloadFromRequest($request));
+            $legacyRequest->setUserResolver(fn () => $request->user());
+            $validated = $this->validateLegacyUpdate($legacyRequest);
+
+            try {
+                $pengajuan->update($validated);
+            } catch (QueryException $exception) {
+                return response([
+                    'success' => false,
+                    'message' => 'Gagal mengubah pengajuan.',
+                    'error' => $exception->getMessage(),
+                ], 422);
+            }
+
+            return response([
+                'success' => true,
+                'data' => $pengajuan,
+                'message' => 'Pengajuan updated successfully',
+            ]);
         }
 
         $ruangLingkupIds = $this->normalizeRuangLingkupIds($request);

@@ -10,6 +10,29 @@ class Pengajuan extends Model
     protected $table = 'pengajuan';
 
     protected $fillable = [
+        // Legacy schema columns
+        'judul',
+        'deskripsi',
+        'pengusul',
+        'tanggal',
+        'mitra',
+        'jurusan',
+        'kategori',
+        'ruang_lingkup',
+        'status',
+        'email_terverifikasi',
+        'file_name',
+        'file_attachments',
+        'review_comment',
+        'reviewed_at',
+        'reviewed_by',
+        'alamat_mitra',
+        'negara',
+        'is_from_admin',
+        'source_role',
+        'created_by_user_id',
+
+        // New schema columns
         'nomor_pengajuan',
         'user_pengusul_id',
         'nama_pengusul',
@@ -31,6 +54,15 @@ class Pengajuan extends Model
     ];
 
     protected $casts = [
+        // Legacy schema casts
+        'tanggal' => 'date',
+        'ruang_lingkup' => 'array',
+        'email_terverifikasi' => 'boolean',
+        'file_attachments' => 'array',
+        'reviewed_at' => 'date',
+        'is_from_admin' => 'boolean',
+
+        // New schema casts
         'ruang_lingkup_ids' => 'array',
         'tanggal_mulai' => 'date',
         'tanggal_berakhir' => 'date',
