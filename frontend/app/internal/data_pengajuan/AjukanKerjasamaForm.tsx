@@ -13,6 +13,7 @@ import {
 } from '@/services/masterUnitProdiService';
 import {
   getMasterRuangLingkup,
+  type MasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
 import { submitInternalPengajuan } from '@/services/internalPengajuanService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
@@ -105,6 +106,8 @@ type InternalAjukanKerjasamaFormProps = {
     asal?: 'Jurusan' | 'Unit';
     selectedRuangLingkup?: string[];
   };
+  initialMasterUnitProdiTree?: MasterUnitProdi[];
+  initialMasterRuangLingkupRows?: MasterRuangLingkup[];
   disableDraftPersistence?: boolean;
   lockJenisKerjasama?: boolean;
   submitButtonLabel?: string;
@@ -185,6 +188,8 @@ export default function InternalAjukanKerjasamaForm({
   enableAppearanceEdit = false,
   appearanceStorageKey = DEFAULT_APPEARANCE_STORAGE_KEY,
   initialData,
+  initialMasterUnitProdiTree,
+  initialMasterRuangLingkupRows,
   disableDraftPersistence = false,
   lockJenisKerjasama = false,
   submitButtonLabel = 'Ajukan Kerjasama',
@@ -197,8 +202,8 @@ export default function InternalAjukanKerjasamaForm({
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
-  const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>([]);
-  const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>([]);
+  const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>(initialMasterRuangLingkupRows?.map((item) => item.nama_ruang_lingkup) ?? []);
+  const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(initialMasterUnitProdiTree ?? []);
   const [selectedJurusanId, setSelectedJurusanId] = useState<number | null>(null);
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null);
   const [rlOpen, setRlOpen] = useState(false);
@@ -222,6 +227,11 @@ export default function InternalAjukanKerjasamaForm({
   const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
 
   useEffect(() => {
+    if (Array.isArray(initialMasterRuangLingkupRows)) {
+      setMasterRuangLingkupOpts(initialMasterRuangLingkupRows.map((item) => item.nama_ruang_lingkup));
+      return;
+    }
+
     let mounted = true;
 
     const loadMasterRuangLingkup = async () => {
@@ -245,9 +255,14 @@ export default function InternalAjukanKerjasamaForm({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialMasterRuangLingkupRows]);
 
   useEffect(() => {
+    if (Array.isArray(initialMasterUnitProdiTree)) {
+      setMasterUnitProdiTree(initialMasterUnitProdiTree);
+      return;
+    }
+
     let mounted = true;
 
     const loadMasterUnitProdiTree = async () => {
@@ -271,7 +286,7 @@ export default function InternalAjukanKerjasamaForm({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialMasterUnitProdiTree]);
 
   useEffect(() => {
     if (asal !== 'Jurusan') {

@@ -1,5 +1,50 @@
 import { apiRequest } from '@/lib/api';
 
+const MASTER_RUANG_LINGKUP_CACHE_KEY = 'sikerma.master-ruang-lingkup-cache-v1';
+
+let masterRuangLingkupCache: MasterRuangLingkup[] | null = null;
+
+function readMasterRuangLingkupCache(): MasterRuangLingkup[] {
+  if (masterRuangLingkupCache) {
+    return masterRuangLingkupCache;
+  }
+
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(MASTER_RUANG_LINGKUP_CACHE_KEY);
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as MasterRuangLingkup[];
+    masterRuangLingkupCache = Array.isArray(parsed) ? parsed : [];
+    return masterRuangLingkupCache;
+  } catch {
+    return [];
+  }
+}
+
+function writeMasterRuangLingkupCache(rows: MasterRuangLingkup[]) {
+  masterRuangLingkupCache = rows;
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(MASTER_RUANG_LINGKUP_CACHE_KEY, JSON.stringify(rows));
+  } catch {
+    // Ignore storage quota / serialization issues.
+  }
+}
+
+export function getCachedMasterRuangLingkup(): MasterRuangLingkup[] {
+  return readMasterRuangLingkupCache();
+}
+
 export interface MasterRuangLingkup {
   id: number;
   nama_ruang_lingkup: string;
@@ -32,7 +77,9 @@ export async function getMasterRuangLingkup(filters?: {
   const url = queryString ? `/master/ruang-lingkup?${queryString}` : '/master/ruang-lingkup';
 
   const response = await apiRequest<ApiResponse<MasterRuangLingkup[]>>(url);
-  return response.data || [];
+  const rows = response.data || [];
+  writeMasterRuangLingkupCache(rows);
+  return rows;
 }
 
 export async function createMasterRuangLingkup(payload: MasterRuangLingkupPayload): Promise<MasterRuangLingkup> {

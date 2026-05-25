@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload } from 'lucide-react';
 import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
@@ -9,6 +9,7 @@ import { validateSelectedFile } from '@/lib/fileUploadUtils';
 import {
   createMasterUnitProdi,
   deleteMasterUnitProdi,
+  getCachedMasterUnitProdiTree,
   getMasterUnitProdi,
   updateMasterUnitProdi,
   type MasterUnitProdi,
@@ -16,6 +17,7 @@ import {
 import {
   createMasterRuangLingkup,
   deleteMasterRuangLingkup,
+  getCachedMasterRuangLingkup,
   getMasterRuangLingkup,
   updateMasterRuangLingkup,
   type MasterRuangLingkup,
@@ -179,6 +181,7 @@ export default function PengajuanKerjasama() {
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
+  const [pengajuanLoading, setPengajuanLoading] = useState(true);
   const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
   const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
   const [reviewDecision, setReviewDecision] = useState<PengajuanStatus>('Disetujui');
@@ -186,7 +189,7 @@ export default function PengajuanKerjasama() {
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
   const [ruangLingkupModalOpen, setRuangLingkupModalOpen] = useState(false);
-  const [ruangLingkupRows, setRuangLingkupRows] = useState<MasterRuangLingkup[]>([]);
+  const [ruangLingkupRows, setRuangLingkupRows] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
   const [ruangLingkupNama, setRuangLingkupNama] = useState('');
   const [editingRuangLingkupId, setEditingRuangLingkupId] = useState<number | null>(null);
   const [editingRuangLingkupNama, setEditingRuangLingkupNama] = useState('');
@@ -198,9 +201,9 @@ export default function PengajuanKerjasama() {
   const [masterSaving, setMasterSaving] = useState(false);
   const [masterMessage, setMasterMessage] = useState<string | null>(null);
   const [masterSearch, setMasterSearch] = useState('');
-  const [masterJurusanRows, setMasterJurusanRows] = useState<MasterUnitProdi[]>([]);
-  const [masterUnitRows, setMasterUnitRows] = useState<MasterUnitProdi[]>([]);
-  const [masterProdiRows, setMasterProdiRows] = useState<MasterUnitProdi[]>([]);
+  const [masterJurusanRows, setMasterJurusanRows] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree().filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'jurusan'));
+  const [masterUnitRows, setMasterUnitRows] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree().filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'unit_kerja'));
+  const [masterProdiRows, setMasterProdiRows] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree().filter((item) => item.jenis_node === 'prodi'));
   const [prodiDraftByJurusan, setProdiDraftByJurusan] = useState<Record<number, { kode: string; nama: string }>>({});
   const [editingProdiId, setEditingProdiId] = useState<number | null>(null);
   const [editingProdiKode, setEditingProdiKode] = useState('');
@@ -227,6 +230,10 @@ export default function PengajuanKerjasama() {
     let mounted = true;
 
     const loadFromApi = async () => {
+      if (mounted) {
+        setPengajuanLoading(true);
+      }
+
       try {
         const rows = await fetchPengajuanDataFromApi({ perPage: 500 });
         if (mounted) {
@@ -234,8 +241,11 @@ export default function PengajuanKerjasama() {
         }
       } catch {
         if (mounted) {
-          setPengajuanData([]);
           setInfoModalMessage('Gagal memuat data pengajuan dari server.');
+        }
+      } finally {
+        if (mounted) {
+          setPengajuanLoading(false);
         }
       }
     };
@@ -273,6 +283,25 @@ export default function PengajuanKerjasama() {
     return rows;
   }, []);
 
+  const masterUnitProdiTreeForForm = useMemo(() => {
+    const prodiByParent = new Map<number, MasterUnitProdi[]>();
+
+    masterProdiRows.forEach((prodi) => {
+      if (typeof prodi.parent_id !== 'number') {
+        return;
+      }
+
+      const current = prodiByParent.get(prodi.parent_id) || [];
+      current.push(prodi);
+      prodiByParent.set(prodi.parent_id, current);
+    });
+
+    return masterJurusanRows.map((jurusan) => ({
+      ...jurusan,
+      children: prodiByParent.get(jurusan.id) || [],
+    }));
+  }, [masterJurusanRows, masterProdiRows]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -294,12 +323,24 @@ export default function PengajuanKerjasama() {
   }, [refreshMasterReferenceData]);
 
   useEffect(() => {
-    if (!ruangLingkupModalOpen) {
-      return;
+    let isMounted = true;
+
+    async function loadRuangLingkupAtMount() {
+      try {
+        await refreshMasterRuangLingkup();
+      } catch {
+        if (isMounted) {
+          setRuangLingkupMessage('Gagal memuat data ruang lingkup. Pastikan backend aktif.');
+        }
+      }
     }
 
-    void refreshMasterRuangLingkup();
-  }, [ruangLingkupModalOpen, refreshMasterRuangLingkup]);
+    loadRuangLingkupAtMount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshMasterRuangLingkup]);
 
   async function handleSubmitRuangLingkup() {
     const nama = ruangLingkupNama.trim();
@@ -1274,9 +1315,52 @@ export default function PengajuanKerjasama() {
         })}
 
         {filtered.length === 0 && (
-          <div className="card p-12 text-center text-gray-400">
-            Tidak ada data yang sesuai dengan filter.
-          </div>
+          pengajuanLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="card animate-pulse p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="h-4 w-3/5 rounded bg-slate-200" />
+                      <div className="h-3 w-1/3 rounded bg-slate-200" />
+                    </div>
+                    <div className="h-6 w-24 rounded-full bg-slate-200" />
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-start gap-6">
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 rounded bg-slate-200" />
+                      <div className="h-4 w-36 rounded bg-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 rounded bg-slate-200" />
+                      <div className="h-5 w-20 rounded bg-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 rounded bg-slate-200" />
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <div className="h-8 w-20 rounded-lg bg-slate-200" />
+                      <div className="h-8 w-20 rounded-lg bg-slate-200" />
+                      <div className="h-8 w-20 rounded-lg bg-slate-200" />
+                      <div className="h-8 w-20 rounded-lg bg-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {Array.from({ length: 3 }).map((__, rlIndex) => (
+                      <div key={rlIndex} className="h-6 w-24 rounded bg-slate-200" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card p-12 text-center text-gray-400">
+              Tidak ada data yang sesuai dengan filter.
+            </div>
+          )
         )}
       </div>
 
@@ -1290,7 +1374,12 @@ export default function PengajuanKerjasama() {
                   className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <AdminAjukanKerjasamaForm onCancel={() => setAjukanModalOpen(false)} onSubmitted={() => setAjukanModalOpen(false)} />
+                  <AdminAjukanKerjasamaForm
+                    onCancel={() => setAjukanModalOpen(false)}
+                    onSubmitted={() => setAjukanModalOpen(false)}
+                    initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
+                    initialMasterRuangLingkupRows={ruangLingkupRows}
+                  />
                 </div>
             </div>
           </div>
@@ -1310,6 +1399,8 @@ export default function PengajuanKerjasama() {
                 disableDraftPersistence
                 lockJenisKerjasama
                 submitButtonLabel="Simpan Perubahan"
+                initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
+                initialMasterRuangLingkupRows={ruangLingkupRows}
                 initialData={{
                   asal: pengajuanUnitOptions.includes(editingItem.jurusan) ? 'Unit' : 'Jurusan',
                   namaMitra: editingItem.mitra,

@@ -1,5 +1,62 @@
 import { apiRequest } from '@/lib/api';
 
+const MASTER_UNIT_PRODI_CACHE_KEY = 'sikerma.master-unit-prodi-cache-v1';
+
+let masterUnitProdiCache: MasterUnitProdi[] | null = null;
+
+function readMasterUnitProdiCache(): MasterUnitProdi[] {
+  if (masterUnitProdiCache) {
+    return masterUnitProdiCache;
+  }
+
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(MASTER_UNIT_PRODI_CACHE_KEY);
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as MasterUnitProdi[];
+    masterUnitProdiCache = Array.isArray(parsed) ? parsed : [];
+    return masterUnitProdiCache;
+  } catch {
+    return [];
+  }
+}
+
+function writeMasterUnitProdiCache(rows: MasterUnitProdi[]) {
+  masterUnitProdiCache = rows;
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(MASTER_UNIT_PRODI_CACHE_KEY, JSON.stringify(rows));
+  } catch {
+    // Ignore storage quota / serialization issues.
+  }
+}
+
+export function getCachedMasterUnitProdiTree(): MasterUnitProdi[] {
+  return readMasterUnitProdiCache();
+}
+
+export function getCachedJurusans(): MasterUnitProdi[] {
+  return readMasterUnitProdiCache().filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'jurusan' && item.aktif);
+}
+
+export function getCachedUnits(): MasterUnitProdi[] {
+  return readMasterUnitProdiCache().filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'unit_kerja' && item.aktif);
+}
+
+export function getCachedProdiByUnit(unitId: number): MasterUnitProdi[] {
+  return readMasterUnitProdiCache().filter((item) => item.jenis_node === 'prodi' && item.parent_id === unitId && item.aktif);
+}
+
 export interface MasterUnitProdi {
   id: number;
   parent_id: number | null;
@@ -59,7 +116,9 @@ export async function getMasterUnitProdi(
   const url = queryString ? `/master/unit-prodi?${queryString}` : '/master/unit-prodi';
 
   const response = await apiRequest<ApiResponse<MasterUnitProdi[]>>(url);
-  return response.data || [];
+  const rows = response.data || [];
+  writeMasterUnitProdiCache(rows);
+  return rows;
 }
 
 /**
@@ -67,7 +126,9 @@ export async function getMasterUnitProdi(
  */
 export async function getMasterUnitProdiTree(): Promise<MasterUnitProdi[]> {
   const response = await apiRequest<ApiResponse<MasterUnitProdi[]>>('/master/unit-prodi/tree');
-  return response.data || [];
+  const rows = response.data || [];
+  writeMasterUnitProdiCache(rows);
+  return rows;
 }
 
 /**

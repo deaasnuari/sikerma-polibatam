@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { submitPengajuanApi } from '@/services/adminPengajuanService';
+import { getCachedMasterUnitProdiTree, getMasterUnitProdiTree, type MasterUnitProdi } from '@/services/masterUnitProdiService';
+import { getCachedMasterRuangLingkup, getMasterRuangLingkup, type MasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
 type UploadedDokumenLike = File | { file: File; dataUrl?: string };
 
@@ -26,6 +28,41 @@ function normalizeUploadedDokumen(items: UploadedDokumenLike[]) {
 export default function PengajuanBaruEksternalPage() {
   const router = useRouter();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree());
+  const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
+
+  const masterUnitProdiTreeForForm = useMemo(() => masterUnitProdiTree, [masterUnitProdiTree]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadMasterData() {
+      try {
+        const [unitProdiRows, ruangLingkupRows] = await Promise.all([
+          getMasterUnitProdiTree(),
+          getMasterRuangLingkup({ aktif: true }),
+        ]);
+
+        if (!mounted) {
+          return;
+        }
+
+        setMasterUnitProdiTree(unitProdiRows);
+        setMasterRuangLingkupRows(ruangLingkupRows);
+      } catch {
+        if (mounted) {
+          setMasterUnitProdiTree([]);
+          setMasterRuangLingkupRows([]);
+        }
+      }
+    }
+
+    void loadMasterData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -36,6 +73,8 @@ export default function PengajuanBaruEksternalPage() {
 
       <InternalAjukanKerjasamaForm
         disableDraftPersistence
+        initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
+        initialMasterRuangLingkupRows={masterRuangLingkupRows}
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
         onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen, selectedProdiId }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
