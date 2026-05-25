@@ -20,6 +20,17 @@ const emptyForm: FormState = {
   aktif: true,
 };
 
+const campusRuangLingkupReferences = [
+  'Penelitian',
+  'Pengabdian Masyarakat',
+  'Magang / PKL',
+  'Pelatihan & Workshop',
+  'Pertukaran Pelajar',
+  'Rekrutmen',
+  'Riset Bersama',
+  'Pengembangan Kurikulum',
+];
+
 export default function MasterRuangLingkupPage() {
   const [rows, setRows] = useState<MasterRuangLingkup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +41,11 @@ export default function MasterRuangLingkupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const availableReferenceOptions = useMemo(() => {
+    const existingNames = new Set(rows.map((item) => item.nama_ruang_lingkup.trim().toLowerCase()));
+    return campusRuangLingkupReferences.filter((name) => !existingNames.has(name.toLowerCase()));
+  }, [rows]);
 
   useEffect(() => {
     let mounted = true;
@@ -62,7 +78,10 @@ export default function MasterRuangLingkupPage() {
 
   const openCreate = () => {
     setEditingRow(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      nama_ruang_lingkup: availableReferenceOptions[0] ?? '',
+    });
     setShowModal(true);
   };
 
@@ -87,7 +106,7 @@ export default function MasterRuangLingkupPage() {
 
   const handleSave = async () => {
     if (!form.nama_ruang_lingkup.trim()) {
-      setError('Nama ruang lingkup wajib diisi.');
+      setError(editingRow ? 'Nama ruang lingkup wajib diisi.' : 'Pilih ruang lingkup dari referensi kampus.');
       return;
     }
 
@@ -162,9 +181,12 @@ export default function MasterRuangLingkupPage() {
           <p className="page-subtitle mt-1">Kelola referensi ruang lingkup kerja sama</p>
         </div>
 
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
+        <button
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+        >
           <Plus size={16} />
-          Tambah Ruang Lingkup
+          Referensi Kampus
         </button>
       </div>
 
@@ -269,11 +291,31 @@ export default function MasterRuangLingkupPage() {
             <div className="space-y-4">
               <label className="block text-sm font-medium text-gray-700">
                 Nama Ruang Lingkup *
-                <input
-                  value={form.nama_ruang_lingkup}
-                  onChange={(event) => setForm((prev) => ({ ...prev, nama_ruang_lingkup: event.target.value }))}
-                  className="input-field mt-1.5 w-full px-4 py-2.5 text-sm"
-                />
+                {editingRow ? (
+                  <input
+                    value={form.nama_ruang_lingkup}
+                    onChange={(event) => setForm((prev) => ({ ...prev, nama_ruang_lingkup: event.target.value }))}
+                    className="input-field mt-1.5 w-full px-4 py-2.5 text-sm"
+                  />
+                ) : (
+                  <>
+                    <select
+                      value={form.nama_ruang_lingkup}
+                      onChange={(event) => setForm((prev) => ({ ...prev, nama_ruang_lingkup: event.target.value }))}
+                      className="input-field mt-1.5 w-full px-4 py-2.5 text-sm"
+                      disabled={availableReferenceOptions.length === 0}
+                    >
+                      {availableReferenceOptions.length === 0 ? (
+                        <option value="">Semua referensi sudah ditambahkan</option>
+                      ) : (
+                        availableReferenceOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))
+                      )}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">Pilih dari daftar referensi kampus, tanpa input manual.</p>
+                  </>
+                )}
               </label>
 
               <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -291,7 +333,7 @@ export default function MasterRuangLingkupPage() {
               <button onClick={closeModal} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50" disabled={submitting}>
                 Batal
               </button>
-              <button onClick={handleSave} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold" disabled={submitting}>
+              <button onClick={handleSave} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold" disabled={submitting || (!editingRow && availableReferenceOptions.length === 0)}>
                 {submitting ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>

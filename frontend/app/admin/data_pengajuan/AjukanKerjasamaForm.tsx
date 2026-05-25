@@ -9,10 +9,7 @@ import {
   submitPengajuanApi,
 } from '@/services/adminPengajuanService';
 import {
-  createMasterRuangLingkup,
-  deleteMasterRuangLingkup,
   getMasterRuangLingkup,
-  updateMasterRuangLingkup,
   type MasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
@@ -57,17 +54,6 @@ const jurusanOptions = pengajuanJurusanOptions;
 
 const unitOptions = pengajuanUnitOptions;
 
-const defaultRuangLingkupOptions = [
-  'Penelitian',
-  'Pengabdian Masyarakat',
-  'Magang / PKL',
-  'Pelatihan & Workshop',
-  'Pertukaran Pelajar',
-  'Rekrutmen',
-  'Riset Bersama',
-  'Pengembangan Kurikulum',
-];
-
 const initialForm = {
   namaMitra: '',
   jenisMitra: '',
@@ -95,7 +81,6 @@ type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
   formData: typeof initialForm;
   selectedRuangLingkup?: string[];
-  customRuangLingkupOpts?: string[];
   customJurusanOpts?: string[];
   customUnitOpts?: string[];
 };
@@ -207,13 +192,8 @@ export default function AdminAjukanKerjasamaForm({
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
   const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>([]);
-  const [customRuangLingkupOpts, setCustomRuangLingkupOpts] = useState<string[]>([]);
   const [rlOpen, setRlOpen] = useState(false);
-  const [rlModalType, setRlModalType] = useState<'add' | 'edit' | 'delete' | null>(null);
-  const [rlModalValue, setRlModalValue] = useState('');
-  const [rlModalTarget, setRlModalTarget] = useState('');
-  const [rlModalError, setRlModalError] = useState<string | null>(null);
-  const [rlModalSubmitting, setRlModalSubmitting] = useState(false);
+  const [rlSearch, setRlSearch] = useState('');
   const [juOpen, setJuOpen] = useState(false);
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
@@ -225,7 +205,8 @@ export default function AdminAjukanKerjasamaForm({
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
   const masterRuangLingkupOpts = masterRuangLingkupRows.map((item) => item.nama_ruang_lingkup);
-  const allRlOptions = Array.from(new Set([...masterRuangLingkupOpts, ...defaultRuangLingkupOptions, ...customRuangLingkupOpts]));
+  const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
+  const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
 
   useEffect(() => {
     let mounted = true;
@@ -289,7 +270,6 @@ export default function AdminAjukanKerjasamaForm({
         setFormData({ ...initialForm, ...parsed.formData });
       }
       if (parsed.selectedRuangLingkup) setSelectedRuangLingkup(parsed.selectedRuangLingkup);
-      if (parsed.customRuangLingkupOpts) setCustomRuangLingkupOpts(parsed.customRuangLingkupOpts);
       if (parsed.customJurusanOpts) setCustomJurusanOpts(parsed.customJurusanOpts);
       if (parsed.customUnitOpts) setCustomUnitOpts(parsed.customUnitOpts);
     } catch {
@@ -340,7 +320,6 @@ export default function AdminAjukanKerjasamaForm({
       asal,
       formData,
       selectedRuangLingkup,
-      customRuangLingkupOpts,
       customJurusanOpts,
       customUnitOpts,
     };
@@ -363,7 +342,7 @@ export default function AdminAjukanKerjasamaForm({
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
+  }, [asal, formData, selectedRuangLingkup, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -385,121 +364,6 @@ export default function AdminAjukanKerjasamaForm({
 
   const resetAppearance = () => {
     setAppearanceSettings(defaultAppearanceSettings);
-  };
-
-  const openAddRlModal = () => {
-    setRlModalType('add');
-    setRlModalValue('');
-    setRlModalTarget('');
-    setRlModalError(null);
-  };
-
-  const openEditRlModal = (option: string) => {
-    setRlModalType('edit');
-    setRlModalValue(option);
-    setRlModalTarget(option);
-    setRlModalError(null);
-  };
-
-  const openDeleteRlModal = (option: string) => {
-    setRlModalType('delete');
-    setRlModalValue('');
-    setRlModalTarget(option);
-    setRlModalError(null);
-  };
-
-  const closeRlModal = () => {
-    if (rlModalSubmitting) {
-      return;
-    }
-
-    setRlModalType(null);
-    setRlModalValue('');
-    setRlModalTarget('');
-    setRlModalError(null);
-  };
-
-  const addRlOption = async () => {
-    const trimmed = rlModalValue.trim();
-    if (!trimmed || allRlOptions.includes(trimmed)) return;
-
-    setRlModalSubmitting(true);
-    setRlModalError(null);
-
-    try {
-      const created = await createMasterRuangLingkup({
-        nama_ruang_lingkup: trimmed,
-        aktif: true,
-      });
-
-      setMasterRuangLingkupRows((prev) => [...prev, created]);
-    } catch {
-      // Fallback local option bila API gagal/role tidak punya izin.
-      setCustomRuangLingkupOpts((prev) => [...prev, trimmed]);
-    } finally {
-      setRlModalSubmitting(false);
-    }
-
-    setSelectedRuangLingkup((prev) => [...prev, trimmed]);
-    closeRlModal();
-  };
-
-  const removeRlOption = async (option: string) => {
-    setRlModalSubmitting(true);
-    setRlModalError(null);
-
-    const masterItem = masterRuangLingkupRows.find((item) => item.nama_ruang_lingkup === option);
-
-    if (masterItem) {
-      try {
-        await deleteMasterRuangLingkup(masterItem.id);
-        setMasterRuangLingkupRows((prev) => prev.filter((item) => item.id !== masterItem.id));
-      } catch {
-        setRlModalError('Gagal menghapus ruang lingkup dari master.');
-        setRlModalSubmitting(false);
-        return;
-      }
-    } else {
-      setCustomRuangLingkupOpts((prev) => prev.filter((item) => item !== option));
-    }
-
-    setSelectedRuangLingkup((prev) => prev.filter((item) => item !== option));
-    setRlModalSubmitting(false);
-    closeRlModal();
-  };
-
-  const editRlOption = async (option: string) => {
-    const nextValue = rlModalValue.trim();
-    if (!nextValue || nextValue === option) {
-      return;
-    }
-
-    if (allRlOptions.includes(nextValue)) {
-      setRlModalError('Nama ruang lingkup sudah ada.');
-      return;
-    }
-
-    const masterItem = masterRuangLingkupRows.find((item) => item.nama_ruang_lingkup === option);
-
-    setRlModalSubmitting(true);
-    setRlModalError(null);
-
-    if (masterItem) {
-      try {
-        const updated = await updateMasterRuangLingkup(masterItem.id, { nama_ruang_lingkup: nextValue });
-        setMasterRuangLingkupRows((prev) => prev.map((item) => (item.id === masterItem.id ? updated : item)));
-      } catch {
-        setRlModalError('Gagal mengubah ruang lingkup di master.');
-        setRlModalSubmitting(false);
-        return;
-      }
-    } else {
-      setCustomRuangLingkupOpts((prev) => prev.map((item) => (item === option ? nextValue : item)));
-    }
-
-    setSelectedRuangLingkup((prev) => prev.map((item) => (item === option ? nextValue : item)));
-    setRlModalSubmitting(false);
-    closeRlModal();
   };
 
   const addJurusanUnitOption = () => {
@@ -981,7 +845,15 @@ export default function AdminAjukanKerjasamaForm({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setRlOpen(!rlOpen)}
+                  onClick={() => {
+                    setRlOpen((prev) => {
+                      const next = !prev;
+                      if (!next) {
+                        setRlSearch('');
+                      }
+                      return next;
+                    });
+                  }}
                   className="input-field flex min-h-[40px] w-full items-start justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
                 >
                   <div className="flex flex-wrap gap-1.5">
@@ -996,13 +868,13 @@ export default function AdminAjukanKerjasamaForm({
                             tabIndex={0}
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDeleteRlModal(rl);
+                              setSelectedRuangLingkup((prev) => prev.filter((x) => x !== rl));
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                openDeleteRlModal(rl);
+                                setSelectedRuangLingkup((prev) => prev.filter((x) => x !== rl));
                               }
                             }}
                             className="cursor-pointer hover:opacity-75"
@@ -1018,12 +890,22 @@ export default function AdminAjukanKerjasamaForm({
                 </button>
                 {rlOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setRlOpen(false)} />
+                    <div className="fixed inset-0 z-10" onClick={() => {
+                      setRlOpen(false);
+                      setRlSearch('');
+                    }} />
                     <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                      <div className="border-b border-slate-100 p-2">
+                        <input
+                          type="text"
+                          value={rlSearch}
+                          onChange={(e) => setRlSearch(e.target.value)}
+                          placeholder="Cari ruang lingkup..."
+                          className="input-field h-8 w-full rounded-lg px-2 text-xs"
+                        />
+                      </div>
                       <div className="max-h-48 overflow-y-auto p-1">
-                        {allRlOptions.map((opt) => {
-                          const isCustom = customRuangLingkupOpts.includes(opt);
-
+                        {filteredRlOptions.map((opt) => {
                           return (
                           <label key={opt} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
                             <input
@@ -1034,57 +916,13 @@ export default function AdminAjukanKerjasamaForm({
                             />
                             <span className="flex flex-1 items-center justify-between gap-2 text-sm text-slate-800">
                               <span>{opt}</span>
-                              <span className="inline-flex items-center gap-1">
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openEditRlModal(opt);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      openEditRlModal(opt);
-                                    }
-                                  }}
-                                  className="inline-flex cursor-pointer rounded px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-slate-200 hover:text-[#173B82]"
-                                  aria-label={`Edit opsi ${opt}`}
-                                >
-                                  Edit
-                                </span>
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openDeleteRlModal(opt);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      openDeleteRlModal(opt);
-                                    }
-                                  }}
-                                  className="inline-flex cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-600"
-                                  aria-label={`Hapus opsi ${opt}`}
-                                >
-                                  <X size={12} />
-                                </span>
-                              </span>
                             </span>
                           </label>
                           );
                         })}
-                      </div>
-                      <div className="flex justify-end border-t border-slate-100 p-2">
-                        <button type="button" onClick={openAddRlModal} className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#173B82] px-3 text-xs font-semibold text-white hover:bg-[#0f2c61]">
-                          <Plus size={12} />Tambah Ruang Lingkup
-                        </button>
+                        {filteredRlOptions.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-slate-500">Tidak ada ruang lingkup yang cocok.</p>
+                        )}
                       </div>
                     </div>
                   </>
@@ -1265,72 +1103,6 @@ export default function AdminAjukanKerjasamaForm({
         </div>
       </form>
 
-      {rlModalType && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-4">
-              <h3 className="text-lg font-bold text-slate-900">
-                {rlModalType === 'add' && 'Tambah Ruang Lingkup'}
-                {rlModalType === 'edit' && 'Edit Ruang Lingkup'}
-                {rlModalType === 'delete' && 'Hapus Ruang Lingkup'}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                {rlModalType === 'add' && 'Masukkan nama ruang lingkup baru.'}
-                {rlModalType === 'edit' && `Ubah nama ruang lingkup \"${rlModalTarget}\".`}
-                {rlModalType === 'delete' && `Yakin ingin menghapus data ruang lingkup \"${rlModalTarget}\"?`}
-              </p>
-            </div>
-
-            {(rlModalType === 'add' || rlModalType === 'edit') && (
-              <div className="mb-4">
-                <input
-                  value={rlModalValue}
-                  onChange={(e) => setRlModalValue(e.target.value)}
-                  className="input-field w-full px-4 py-2.5 text-sm"
-                  placeholder="Contoh: Publikasi Bersama"
-                />
-              </div>
-            )}
-
-            {rlModalError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {rlModalError}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeRlModal}
-                disabled={rlModalSubmitting}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (rlModalType === 'add') {
-                    void addRlOption();
-                    return;
-                  }
-
-                  if (rlModalType === 'edit') {
-                    void editRlOption(rlModalTarget);
-                    return;
-                  }
-
-                  void removeRlOption(rlModalTarget);
-                }}
-                disabled={rlModalSubmitting}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${rlModalType === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[#173B82] hover:bg-[#0f2c61]'}`}
-              >
-                {rlModalSubmitting ? 'Memproses...' : rlModalType === 'delete' ? 'Hapus Data' : 'Simpan'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

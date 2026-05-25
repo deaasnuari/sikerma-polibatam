@@ -53,17 +53,6 @@ const jurusanOptions = pengajuanJurusanOptions;
 
 const unitOptions = pengajuanUnitOptions;
 
-const defaultRuangLingkupOptions = [
-  'Penelitian',
-  'Pengabdian Masyarakat',
-  'Magang / PKL',
-  'Pelatihan & Workshop',
-  'Pertukaran Pelajar',
-  'Rekrutmen',
-  'Riset Bersama',
-  'Pengembangan Kurikulum',
-];
-
 const initialForm = {
   namaMitra: '',
   jenisMitra: '',
@@ -91,7 +80,6 @@ type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
   formData: typeof initialForm;
   selectedRuangLingkup?: string[];
-  customRuangLingkupOpts?: string[];
   customJurusanOpts?: string[];
   customUnitOpts?: string[];
 };
@@ -203,8 +191,8 @@ export default function InternalAjukanKerjasamaForm({
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
   const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>([]);
-  const [customRuangLingkupOpts, setCustomRuangLingkupOpts] = useState<string[]>([]);
   const [rlOpen, setRlOpen] = useState(false);
+  const [rlSearch, setRlSearch] = useState('');
   const [juOpen, setJuOpen] = useState(false);
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
@@ -215,7 +203,8 @@ export default function InternalAjukanKerjasamaForm({
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
-  const allRlOptions = Array.from(new Set([...masterRuangLingkupOpts, ...defaultRuangLingkupOptions, ...customRuangLingkupOpts]));
+  const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
+  const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
 
   useEffect(() => {
     let mounted = true;
@@ -279,7 +268,6 @@ export default function InternalAjukanKerjasamaForm({
         setFormData({ ...initialForm, ...parsed.formData });
       }
       if (parsed.selectedRuangLingkup) setSelectedRuangLingkup(parsed.selectedRuangLingkup);
-      if (parsed.customRuangLingkupOpts) setCustomRuangLingkupOpts(parsed.customRuangLingkupOpts);
       if (parsed.customJurusanOpts) setCustomJurusanOpts(parsed.customJurusanOpts);
       if (parsed.customUnitOpts) setCustomUnitOpts(parsed.customUnitOpts);
     } catch {
@@ -330,7 +318,6 @@ export default function InternalAjukanKerjasamaForm({
       asal,
       formData,
       selectedRuangLingkup,
-      customRuangLingkupOpts,
       customJurusanOpts,
       customUnitOpts,
     };
@@ -353,7 +340,7 @@ export default function InternalAjukanKerjasamaForm({
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [asal, formData, selectedRuangLingkup, customRuangLingkupOpts, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
+  }, [asal, formData, selectedRuangLingkup, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -856,7 +843,15 @@ export default function InternalAjukanKerjasamaForm({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setRlOpen(!rlOpen)}
+                  onClick={() => {
+                    setRlOpen((prev) => {
+                      const next = !prev;
+                      if (!next) {
+                        setRlSearch('');
+                      }
+                      return next;
+                    });
+                  }}
                   className="input-field flex min-h-[40px] w-full items-start justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left"
                 >
                   <div className="flex flex-wrap gap-1.5">
@@ -893,10 +888,22 @@ export default function InternalAjukanKerjasamaForm({
                 </button>
                 {rlOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setRlOpen(false)} />
+                    <div className="fixed inset-0 z-10" onClick={() => {
+                      setRlOpen(false);
+                      setRlSearch('');
+                    }} />
                     <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+                      <div className="border-b border-slate-100 p-2">
+                        <input
+                          type="text"
+                          value={rlSearch}
+                          onChange={(e) => setRlSearch(e.target.value)}
+                          placeholder="Cari ruang lingkup..."
+                          className="input-field h-8 w-full rounded-lg px-2 text-xs"
+                        />
+                      </div>
                       <div className="max-h-48 overflow-y-auto p-1">
-                        {allRlOptions.map((opt) => {
+                        {filteredRlOptions.map((opt) => {
                           return (
                           <label key={opt} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
                             <input
@@ -911,6 +918,9 @@ export default function InternalAjukanKerjasamaForm({
                           </label>
                           );
                         })}
+                        {filteredRlOptions.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-slate-500">Tidak ada ruang lingkup yang cocok.</p>
+                        )}
                       </div>
                     </div>
                   </>

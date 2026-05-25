@@ -14,6 +14,13 @@ import {
   type MasterUnitProdi,
 } from '@/services/masterUnitProdiService';
 import {
+  createMasterRuangLingkup,
+  deleteMasterRuangLingkup,
+  getMasterRuangLingkup,
+  updateMasterRuangLingkup,
+  type MasterRuangLingkup,
+} from '@/services/masterRuangLingkupService';
+import {
   deletePengajuanItemApi,
   fetchPengajuanDataFromApi,
   getFilteredPengajuanData,
@@ -38,18 +45,6 @@ type EditFormState = {
   tanggalBerakhir: string;
   ruangLingkup: string[];
 };
-
-const ruangLingkupOptions = [
-  'Penelitian',
-  'Pengabdian Masyarakat',
-  'Magang',
-  'Pertukaran Mahasiswa',
-  'Pelatihan',
-  'Workshop',
-  'Sertifikasi',
-  'Joint Program',
-  'Lainnya',
-];
 
 const statusConfig: Record<PengajuanStatus, { label: string; className: string; iconEl: React.ReactNode }> = {
   Menunggu: {
@@ -190,6 +185,13 @@ export default function PengajuanKerjasama() {
   const [reviewComment, setReviewComment] = useState('');
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
+  const [ruangLingkupModalOpen, setRuangLingkupModalOpen] = useState(false);
+  const [ruangLingkupRows, setRuangLingkupRows] = useState<MasterRuangLingkup[]>([]);
+  const [ruangLingkupNama, setRuangLingkupNama] = useState('');
+  const [editingRuangLingkupId, setEditingRuangLingkupId] = useState<number | null>(null);
+  const [editingRuangLingkupNama, setEditingRuangLingkupNama] = useState('');
+  const [ruangLingkupSaving, setRuangLingkupSaving] = useState(false);
+  const [ruangLingkupMessage, setRuangLingkupMessage] = useState<string | null>(null);
   const [masterJenis, setMasterJenis] = useState<'jurusan' | 'unit_kerja'>('jurusan');
   const [masterKode, setMasterKode] = useState('');
   const [masterNama, setMasterNama] = useState('');
@@ -265,6 +267,12 @@ export default function PengajuanKerjasama() {
     return { jurusanRows, unitRows, prodiRows };
   }, []);
 
+  const refreshMasterRuangLingkup = useCallback(async () => {
+    const rows = await getMasterRuangLingkup();
+    setRuangLingkupRows(rows);
+    return rows;
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -284,6 +292,103 @@ export default function PengajuanKerjasama() {
       isMounted = false;
     };
   }, [refreshMasterReferenceData]);
+
+  useEffect(() => {
+    if (!ruangLingkupModalOpen) {
+      return;
+    }
+
+    void refreshMasterRuangLingkup();
+  }, [ruangLingkupModalOpen, refreshMasterRuangLingkup]);
+
+  async function handleSubmitRuangLingkup() {
+    const nama = ruangLingkupNama.trim();
+    if (!nama) {
+      setRuangLingkupMessage('Nama ruang lingkup wajib diisi.');
+      return;
+    }
+
+    try {
+      setRuangLingkupSaving(true);
+      setRuangLingkupMessage(null);
+
+      await createMasterRuangLingkup({
+        nama_ruang_lingkup: nama,
+        aktif: true,
+      });
+
+      await refreshMasterRuangLingkup();
+      setRuangLingkupNama('');
+      setRuangLingkupMessage('Ruang lingkup berhasil ditambahkan.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menambah ruang lingkup.';
+      setRuangLingkupMessage(message);
+    } finally {
+      setRuangLingkupSaving(false);
+    }
+  }
+
+  function startEditRuangLingkup(item: MasterRuangLingkup) {
+    setEditingRuangLingkupId(item.id);
+    setEditingRuangLingkupNama(item.nama_ruang_lingkup);
+    setRuangLingkupMessage(null);
+  }
+
+  function cancelEditRuangLingkup() {
+    setEditingRuangLingkupId(null);
+    setEditingRuangLingkupNama('');
+  }
+
+  async function saveEditRuangLingkup(id: number) {
+    const nextName = editingRuangLingkupNama.trim();
+    if (!nextName) {
+      setRuangLingkupMessage('Nama ruang lingkup wajib diisi.');
+      return;
+    }
+
+    try {
+      setRuangLingkupSaving(true);
+      setRuangLingkupMessage(null);
+
+      await updateMasterRuangLingkup(id, {
+        nama_ruang_lingkup: nextName,
+      });
+
+      await refreshMasterRuangLingkup();
+      setRuangLingkupMessage('Ruang lingkup berhasil diperbarui.');
+      cancelEditRuangLingkup();
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal mengubah ruang lingkup.';
+      setRuangLingkupMessage(message);
+    } finally {
+      setRuangLingkupSaving(false);
+    }
+  }
+
+  async function handleDeleteRuangLingkup(id: number) {
+    const confirmed = window.confirm('Yakin ingin menghapus ruang lingkup ini?');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setRuangLingkupSaving(true);
+      setRuangLingkupMessage(null);
+
+      await deleteMasterRuangLingkup(id);
+      await refreshMasterRuangLingkup();
+      setRuangLingkupMessage('Ruang lingkup berhasil dihapus.');
+
+      if (editingRuangLingkupId === id) {
+        cancelEditRuangLingkup();
+      }
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus ruang lingkup.';
+      setRuangLingkupMessage(message);
+    } finally {
+      setRuangLingkupSaving(false);
+    }
+  }
 
   const setProdiDraftField = (jurusanId: number, field: 'kode' | 'nama', value: string) => {
     setProdiDraftByJurusan((prev) => {
@@ -390,7 +495,7 @@ export default function PengajuanKerjasama() {
   const editAllJurusanOptions = [...pengajuanJurusanOptions, ...editCustomJurusanOpts];
   const editAllUnitOptions = [...pengajuanUnitOptions, ...editCustomUnitOpts];
   const editAsalOptions = editAsal === 'Jurusan' ? editAllJurusanOptions : editAllUnitOptions;
-  const editAllRlOptions = [...ruangLingkupOptions, ...editCustomRlOpts];
+  const editAllRlOptions = Array.from(new Set([...ruangLingkupRows.map((item) => item.nama_ruang_lingkup), ...editCustomRlOpts]));
   const editTemplateUrl = editForm ? (templatePreviewUrlByJenis[editForm.jenisDokumen] || '') : '';
   const editTemplateFileName = editForm ? (templateFileNameByJenis[editForm.jenisDokumen] || '') : '';
   const editSelectedTemplate = editForm ? (editTemplateDokumenMap[editForm.jenisDokumen] || null) : null;
@@ -907,6 +1012,17 @@ export default function PengajuanKerjasama() {
           >
             <Plus size={16} />
             Referensi Kampus
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRuangLingkupModalOpen(true);
+              setRuangLingkupMessage(null);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+          >
+            <Plus size={16} />
+            Tambah Ruang Lingkup
           </button>
           <button
             type="button"
@@ -1660,6 +1776,123 @@ export default function PengajuanKerjasama() {
         </div>
       )}
 
+      {ruangLingkupModalOpen && (
+        <div className="fixed inset-0 z-[76] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center" onClick={() => setRuangLingkupModalOpen(false)}>
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Tambah Ruang Lingkup</h3>
+                <p className="text-xs text-slate-500">Tambahkan opsi ruang lingkup untuk form pengajuan.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRuangLingkupModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={ruangLingkupNama}
+                  onChange={(e) => setRuangLingkupNama(e.target.value)}
+                  placeholder="Contoh: Publikasi Bersama"
+                  className="input-field h-10 flex-1 rounded-lg px-3 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleSubmitRuangLingkup();
+                  }}
+                  disabled={ruangLingkupSaving}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  <Plus size={14} />
+                  {ruangLingkupSaving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">Data tersimpan ke DB dan langsung dipakai di Form Pengajuan.</p>
+
+              {ruangLingkupMessage && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  {ruangLingkupMessage}
+                </div>
+              )}
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-700">Daftar Ruang Lingkup</p>
+                <div className="mt-2 space-y-2">
+                  {ruangLingkupRows.length === 0 ? (
+                    <span className="text-[11px] text-slate-400">Belum ada data ruang lingkup.</span>
+                  ) : (
+                    ruangLingkupRows.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                        {editingRuangLingkupId === item.id ? (
+                          <input
+                            value={editingRuangLingkupNama}
+                            onChange={(e) => setEditingRuangLingkupNama(e.target.value)}
+                            className="input-field h-8 flex-1 rounded-md px-2 text-xs"
+                            placeholder="Nama ruang lingkup"
+                          />
+                        ) : (
+                          <span className="text-xs font-medium text-slate-700">{item.nama_ruang_lingkup}</span>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          {editingRuangLingkupId === item.id ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void saveEditRuangLingkup(item.id);
+                                }}
+                                disabled={ruangLingkupSaving}
+                                className="h-7 rounded-md bg-[#1E376C] px-2 text-[11px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                              >
+                                Simpan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEditRuangLingkup}
+                                className="h-7 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                              >
+                                Batal
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEditRuangLingkup(item)}
+                                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void handleDeleteRuangLingkup(item.id);
+                                }}
+                                disabled={ruangLingkupSaving}
+                                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Hapus
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editForm && (
         <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
@@ -1753,7 +1986,7 @@ export default function PengajuanKerjasama() {
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Ruang Lingkup</label>
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {ruangLingkupOptions.map((option) => {
+                  {editAllRlOptions.map((option) => {
                     const checked = editForm.ruangLingkup.includes(option);
 
                     return (
@@ -1788,6 +2021,9 @@ export default function PengajuanKerjasama() {
                       </label>
                     );
                   })}
+                  {editAllRlOptions.length === 0 && (
+                    <span className="text-[11px] text-slate-500">Belum ada ruang lingkup di master.</span>
+                  )}
                 </div>
               </div>
 
