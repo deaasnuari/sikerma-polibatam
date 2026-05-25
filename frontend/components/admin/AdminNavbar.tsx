@@ -158,8 +158,8 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
             <nav className="hidden md:flex items-center gap-5 pr-2">
               {[
                 { label: 'Beranda', href: '/#beranda' },
-                { label: 'Kemitraan', href: '/#info-kerjasama' },
                 { label: 'Aktivitas', href: '/#aktivitas' },
+                { label: 'Kemitraan', href: '/#info-kerjasama' },
                 { label: 'Berita', href: 'https://www.polibatam.ac.id/category/kerja-sama/', external: true },
                 { label: 'Kontak', href: '/#kontak' },
               ].map((item) => (
@@ -204,8 +204,8 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                 <div className="flex flex-col gap-1">
                   {[
                     { label: 'Beranda', href: '/#beranda' },
-                    { label: 'Kemitraan', href: '/#info-kerjasama' },
                     { label: 'Aktivitas', href: '/#aktivitas' },
+                    { label: 'Kemitraan', href: '/#info-kerjasama' },
                     { label: 'Berita', href: 'https://www.polibatam.ac.id/category/kerja-sama/', external: true },
                     { label: 'Kontak', href: '/#kontak' },
                   ].map((item) => (
