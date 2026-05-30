@@ -1,0 +1,146 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Faker\Factory as Faker;
+use Illuminate\Support\Str;
+
+class DummyDataSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $faker = Faker::create('id_ID');
+
+        // Get some users, master_unit_prodi, and mitra to associate with
+        $users = DB::table('users')->pluck('id')->toArray();
+        $unitProdis = DB::table('master_unit_prodi')->pluck('id')->toArray();
+        
+        // If master_mitra is empty, seed a few dummy mitras first
+        if (empty(DB::table('master_mitra')->count())) {
+            for ($i = 0; $i < 5; $i++) {
+                DB::table('master_mitra')->insert([
+                    'nama_mitra' => $faker->company,
+                    'kategori_mitra' => $faker->randomElement(['Perguruan Tinggi', 'Industri', 'Instansi Pemerintah']),
+                    'alamat' => $faker->address,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+        $mitras = DB::table('master_mitra')->pluck('id')->toArray();
+
+        // 1. Seed Pengajuan
+        $pengajuanIds = [];
+        for ($i = 0; $i < 10; $i++) {
+            $pengajuanId = DB::table('pengajuan')->insertGetId([
+                'judul' => 'Pengajuan Kerja Sama ' . $faker->sentence(3),
+                'deskripsi' => $faker->paragraph,
+                'pengusul' => $faker->name,
+                'tanggal' => $faker->date(),
+                'mitra' => $faker->company, // string based
+                'jenis_dokumen' => $faker->randomElement(['MoU', 'MoA', 'SPK']),
+                'jurusan' => 'Teknik Informatika', // string based
+                'kategori' => $faker->randomElement(['Dalam Negeri', 'Luar Negeri']),
+                'tanggal_mulai' => $faker->date(),
+                'tanggal_berakhir' => $faker->dateTimeBetween('now', '+5 years')->format('Y-m-d'),
+                'email_pengusul' => $faker->email,
+                'whatsapp_pengusul' => $faker->phoneNumber,
+                'negara' => 'Indonesia',
+                'status' => $faker->randomElement(['menunggu', 'disetujui', 'ditolak', 'revisi']),
+                'created_by_user_id' => $faker->randomElement($users) ?? null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $pengajuanIds[] = $pengajuanId;
+
+            // Seed Pengajuan Log for this pengajuan
+            for ($j = 0; $j < rand(1, 3); $j++) {
+                DB::table('pengajuan_log')->insert([
+                    'pengajuan_id' => $pengajuanId,
+                    'tipe_log' => 'status_update',
+                    'status_baru' => $faker->randomElement(['menunggu', 'review', 'disetujui']),
+                    'isi_log' => $faker->sentence,
+                    'dibuat_oleh_user_id' => $faker->randomElement($users) ?? null,
+                    'dibuat_pada' => now()->subDays(rand(1, 10)),
+                ]);
+            }
+        }
+
+        // 2. Seed Dokumen Kerjasama
+        foreach ($pengajuanIds as $index => $pId) {
+            // Not all pengajuan become documents
+            if ($index % 2 == 0) continue;
+
+            // Seed ajuan to satisfy FK
+            DB::table('ajuan')->insert([
+                'no_permohonan' => (string) $pId,
+                'nama_pemohon' => $faker->name,
+                'jabatan_pemohon' => 'Dosen',
+                'unit' => 'Unit',
+                'prodi' => 'Prodi',
+                'email' => $faker->email,
+                'wa_pemohon' => $faker->phoneNumber,
+                'nama_institusi' => $faker->company,
+                'kategori_institusi' => 'Kategori',
+                'negara' => 'Indonesia',
+                'web_institusi' => $faker->url,
+                'nama_pic' => $faker->name,
+                'jabatan_pic' => 'PIC',
+                'wa_pic' => $faker->phoneNumber,
+                'email_pic' => $faker->email,
+                'jenis_ajuan' => 'MoU',
+                'ruang_lingkup' => 'Pendidikan',
+                'status_ajuan' => 'disetujui',
+                'tgl_ajuan' => now()->format('Y-m-d'),
+                'tgl_verifikasi' => now()->format('Y-m-d'),
+                'tgl_disetujui' => now()->format('Y-m-d'),
+                'tgl_selesai' => now()->format('Y-m-d'),
+                'komentar' => 'Dummy',
+            ]);
+
+            $dokumenId = DB::table('dokumen_kerjasama')->insertGetId([
+                'no_permohonan' => (string) $pId,
+                'sumber_pengajuan_id' => $pId,
+                'nomor_dokumen' => 'DOC-' . strtoupper(Str::random(8)),
+                'nama_dokumen' => 'Dokumen Kerja Sama Resmi ' . $faker->sentence(3),
+                'judul_dokumen' => 'Kerja Sama ' . $faker->company,
+                'jenis_dokumen' => $faker->randomElement(['MoU', 'MoA']),
+                'unit_prodi_id' => !empty($unitProdis) ? $faker->randomElement($unitProdis) : null,
+                'mitra_id' => !empty($mitras) ? $faker->randomElement($mitras) : null,
+                'tanggal_mulai' => $faker->date(),
+                'tanggal_berakhir' => $faker->dateTimeBetween('now', '+3 years')->format('Y-m-d'),
+                'status_siklus' => $faker->randomElement(['active', 'expired', 'archived']),
+                'file' => 'dummy/path/dokumen_' . $pId . '.pdf', // Fallback for old column
+                'keterangan' => $faker->sentence,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Seed Dokumen File
+            DB::table('dokumen_file')->insert([
+                'dokumen_id' => $dokumenId,
+                'peran_berkas' => 'lampiran',
+                'nama_file' => 'Scan_Dokumen_Resmi.pdf',
+                'path_file' => 'storage/dokumen/Scan_Dokumen_Resmi.pdf',
+                'diunggah_pada' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            // Seed Dokumen Log
+            for ($k = 0; $k < rand(1, 3); $k++) {
+                DB::table('dokumen_log')->insert([
+                    'dokumen_id' => $dokumenId,
+                    'tipe_log' => $faker->randomElement(['aktivitas', 'status_update']),
+                    'isi_log' => $faker->sentence,
+                    'dibuat_pada' => now()->subDays(rand(1, 10)),
+                ]);
+            }
+        }
+    }
+}

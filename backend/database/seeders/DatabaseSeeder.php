@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MasterUnitProdiSeeder::class,
             MasterRuangLingkupSeeder::class,
+            DummyDataSeeder::class,
         ]);
 
         $users = [
