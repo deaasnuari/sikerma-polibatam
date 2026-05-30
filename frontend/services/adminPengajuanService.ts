@@ -165,6 +165,8 @@ function mapJenisDokumenToApi(value: string): 'MOU' | 'MOA' | 'IA' {
 function mapStatusFromApi(value: ApiPengajuanRow['status_pengajuan']): PengajuanStatus {
   if (value === 'diproses') return 'Diproses';
   if (value === 'disetujui') return 'Disetujui';
+  if (value === 'selesai') return 'Disetujui';
+  if (value === 'verifikasi') return 'Diproses'; // atau mapping lain sesuai kebutuhan
   if (value === 'ditolak') return 'Ditolak';
   return 'Menunggu';
 }
