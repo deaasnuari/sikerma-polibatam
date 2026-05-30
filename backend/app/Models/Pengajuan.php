@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Casts\PgArrayCast;
 
 class Pengajuan extends Model
 {
-    protected $table = 'pengajuan';
+    protected $table = 'pengajuan_v2';
 
     protected $fillable = [
         // Legacy schema columns
@@ -64,7 +65,7 @@ class Pengajuan extends Model
         'is_from_admin' => 'boolean',
 
         // New schema casts
-        'ruang_lingkup_ids' => 'array',
+        'ruang_lingkup_ids' => PgArrayCast::class,
         'tanggal_mulai' => 'date',
         'tanggal_berakhir' => 'date',
         'diajukan_pada' => 'datetime',

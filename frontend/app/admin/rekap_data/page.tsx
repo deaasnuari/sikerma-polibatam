@@ -51,7 +51,8 @@ export default function RekapDataPage() {
         if (mounted) {
           setRekapData(rows);
         }
-      } catch {
+      } catch (err) {
+        console.error("Failed to load rekap dokumen from API:", err);
         if (mounted) {
           setRekapData([]);
         }

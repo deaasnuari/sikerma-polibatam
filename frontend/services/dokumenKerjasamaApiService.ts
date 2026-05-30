@@ -20,10 +20,11 @@ type ApiDokumenRow = {
   status_siklus?: 'active' | 'expiring' | 'archived' | null;
   mitra?: { id: number; nama_mitra: string } | null;
   unit_prodi?: { id: number; nama: string } | null;
+  file?: string | null;
 };
 
-function mapJenis(value: string): 'MoA' | 'MoU' | 'IA' {
-  const upper = value.toUpperCase();
+function mapJenis(value?: string | null): 'MoA' | 'MoU' | 'IA' {
+  const upper = (value || '').toUpperCase();
   if (upper === 'MOA') return 'MoA';
   if (upper === 'IA') return 'IA';
   return 'MoU';
@@ -49,15 +50,32 @@ function toDisplayDate(value?: string | null): string {
 }
 
 export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
-  const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow>>('/dokumen-kerjasama?per_page=500');
+  const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=500');
   return (response.data?.data ?? []).map((row) => {
     const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
+    
+    // Parse legacy Mitra from keterangan if mitra object is not present
+    let namaMitra = row.mitra?.nama_mitra;
+    if (!namaMitra && row.keterangan && row.keterangan.includes('Mitra:')) {
+      const match = row.keterangan.match(/Mitra:\s*(.*?)(?:\s*\|\s*Bidang:|$)/i);
+      if (match && match[1]) {
+        namaMitra = match[1].trim();
+      }
+    }
+    
+    if (!namaMitra && row.file) {
+      // e.g. "49 MOU Solustar Pte Ltd 2017 (1).pdf..."
+      const cleanedFile = row.file.replace(/^\d+\s*(MOU|MOA|IA)\s*/i, '').replace(/\.pdf.*$/i, '').trim();
+      if (cleanedFile && cleanedFile.length > 2) {
+        namaMitra = cleanedFile;
+      }
+    }
 
     return {
-      sourcePengajuanId: undefined,
+      sourcePengajuanId: row.sumber_pengajuan_id || undefined,
       noDokumen: nomor,
-      namaMitra: row.mitra?.nama_mitra || '-',
+      namaMitra: namaMitra || '-',
       jenis: mapJenis(row.jenis_dokumen),
       unit: row.unit_prodi?.nama || '-',
       tanggalMulai: toDisplayDate(tanggalMulaiRaw),

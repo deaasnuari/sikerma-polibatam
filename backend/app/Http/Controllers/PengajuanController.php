@@ -18,7 +18,7 @@ class PengajuanController extends Controller
             return self::$pengajuanColumnCache[$column];
         }
 
-        self::$pengajuanColumnCache[$column] = Schema::hasColumn('pengajuan', $column);
+        self::$pengajuanColumnCache[$column] = Schema::hasColumn((new Pengajuan)->getTable(), $column);
 
         return self::$pengajuanColumnCache[$column];
     }
@@ -316,7 +316,7 @@ class PengajuanController extends Controller
         $ruangLingkupIds = $this->normalizeRuangLingkupIds($request);
 
         $validated = $request->validate([
-            'nomor_pengajuan' => ['required', 'string', 'max:50', 'unique:pengajuan,nomor_pengajuan'],
+            'nomor_pengajuan' => ['required', 'string', 'max:50', 'unique:pengajuan_v2,nomor_pengajuan'],
             'user_pengusul_id' => ['nullable', 'integer', 'exists:users,id'],
             'nama_pengusul' => ['required', 'string', 'max:200'],
             'jabatan_pengusul' => ['nullable', 'string', 'max:150'],
@@ -387,7 +387,7 @@ class PengajuanController extends Controller
         $ruangLingkupIds = $this->normalizeRuangLingkupIds($request);
 
         $validated = $request->validate([
-            'nomor_pengajuan' => ['sometimes', 'required', 'string', 'max:50', 'unique:pengajuan,nomor_pengajuan,' . $pengajuan->id],
+            'nomor_pengajuan' => ['sometimes', 'required', 'string', 'max:50', 'unique:pengajuan_v2,nomor_pengajuan,' . $pengajuan->id],
             'user_pengusul_id' => ['nullable', 'integer', 'exists:users,id'],
             'nama_pengusul' => ['sometimes', 'required', 'string', 'max:200'],
             'jabatan_pengusul' => ['nullable', 'string', 'max:150'],
