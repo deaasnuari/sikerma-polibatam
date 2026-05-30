@@ -166,7 +166,13 @@ class MigrateLegacyData extends Command
             $mitraId = $mitraMap[trim($ajuan->nama_institusi ?? '')] ?? null;
             
             $status = strtolower($ajuan->status_ajuan ?? 'menunggu');
-            if (!in_array($status, ['menunggu', 'diproses', 'disetujui', 'ditolak'])) {
+            if ($status === 'selesai' || $status === 'disetujui' || str_contains($status, 'setuju')) {
+                $status = 'disetujui';
+            } elseif (str_contains($status, 'proses') || str_contains($status, 'revisi') || $status === 'diproses') {
+                $status = 'diproses';
+            } elseif (str_contains($status, 'tolak') || $status === 'ditolak') {
+                $status = 'ditolak';
+            } else {
                 $status = 'menunggu';
             }
 
