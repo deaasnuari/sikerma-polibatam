@@ -60,9 +60,9 @@ const PENGAJUAN_STORAGE_KEY = 'pengajuanKerjasamaData';
 
 type StoredPengajuanItem = {
   id: number;
-  mitra?: string;
+  namaMitra?: string;
   jenisDokumen?: string;
-  jurusan?: string;
+  namaUnitProdi?: string;
   tanggalMulai?: string;
   tanggalBerakhir?: string;
   whatsappPengusul?: string;
@@ -225,9 +225,9 @@ function mapDokumenDataToRekap(data: DokumenData): RekapDokumen {
 
 type PengajuanSyncPayload = {
   id: number;
-  mitra: string;
+  namaMitra: string;
   jenisDokumen: string;
-  jurusan: string;
+  namaUnitProdi: string;
   tanggalMulai?: string;
   tanggalBerakhir?: string;
   whatsappPengusul?: string;
@@ -305,9 +305,9 @@ function mergeMissingPengajuanIntoRekap(current: RekapDokumen[]): RekapDokumen[]
       const nextItem: RekapDokumen = {
         sourcePengajuanId: item.id,
         noDokumen: `${jenis}/${tahun}/P${String(seqCount).padStart(3, '0')}`,
-        namaMitra: item.mitra || '-',
+        namaMitra: item.namaMitra || '-',
         jenis,
-        unit: item.jurusan || '-',
+        unit: item.namaUnitProdi || '-',
         tanggalMulai: formatDisplayDate(item.tanggalMulai || ''),
         berlakuHingga: formatDisplayDate(item.tanggalBerakhir || ''),
         tahun,
@@ -502,9 +502,9 @@ export function upsertRekapFromPengajuan(payload: PengajuanSyncPayload): RekapDo
   const nextItem: RekapDokumen = {
     sourcePengajuanId: payload.id,
     noDokumen,
-    namaMitra: payload.mitra,
+    namaMitra: payload.namaMitra,
     jenis,
-    unit: payload.jurusan,
+    unit: payload.namaUnitProdi,
     tanggalMulai: formatDisplayDate(payload.tanggalMulai || ''),
     berlakuHingga: formatDisplayDate(payload.tanggalBerakhir || ''),
     tahun,

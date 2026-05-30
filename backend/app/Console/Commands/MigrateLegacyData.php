@@ -10,71 +10,42 @@ use Illuminate\Support\Str;
 
 class MigrateLegacyData extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'migrate:legacy-data {--fresh : Truncate new tables before migration}';
+    protected $description = 'Migrates data from old tables (ajuan, dokumen, dll) to the new PostgreSQL schema (pengajuan_v2, dll)';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Migrates data from old MySQL database to the new PostgreSQL schema';
-
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $this->info('Starting legacy data migration...');
 
-        $oldDb = DB::connection('mysql_old');
-        $newDb = DB::connection('pgsql');
-
-        try {
-            $oldDb->getPdo();
-            $this->info('Successfully connected to old database.');
-        } catch (Exception $e) {
-            $this->error('Could not connect to old database: ' . $e->getMessage());
-            return 1;
-        }
-
         if ($this->option('fresh')) {
             $this->warn('Truncating new tables...');
-            // Disable foreign key checks for PostgreSQL during truncation
-            $newDb->statement('SET session_replication_role = replica;');
+            DB::statement('SET session_replication_role = replica;');
             $tables = [
                 'dokumen_log', 'dokumen_file', 'dokumen_kerjasama',
                 'pengajuan_log', 'pengajuan_file', 'pengajuan',
-                'master_mitra', 'master_ruang_lingkup', 'master_unit_prodi',
-                'carousel_images', 'otp_codes', 'users'
+                'master_mitra', 'master_ruang_lingkup', 'master_unit_prodi'
             ];
             foreach ($tables as $table) {
-                if (Schema::connection('pgsql')->hasTable($table)) {
-                    $newDb->table($table)->truncate();
+                if (Schema::hasTable($table)) {
+                    DB::table($table)->truncate();
                 }
             }
-            $newDb->statement('SET session_replication_role = DEFAULT;');
+            DB::statement('SET session_replication_role = DEFAULT;');
             $this->info('Tables truncated.');
         }
 
-        // We wrap in transaction if possible, but due to large data it might be better without,
-        // or just use transaction for safety.
-        DB::connection('pgsql')->beginTransaction();
+        DB::beginTransaction();
 
         try {
-            $this->migrateDirectCopy($oldDb, $newDb);
-            $this->migrateMasterUnitProdi($oldDb, $newDb);
-            $this->migratePengajuan($oldDb, $newDb);
-            $this->migrateDokumenKerjasama($oldDb, $newDb);
+            $this->migrateMasterUnitProdi();
+            $this->migrateMasterMitra();
+            $this->migratePengajuanV2();
+            $this->migrateDokumenKerjasama();
 
-            DB::connection('pgsql')->commit();
+            DB::commit();
             $this->info('Migration completed successfully!');
         } catch (Exception $e) {
-            DB::connection('pgsql')->rollBack();
+            DB::rollBack();
             $this->error('Migration failed: ' . $e->getMessage());
             $this->error($e->getTraceAsString());
             return 1;
@@ -83,210 +54,265 @@ class MigrateLegacyData extends Command
         return 0;
     }
 
-    protected function migrateDirectCopy($oldDb, $newDb)
+    protected function migrateMasterUnitProdi()
     {
-        $this->info('Migrating direct copy tables (users, otp_codes, carousel_images)...');
-        $tables = ['users', 'otp_codes', 'carousel_images'];
-        foreach ($tables as $table) {
-            if (Schema::connection('mysql_old')->hasTable($table)) {
-                $data = $oldDb->table($table)->get();
-                $insertData = json_decode(json_encode($data), true);
-                if (!empty($insertData)) {
-                    // Chunk inserts if too large
-                    $chunks = array_chunk($insertData, 500);
-                    foreach ($chunks as $chunk) {
-                        $newDb->table($table)->insert($chunk);
-                    }
-                }
-                $this->info("Migrated {$table}.");
-            }
-        }
-    }
-
-    protected function migrateMasterUnitProdi($oldDb, $newDb)
-    {
-        $this->info('Migrating prodi to master_unit_prodi...');
-        if (!Schema::connection('mysql_old')->hasTable('prodi')) {
-            $this->warn('Old table prodi not found, skipping.');
-            return;
-        }
-
-        $oldProdis = $oldDb->table('prodi')->get();
-
-        // Map units first
-        $units = $oldProdis->pluck('unit')->unique()->filter();
+        $this->info('Migrating prodi and unit to master_unit_prodi...');
+        if (!Schema::hasTable('ajuan')) return;
+        
+        $ajuans = DB::table('ajuan')->get();
+        
+        $units = $ajuans->pluck('unit')->unique()->filter();
         $unitMap = [];
 
         foreach ($units as $unitName) {
-            $id = $newDb->table('master_unit_prodi')->insertGetId([
-                'nama' => $unitName,
-                'jenis_node' => 'unit',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $unitMap[$unitName] = $id;
+            $unitName = trim($unitName);
+            if (empty($unitName)) continue;
+            
+            $existing = DB::table('master_unit_prodi')->where('nama', $unitName)->where('jenis_node', 'unit')->first();
+            if (!$existing) {
+                $id = DB::table('master_unit_prodi')->insertGetId([
+                    'nama' => $unitName,
+                    'jenis_node' => 'unit',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $unitMap[$unitName] = $id;
+            } else {
+                $unitMap[$unitName] = $existing->id;
+            }
         }
 
-        // Map prodis
-        foreach ($oldProdis as $prodi) {
-            $parentId = isset($unitMap[$prodi->unit]) ? $unitMap[$prodi->unit] : null;
-            $newDb->table('master_unit_prodi')->insert([
-                'nama' => $prodi->nama,
-                'jenis_node' => 'prodi',
-                'parent_id' => $parentId,
-                'created_at' => $prodi->created_at ?? now(),
-                'updated_at' => $prodi->updated_at ?? now(),
-            ]);
+        $prodis = $ajuans->map(function($item) {
+            return ['unit' => trim($item->unit ?? ''), 'prodi' => trim($item->prodi ?? '')];
+        })->unique('prodi')->filter(function($item) {
+            return !empty($item['prodi']);
+        });
+
+        foreach ($prodis as $prodi) {
+            $parentId = isset($unitMap[$prodi['unit']]) ? $unitMap[$prodi['unit']] : null;
+            
+            $existing = DB::table('master_unit_prodi')->where('nama', $prodi['prodi'])->where('jenis_node', 'prodi')->first();
+            if (!$existing) {
+                DB::table('master_unit_prodi')->insert([
+                    'nama' => $prodi['prodi'],
+                    'jenis_node' => 'prodi',
+                    'parent_id' => $parentId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
         $this->info('Migrated master_unit_prodi.');
     }
-
-    protected function migratePengajuan($oldDb, $newDb)
+    
+    protected function migrateMasterMitra()
     {
-        $this->info('Migrating ajuan and kerjasamapemohon to pengajuan...');
-        if (!Schema::connection('mysql_old')->hasTable('ajuan')) return;
+        $this->info('Migrating institusi to master_mitra...');
+        if (!Schema::hasTable('ajuan')) return;
+        
+        $ajuans = DB::table('ajuan')->get();
+        
+        $mitras = $ajuans->unique('nama_institusi')->filter(function($item) {
+            return !empty(trim($item->nama_institusi ?? ''));
+        });
+        
+        foreach ($mitras as $mitra) {
+            $nama = trim($mitra->nama_institusi ?? '');
+            $existing = DB::table('master_mitra')->where('nama_mitra', $nama)->first();
+            if (!$existing) {
+                DB::table('master_mitra')->insert([
+                    'nama_mitra' => $nama,
+                    'kategori_mitra' => $mitra->kategori_institusi ?? null,
+                    'negara' => $mitra->negara ?? null,
+                    'website' => $mitra->web_institusi ?? null,
+                    'nama_kontak_utama' => $mitra->nama_pic ?? null,
+                    'jabatan_kontak_utama' => $mitra->jabatan_pic ?? null,
+                    'email_kontak_utama' => $mitra->email_pic ?? null,
+                    'telepon_kontak_utama' => $mitra->wa_pic ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+        $this->info('Migrated master_mitra.');
+    }
 
-        $ajuans = $oldDb->table('ajuan')->get();
-        $pemohons = Schema::connection('mysql_old')->hasTable('kerjasamapemohon') 
-            ? $oldDb->table('kerjasamapemohon')->get()->keyBy('id_ajuan') 
-            : collect([]);
+    protected function migratePengajuanV2()
+    {
+        $this->info('Migrating ajuan to pengajuan_v2...');
+        if (!Schema::hasTable('ajuan')) return;
+
+        $ajuans = DB::table('ajuan')->get();
+        
+        // Load Maps
+        $prodiMap = DB::table('master_unit_prodi')->where('jenis_node', 'prodi')->pluck('id', 'nama')->toArray();
+        $unitMap = DB::table('master_unit_prodi')->where('jenis_node', 'unit')->pluck('id', 'nama')->toArray();
+        $mitraMap = DB::table('master_mitra')->pluck('id', 'nama_mitra')->toArray();
 
         foreach ($ajuans as $ajuan) {
-            $pemohon = $pemohons->get($ajuan->no_permohonan);
-            
-            // Format dates
             $tanggal = null;
             if ($ajuan->tgl_ajuan && strtotime($ajuan->tgl_ajuan)) {
                 $tanggal = date('Y-m-d', strtotime($ajuan->tgl_ajuan));
-            } else {
-                $tanggal = now()->format('Y-m-d');
             }
 
-            $pengusul = $pemohon ? $pemohon->Nama_Pemohon : $ajuan->nama_pemohon;
-            $email = $pemohon ? $pemohon->Email_Pemohon : $ajuan->email;
-            $wa = $pemohon ? $pemohon->No_Wa_Pemohon : $ajuan->wa_pemohon;
-            $jurusan = $pemohon ? $pemohon->Unit_Jurusan_Pemohon : ($ajuan->prodi ?: $ajuan->unit);
+            $unitName = trim($ajuan->prodi ?? '');
+            if (empty($unitName)) {
+                $unitName = trim($ajuan->unit ?? '');
+                $unitProdiId = $unitMap[$unitName] ?? null;
+            } else {
+                $unitProdiId = $prodiMap[$unitName] ?? null;
+            }
+            
+            $mitraId = $mitraMap[trim($ajuan->nama_institusi ?? '')] ?? null;
+            
+            $status = strtolower($ajuan->status_ajuan ?? 'menunggu');
+            if (!in_array($status, ['menunggu', 'diproses', 'disetujui', 'ditolak'])) {
+                $status = 'menunggu';
+            }
 
-            $pengajuanId = $newDb->table('pengajuan')->insertGetId([
-                'judul' => 'Pengajuan ' . $ajuan->no_permohonan, // Fallback if no judul
-                'pengusul' => $pengusul ?: 'Unknown',
-                'tanggal' => $tanggal,
-                'mitra' => $ajuan->nama_institusi ?: 'Unknown',
-                'jenis_dokumen' => $ajuan->jenis_ajuan ?: 'MoU',
-                'jurusan' => $jurusan ?: 'Unknown',
-                'email_pengusul' => $email,
-                'whatsapp_pengusul' => $wa,
-                'negara' => $ajuan->negara,
-                'status' => $ajuan->status_ajuan ?: 'menunggu',
+            $pengajuanId = DB::table('pengajuan')->insertGetId([
+                'nomor_pengajuan' => $ajuan->no_permohonan,
+                'nama_pengusul' => $ajuan->nama_pemohon ?? 'Unknown',
+                'jabatan_pengusul' => $ajuan->jabatan_pemohon ?? null,
+                'email_pengusul' => $ajuan->email ?? null,
+                'whatsapp_pengusul' => $ajuan->wa_pemohon ?? null,
+                'unit_prodi_id' => $unitProdiId,
+                'mitra_id' => $mitraId,
+                'nama_mitra' => $ajuan->nama_institusi ?? null,
+                'judul_pengajuan' => 'Pengajuan ' . $ajuan->no_permohonan,
+                'deskripsi_pengajuan' => $ajuan->catatan ?? null,
+                'jenis_dokumen' => $ajuan->jenis_ajuan ?? 'MOU',
+                'kategori_pengajuan' => 'eksternal', // Default
+                'ruang_lingkup_ids' => '[]',
+                'tanggal_mulai' => $tanggal,
+                'tanggal_berakhir' => null,
+                'status_pengajuan' => $status,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // Migrate to pengajuan_log
-            if (Schema::connection('mysql_old')->hasTable('progres')) {
-                $logs = $oldDb->table('progres')->where('no_permohonan', $ajuan->no_permohonan)->get();
+            if (Schema::hasTable('progres')) {
+                $logs = DB::table('progres')->where('no_permohonan', $ajuan->no_permohonan)->get();
                 foreach ($logs as $log) {
-                    $newDb->table('pengajuan_log')->insert([
+                    DB::table('pengajuan_log')->insert([
                         'pengajuan_id' => $pengajuanId,
-                        'status_ke' => $log->status ?? 'menunggu',
-                        'catatan' => $log->catatan,
-                        'dibuat_oleh_user_id' => null,
-                        'created_at' => $log->created_at ?? now(),
+                        'tipe_log' => 'status',
+                        'status_baru' => 'menunggu',
+                        'isi_log' => $log->catatan ?? null,
+                        'dibuat_pada' => $log->created_at ?? now(),
                     ]);
                 }
             }
         }
-        $this->info('Migrated pengajuan and pengajuan_log.');
+        $this->info('Migrated pengajuan_v2 and pengajuan_log.');
     }
 
-    protected function migrateDokumenKerjasama($oldDb, $newDb)
+    protected function migrateDokumenKerjasama()
     {
-        $this->info('Migrating dokumen to dokumen_kerjasama and dokumen_file...');
-        if (!Schema::connection('mysql_old')->hasTable('dokumen')) return;
+        $this->info('Migrating dokumen to dokumen_kerjasama...');
+        if (!Schema::hasTable('dokumen')) return;
 
-        $dokumens = $oldDb->table('dokumen')->get();
+        if (!DB::table('ajuan')->where('no_permohonan', 'MIGRATED')->exists()) {
+            DB::table('ajuan')->insert([
+                'no_permohonan' => 'MIGRATED',
+                'nama_pemohon' => 'System',
+                'jabatan_pemohon' => '-',
+                'unit' => '-',
+                'prodi' => '-',
+                'email' => '-',
+                'wa_pemohon' => '-',
+                'nama_institusi' => '-',
+                'kategori_institusi' => '-',
+                'negara' => '-',
+                'web_institusi' => '-',
+                'nama_pic' => '-',
+                'jabatan_pic' => '-',
+                'wa_pic' => '-',
+                'email_pic' => '-',
+                'jenis_ajuan' => '-',
+                'ruang_lingkup' => '-',
+                'status_ajuan' => 'selesai',
+                'tgl_ajuan' => now()->toDateString(),
+                'tgl_verifikasi' => now()->toDateString(),
+                'tgl_disetujui' => now()->toDateString(),
+                'tgl_selesai' => now()->toDateString(),
+                'komentar' => 'Dummy for migration'
+            ]);
+        }
+
+        $dokumens = DB::table('dokumen')->get();
+        $prodiMap = DB::table('master_unit_prodi')->where('jenis_node', 'prodi')->pluck('id', 'nama')->toArray();
+        $unitMap = DB::table('master_unit_prodi')->where('jenis_node', 'unit')->pluck('id', 'nama')->toArray();
+        $mitraMap = DB::table('master_mitra')->pluck('id', 'nama_mitra')->toArray();
 
         foreach ($dokumens as $dok) {
-            $dokumenId = $newDb->table('dokumen_kerjasama')->insertGetId([
-                'no_permohonan' => $dok->no_permohonan, // Assuming relation holds, or might need to adjust
-                'nama_dokumen' => $dok->nama_dokumen ?? 'Dokumen ' . $dok->no_permohonan,
-                'jenis_dokumen' => $dok->jenis_dokumen,
-                'keterangan' => $dok->keterangan,
-                'status_siklus' => 'active', // default
+            $unitName = trim($dok->unit ?? '');
+            $unitProdiId = $prodiMap[$unitName] ?? ($unitMap[$unitName] ?? null);
+            $mitraId = $mitraMap[trim($dok->mitra ?? '')] ?? null;
+            
+            $dokumenId = DB::table('dokumen_kerjasama')->insertGetId([
+                'nomor_dokumen' => (!empty($dok->no_dokumen) ? $dok->no_dokumen . '-' . uniqid() : ('DOK-' . uniqid())),
+                'no_permohonan' => 'MIGRATED',
+                'no_dokumen' => (!empty($dok->no_dokumen) ? $dok->no_dokumen . '-' . uniqid() : null),
+                'nama_dokumen' => $dok->nama_dokumen ?? 'Dokumen',
+                'file' => $dok->file ?? 'no_file',
+                'sumber_pengajuan_id' => null,
+                'unit_prodi_id' => $unitProdiId,
+                'mitra_id' => $mitraId,
+                'jenis_dokumen' => $dok->jenis_ajuan ?? 'MOU',
+                'judul_dokumen' => 'Dokumen ' . ($dok->no_dokumen ?? uniqid()),
+                'ruang_lingkup_ids' => '[]',
+                'tanggal_mulai' => $dok->tgl_mulai ?? now(),
+                'tanggal_berakhir' => $dok->tgl_akhir ?? now()->addYear(),
+                'status_siklus' => 'active',
+                'keterangan' => $dok->bidang ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
             if (!empty($dok->file)) {
-                $newDb->table('dokumen_file')->insert([
-                    'dokumen_kerjasama_id' => $dokumenId,
-                    'nama_file' => $dok->nama_dokumen ?? 'File Dokumen',
+                DB::table('dokumen_file')->insert([
+                    'dokumen_id' => $dokumenId,
+                    'peran_berkas' => 'lampiran',
+                    'nama_file' => 'File Dokumen',
                     'path_file' => $dok->file,
-                    'kategori' => 'resmi',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             }
         }
 
-        // Migrate rekap -> dokumen_kerjasama and dokumen_file
-        if (Schema::connection('mysql_old')->hasTable('rekap')) {
-            $rekaps = $oldDb->table('rekap')->get();
+        if (Schema::hasTable('rekap')) {
+            $rekaps = DB::table('rekap')->get();
+            
+            // Map PIC and Institusi to Mitra logic could be complex for Rekap, we'll keep it simple
             foreach ($rekaps as $rekap) {
-                // Check if already exists from dokumen (sometimes they overlap)
-                // Here we just insert as new or handle appropriately
-                $dokumenId = $newDb->table('dokumen_kerjasama')->insertGetId([
-                    'nomor_dokumen' => $rekap->no_dokumen,
-                    'nama_dokumen' => 'Rekap ' . $rekap->no_dokumen,
-                    'tanggal_mulai' => $rekap->tgl_awal,
-                    'tanggal_berakhir' => $rekap->tgl_ahir,
+                $dokumenId = DB::table('dokumen_kerjasama')->insertGetId([
+                    'nomor_dokumen' => (!empty($rekap->no_dokumen) ? $rekap->no_dokumen . '-' . uniqid() : ('REKAP-' . uniqid())),
+                    'no_permohonan' => 'MIGRATED',
+                    'no_dokumen' => (!empty($rekap->no_dokumen) ? $rekap->no_dokumen . '-' . uniqid() : null),
+                    'nama_dokumen' => 'Rekap ' . ($rekap->no_dokumen ?? uniqid()),
+                    'file' => $rekap->file ?? 'no_file',
+                    'judul_dokumen' => 'Rekap ' . ($rekap->no_dokumen ?? uniqid()),
+                    'jenis_dokumen' => $rekap->jenis_dokumen ?? 'MOU',
+                    'ruang_lingkup_ids' => '[]',
+                    'tanggal_mulai' => $rekap->tgl_awal ?? now(),
+                    'tanggal_berakhir' => $rekap->tgl_ahir ?? now()->addYear(),
                     'status_siklus' => 'active',
                     'created_at' => $rekap->created_at ?? now(),
                     'updated_at' => $rekap->updated_at ?? now(),
                 ]);
 
                 if (!empty($rekap->file)) {
-                    $newDb->table('dokumen_file')->insert([
-                        'dokumen_kerjasama_id' => $dokumenId,
+                    DB::table('dokumen_file')->insert([
+                        'dokumen_id' => $dokumenId,
+                        'peran_berkas' => 'lampiran',
                         'nama_file' => 'File Rekap',
                         'path_file' => $rekap->file,
-                        'kategori' => 'rekap',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
                 }
-            }
-        }
-
-        // Migrate arsip -> update status_siklus
-        if (Schema::connection('mysql_old')->hasTable('arsip')) {
-            $arsips = $oldDb->table('arsip')->get();
-            // Since arsip in old DB only has nama_file and jenis, we might match it by file or we can just append them to dokumen_file if they are standalone
-            foreach ($arsips as $arsip) {
-                // If we can link to dokumen, we update status_siklus = 'archived'
-                // For now, we will search by file name
-                $linkedFile = $newDb->table('dokumen_file')->where('path_file', $arsip->nama_file)->first();
-                if ($linkedFile) {
-                    $newDb->table('dokumen_kerjasama')
-                        ->where('id', $linkedFile->dokumen_kerjasama_id)
-                        ->update([
-                            'status_siklus' => 'archived',
-                            'alasan_arsip' => $arsip->catatan,
-                            'diarsipkan_pada' => now()
-                        ]);
-                }
-            }
-        }
-        
-        // Migrate monitoring -> dokumen_log
-        if (Schema::connection('mysql_old')->hasTable('monitoring')) {
-            $monitorings = $oldDb->table('monitoring')->get();
-            foreach ($monitorings as $mon) {
-                // Monitoring typically logs activity.
-                // Assuming it has no_dokumen or something similar to link
-                // For fallback, we just insert it.
-                // Need actual schema of monitoring to map properly.
-                // Let's insert tentatively.
             }
         }
 

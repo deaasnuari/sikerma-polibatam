@@ -80,19 +80,18 @@ export default function PengajuanBaruEksternalPage() {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
 
           await submitPengajuanApi({
-            judul: formData.judulKerjasama,
-            pengusul: formData.namaKontak || 'Mitra Eksternal',
-            mitra: formData.namaMitra,
+            judulPengajuan: formData.judulKerjasama,
+            namaPengusul: formData.namaKontak || 'Mitra Eksternal',
+            namaMitra: formData.namaMitra,
             jenisDokumen: formData.jenisKerjasama,
-            jurusan: formData.unitPelaksana,
+            namaUnitProdi: formData.unitPelaksana,
             unitProdiId: selectedProdiId,
-            kategori: 'Eksternal',
-            negara: formData.negara,
+            kategoriPengajuan: 'Eksternal',
             tanggalMulai: formData.tanggalMulai,
             tanggalBerakhir: formData.tanggalBerakhir,
             emailPengusul: formData.emailKontak,
             whatsappPengusul: formData.teleponKontak,
-            alamatMitra: formData.alamatMitra,
+            ruangLingkupIds: [],
             ruangLingkup: selectedRuangLingkup,
             fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
             fileAttachments: normalizedDokumen.map((item) => ({

@@ -13,26 +13,34 @@ export type PengajuanFileAttachment = {
   size?: number;
 };
 
-// Tipe utama untuk satu data pengajuan kerjasama.
+// Tipe utama untuk satu data pengajuan kerjasama (Struktur Baru).
 export interface PengajuanItem {
   id: number;
-  judul: string;
-  deskripsi?: string;
-  pengusul: string;
-  tanggal: string;
-  mitra: string;
+  nomorPengajuan: string;
+  judulPengajuan: string;
+  deskripsiPengajuan?: string;
+  namaPengusul: string;
+  jabatanPengusul?: string;
+  diajukanPada: string;
+  mitraId?: number;
+  namaMitra: string;
   jenisDokumen: string;
-  jurusan: string;
-  kategori?: 'Internal' | 'Eksternal';
+  mitraKategori?: string;
+  mitraNegara?: string;
+  mitraAlamat?: string;
+  mitraEmail?: string;
+  mitraTelepon?: string;
+  unitProdiId?: number;
+  namaUnitProdi: string;
+  kategoriPengajuan?: 'Internal' | 'Eksternal';
   tanggalMulai?: string;
   tanggalBerakhir?: string;
   emailPengusul?: string;
   whatsappPengusul?: string;
-  alamatMitra?: string;
-  negara?: string;
-  emailTerverifikasi?: boolean;
-  ruangLingkup: string[];
-  status: PengajuanStatus;
+  emailTerverifikasiPada?: string;
+  ruangLingkupIds: number[];
+  ruangLingkup: string[]; // For display fallback
+  statusPengajuan: PengajuanStatus;
   fileName?: string;
   fileAttachments?: PengajuanFileAttachment[];
   reviewComment?: string;
@@ -118,13 +126,14 @@ type ApiPengajuanRow = {
   status_pengajuan: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
   diajukan_pada?: string | null;
   unit_prodi?: { id: number; nama: string } | null;
-  mitra?: { id: number; nama_mitra: string } | string | null;
+  mitra?: { id: number; nama_mitra: string; kategori_mitra?: string | null; negara?: string | null; alamat?: string | null; email_mitra?: string | null; telepon_mitra?: string | null; } | string | null;
   // Legacy schema keys (from recent pulled backend)
   judul?: string;
   deskripsi?: string | null;
   pengusul?: string;
   tanggal?: string | null;
   mitra_nama?: string | null;
+  nama_mitra?: string | null;
   jurusan?: string | null;
   kategori?: 'Internal' | 'Eksternal' | null;
   ruang_lingkup?: string[] | null;
@@ -169,37 +178,61 @@ function mapStatusToApi(value: PengajuanStatus): 'menunggu' | 'diproses' | 'dise
 
 function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
   const tanggalRaw = row.diajukan_pada || row.tanggal;
-  const tanggal = tanggalRaw ? tanggalRaw.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const diajukanPada = tanggalRaw ? tanggalRaw.slice(0, 10) : new Date().toISOString().slice(0, 10);
   const statusApi = row.status_pengajuan || row.status || 'menunggu';
 
   const mitraNama =
     (typeof row.mitra === 'string' ? row.mitra : row.mitra?.nama_mitra) ||
     row.mitra_nama ||
+    row.nama_mitra ||
     '-';
+
+  let resolvedRuangLingkup: string[] = [];
+  if (Array.isArray(row.ruang_lingkup) && row.ruang_lingkup.length > 0) {
+    resolvedRuangLingkup = row.ruang_lingkup;
+  } else if (Array.isArray(row.ruang_lingkup_ids) && row.ruang_lingkup_ids.length > 0) {
+    let cachedMaster: any[] = [];
+    try {
+      const module = require('@/services/masterRuangLingkupService');
+      cachedMaster = module.getCachedMasterRuangLingkup() || [];
+    } catch (e) {
+      // Ignored
+    }
+    resolvedRuangLingkup = row.ruang_lingkup_ids.map((id) => {
+      const found = cachedMaster.find((m: any) => m.id === id);
+      return found ? found.nama_ruang_lingkup : `RL-${id}`;
+    });
+  }
 
   return {
     id: row.id,
-    judul: row.judul_pengajuan || row.judul || '-',
-    deskripsi: (row.deskripsi_pengajuan ?? row.deskripsi) || undefined,
-    pengusul: row.nama_pengusul || row.pengusul || '-',
-    tanggal,
-    mitra: mitraNama,
+    nomorPengajuan: row.nomor_pengajuan || `PGJ-LEGACY-${row.id}`,
+    judulPengajuan: row.judul_pengajuan || row.judul || '-',
+    deskripsiPengajuan: (row.deskripsi_pengajuan ?? row.deskripsi) || undefined,
+    namaPengusul: row.nama_pengusul || row.pengusul || '-',
+    jabatanPengusul: row.jabatan_pengusul || undefined,
+    diajukanPada,
+    mitraId: row.mitra_id ?? undefined,
+    namaMitra: mitraNama,
+    mitraKategori: typeof row.mitra === 'object' && row.mitra !== null && 'kategori_mitra' in row.mitra ? row.mitra.kategori_mitra || undefined : undefined,
+    mitraNegara: typeof row.mitra === 'object' && row.mitra !== null && 'negara' in row.mitra ? row.mitra.negara || undefined : undefined,
+    mitraAlamat: typeof row.mitra === 'object' && row.mitra !== null && 'alamat' in row.mitra ? row.mitra.alamat || undefined : undefined,
+    mitraEmail: typeof row.mitra === 'object' && row.mitra !== null && 'email_mitra' in row.mitra ? row.mitra.email_mitra || undefined : undefined,
+    mitraTelepon: typeof row.mitra === 'object' && row.mitra !== null && 'telepon_mitra' in row.mitra ? row.mitra.telepon_mitra || undefined : undefined,
     jenisDokumen: mapJenisDokumenFromApi(row.jenis_dokumen),
-    jurusan: row.unit_prodi?.nama || row.jurusan || '-',
-    kategori:
-      row.kategori === 'Internal' || row.kategori === 'Eksternal'
-        ? row.kategori
-        : row.kategori_pengajuan === 'internal'
-          ? 'Internal'
-          : 'Eksternal',
+    unitProdiId: row.unit_prodi_id ?? undefined,
+    namaUnitProdi: row.unit_prodi?.nama || row.jurusan || '-',
+    kategoriPengajuan:
+      row.kategori_pengajuan === 'internal' || row.kategori === 'Internal'
+        ? 'Internal'
+        : 'Eksternal',
     tanggalMulai: row.tanggal_mulai ?? undefined,
     tanggalBerakhir: row.tanggal_berakhir ?? undefined,
     emailPengusul: row.email_pengusul ?? undefined,
     whatsappPengusul: row.whatsapp_pengusul ?? undefined,
-    ruangLingkup: Array.isArray(row.ruang_lingkup)
-      ? row.ruang_lingkup
-      : (row.ruang_lingkup_ids ?? []).map((id) => `RL-${id}`),
-    status: mapStatusFromApi(statusApi),
+    ruangLingkupIds: row.ruang_lingkup_ids ?? [],
+    ruangLingkup: resolvedRuangLingkup,
+    statusPengajuan: mapStatusFromApi(statusApi),
   };
 }
 
@@ -256,25 +289,23 @@ export async function savePengajuanReviewApi(id: number, status: PengajuanStatus
 
 export async function updatePengajuanItemApi(
   id: number,
-  updates: Partial<Omit<PengajuanItem, 'id' | 'tanggal'>> & {
-    unitProdiId?: number | null;
-  }
+  updates: Partial<Omit<PengajuanItem, 'id' | 'diajukanPada'>>
 ): Promise<PengajuanItem> {
   const payload: Record<string, unknown> = {};
-  if (typeof updates.judul === 'string') payload.judul_pengajuan = updates.judul;
-  if (typeof updates.judul === 'string') payload.judul = updates.judul;
-  if (typeof updates.deskripsi === 'string') payload.deskripsi_pengajuan = updates.deskripsi;
-  if (typeof updates.deskripsi === 'string') payload.deskripsi = updates.deskripsi;
-  if (typeof updates.pengusul === 'string') payload.nama_pengusul = updates.pengusul;
-  if (typeof updates.pengusul === 'string') payload.pengusul = updates.pengusul;
+  if (typeof updates.judulPengajuan === 'string') payload.judul_pengajuan = updates.judulPengajuan;
+  if (typeof updates.deskripsiPengajuan === 'string') payload.deskripsi_pengajuan = updates.deskripsiPengajuan;
+  if (typeof updates.namaPengusul === 'string') payload.nama_pengusul = updates.namaPengusul;
+  if (typeof updates.jabatanPengusul === 'string') payload.jabatan_pengusul = updates.jabatanPengusul;
   if (typeof updates.emailPengusul === 'string') payload.email_pengusul = updates.emailPengusul;
   if (typeof updates.whatsappPengusul === 'string') payload.whatsapp_pengusul = updates.whatsappPengusul;
   if (updates.unitProdiId !== undefined) payload.unit_prodi_id = updates.unitProdiId;
+  if (updates.mitraId !== undefined) payload.mitra_id = updates.mitraId;
+  if (typeof updates.namaMitra === 'string') payload.nama_mitra = updates.namaMitra;
   if (typeof updates.jenisDokumen === 'string') payload.jenis_dokumen = mapJenisDokumenToApi(updates.jenisDokumen);
   if (typeof updates.tanggalMulai === 'string') payload.tanggal_mulai = updates.tanggalMulai;
   if (typeof updates.tanggalBerakhir === 'string') payload.tanggal_berakhir = updates.tanggalBerakhir;
-  if (typeof updates.status === 'string') payload.status_pengajuan = mapStatusToApi(updates.status);
-  if (typeof updates.status === 'string') payload.status = mapStatusToApi(updates.status);
+  if (typeof updates.statusPengajuan === 'string') payload.status_pengajuan = mapStatusToApi(updates.statusPengajuan as PengajuanStatus);
+  if (updates.ruangLingkupIds !== undefined) payload.ruang_lingkup_ids = updates.ruangLingkupIds;
 
   const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>(`/pengajuan/${id}`, {
     method: 'PATCH',
@@ -298,9 +329,7 @@ function buildNomorPengajuan(prefix: 'ADM' | 'INT' | 'EXT'): string {
 }
 
 export async function submitPengajuanApi(
-  data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'> & {
-    unitProdiId?: number | null;
-  },
+  data: Omit<PengajuanItem, 'id' | 'diajukanPada' | 'statusPengajuan' | 'isFromAdmin' | 'nomorPengajuan'>,
   isFromAdmin?: boolean,
   source: 'admin' | 'internal' | 'eksternal' = 'internal'
 ): Promise<PengajuanItem> {
@@ -308,26 +337,19 @@ export async function submitPengajuanApi(
 
   const payload = {
     nomor_pengajuan: buildNomorPengajuan(prefix),
-    nama_pengusul: data.pengusul || (source === 'eksternal' ? 'Mitra Eksternal' : 'Internal Polibatam'),
-    pengusul: data.pengusul || (source === 'eksternal' ? 'Mitra Eksternal' : 'Internal Polibatam'),
+    nama_pengusul: data.namaPengusul || (source === 'eksternal' ? 'Mitra Eksternal' : 'Internal Polibatam'),
     email_pengusul: data.emailPengusul || null,
     whatsapp_pengusul: data.whatsappPengusul || null,
-    judul_pengajuan: data.judul,
-    judul: data.judul,
-    deskripsi_pengajuan: data.deskripsi || null,
-    deskripsi: data.deskripsi || null,
+    judul_pengajuan: data.judulPengajuan,
+    deskripsi_pengajuan: data.deskripsiPengajuan || null,
     jenis_dokumen: mapJenisDokumenToApi(data.jenisDokumen),
-    mitra: data.mitra,
-    jurusan: data.jurusan,
+    mitra_id: data.mitraId ?? null,
+    nama_mitra: data.namaMitra,
     unit_prodi_id: data.unitProdiId ?? null,
-    kategori: data.kategori || (source === 'eksternal' ? 'Eksternal' : 'Internal'),
-    kategori_pengajuan: (data.kategori || (source === 'eksternal' ? 'Eksternal' : 'Internal')).toLowerCase(),
-    tanggal: new Date().toISOString().slice(0, 10),
+    kategori_pengajuan: (data.kategoriPengajuan || (source === 'eksternal' ? 'Eksternal' : 'Internal')).toLowerCase(),
     tanggal_mulai: data.tanggalMulai || null,
     tanggal_berakhir: data.tanggalBerakhir || null,
-    ruang_lingkup: data.ruangLingkup,
-    ruang_lingkup_ids: [],
-    status: 'menunggu',
+    ruang_lingkup_ids: data.ruangLingkupIds ?? [],
     status_pengajuan: 'menunggu',
   };
 
@@ -347,93 +369,105 @@ export async function submitPengajuanApi(
 const defaultPengajuanData: PengajuanItem[] = [
   {
     id: 1,
-    judul: 'Kerja Sama Magang dengan PT Solusi Digital',
-    pengusul: 'Dr. Ahmad Wijaya',
-    tanggal: '2026-02-25',
-    mitra: 'PT Solusi Digital Indonesia',
+    nomorPengajuan: 'PGJ-DUMMY-1',
+    judulPengajuan: 'Kerja Sama Magang dengan PT Solusi Digital',
+    namaPengusul: 'Dr. Ahmad Wijaya',
+    diajukanPada: '2026-02-25',
+    namaMitra: 'PT Solusi Digital Indonesia',
     jenisDokumen: 'MoA',
-    jurusan: 'Teknik Informatika',
-    kategori: 'Eksternal',
+    namaUnitProdi: 'Teknik Informatika',
+    kategoriPengajuan: 'Eksternal',
     tanggalMulai: '2026-03-01',
     tanggalBerakhir: '2027-03-01',
+    ruangLingkupIds: [1, 2],
     ruangLingkup: ['Penelitian', 'Pengabdian Masyarakat'],
-    status: 'Menunggu',
+    statusPengajuan: 'Menunggu',
   },
   {
     id: 2,
-    judul: 'Penelitian Bersama Universitas Malaysia',
-    pengusul: 'Dr. Ahmad Wijaya',
-    tanggal: '2026-02-25',
-    mitra: 'Universitas Teknologi Malaysia',
+    nomorPengajuan: 'PGJ-DUMMY-2',
+    judulPengajuan: 'Penelitian Bersama Universitas Malaysia',
+    namaPengusul: 'Dr. Ahmad Wijaya',
+    diajukanPada: '2026-02-25',
+    namaMitra: 'Universitas Teknologi Malaysia',
     jenisDokumen: 'MoU',
-    jurusan: 'Teknik Informatika',
-    kategori: 'Eksternal',
+    namaUnitProdi: 'Teknik Informatika',
+    kategoriPengajuan: 'Eksternal',
     tanggalMulai: '2026-04-01',
     tanggalBerakhir: '2028-04-01',
+    ruangLingkupIds: [1, 3],
     ruangLingkup: ['Penelitian', 'Publikasi Bersama'],
-    status: 'Diproses',
+    statusPengajuan: 'Diproses',
   },
   {
     id: 3,
-    judul: 'Pelatihan Kewirausahaan Internal',
-    pengusul: 'Dr. Ahmad Wijaya',
-    tanggal: '2026-02-25',
-    mitra: 'UPT Kerjasama Polibatam',
+    nomorPengajuan: 'PGJ-DUMMY-3',
+    judulPengajuan: 'Pelatihan Kewirausahaan Internal',
+    namaPengusul: 'Dr. Ahmad Wijaya',
+    diajukanPada: '2026-02-25',
+    namaMitra: 'UPT Kerjasama Polibatam',
     jenisDokumen: 'MoU',
-    jurusan: 'Teknik Informatika',
-    kategori: 'Internal',
+    namaUnitProdi: 'Teknik Informatika',
+    kategoriPengajuan: 'Internal',
     tanggalMulai: '2026-05-10',
     tanggalBerakhir: '2026-12-10',
+    ruangLingkupIds: [4, 5],
     ruangLingkup: ['Pelatihan', 'Pengembangan SDM'],
-    status: 'Disetujui',
+    statusPengajuan: 'Disetujui',
     reviewComment: 'Dokumen sudah lengkap dan disetujui untuk tindak lanjut.',
     reviewedAt: '2026-03-02',
     reviewedBy: 'Admin SIKERMA',
   },
   {
     id: 4,
-    judul: 'Kolaborasi Riset AI Jurusan TI',
-    pengusul: 'Siti Rahma',
-    tanggal: '2026-03-11',
-    mitra: 'PT Cerdas Data Nusantara',
+    nomorPengajuan: 'PGJ-DUMMY-4',
+    judulPengajuan: 'Kolaborasi Riset AI Jurusan TI',
+    namaPengusul: 'Siti Rahma',
+    diajukanPada: '2026-03-11',
+    namaMitra: 'PT Cerdas Data Nusantara',
     jenisDokumen: 'MoA',
-    jurusan: 'Teknik Informatika',
-    kategori: 'Internal',
+    namaUnitProdi: 'Teknik Informatika',
+    kategoriPengajuan: 'Internal',
     tanggalMulai: '2026-04-15',
     tanggalBerakhir: '2027-04-15',
+    ruangLingkupIds: [1, 3],
     ruangLingkup: ['Penelitian', 'Publikasi Bersama'],
-    status: 'Diproses',
+    statusPengajuan: 'Diproses',
     reviewComment: 'Admin sedang memvalidasi dokumen pendukung dan ruang lingkup kerja sama.',
     reviewedAt: '2026-03-14',
     reviewedBy: 'Admin SIKERMA',
   },
   {
     id: 5,
-    judul: 'Program Magang Industri untuk Mahasiswa',
-    pengusul: 'Andi Saputra',
-    tanggal: '2026-03-19',
-    mitra: 'PT Inovasi Batam',
+    nomorPengajuan: 'PGJ-DUMMY-5',
+    judulPengajuan: 'Program Magang Industri untuk Mahasiswa',
+    namaPengusul: 'Andi Saputra',
+    diajukanPada: '2026-03-19',
+    namaMitra: 'PT Inovasi Batam',
     jenisDokumen: 'IA',
-    jurusan: 'Teknik Elektro',
-    kategori: 'Internal',
+    namaUnitProdi: 'Teknik Elektro',
+    kategoriPengajuan: 'Internal',
     tanggalMulai: '2026-06-01',
     tanggalBerakhir: '2026-12-31',
+    ruangLingkupIds: [6, 4],
     ruangLingkup: ['Magang', 'Pelatihan'],
-    status: 'Menunggu',
+    statusPengajuan: 'Menunggu',
   },
   {
     id: 6,
-    judul: 'Pengabdian Masyarakat Bersama Komunitas Digital',
-    pengusul: 'Nabila Putri',
-    tanggal: '2026-03-25',
-    mitra: 'Komunitas Digital Batam',
+    nomorPengajuan: 'PGJ-DUMMY-6',
+    judulPengajuan: 'Pengabdian Masyarakat Bersama Komunitas Digital',
+    namaPengusul: 'Nabila Putri',
+    diajukanPada: '2026-03-25',
+    namaMitra: 'Komunitas Digital Batam',
     jenisDokumen: 'MoU',
-    jurusan: 'Manajemen Bisnis',
-    kategori: 'Internal',
+    namaUnitProdi: 'Manajemen Bisnis',
+    kategoriPengajuan: 'Internal',
     tanggalMulai: '2026-07-01',
     tanggalBerakhir: '2027-01-01',
+    ruangLingkupIds: [2, 4],
     ruangLingkup: ['Pengabdian Masyarakat', 'Pelatihan'],
-    status: 'Ditolak',
+    statusPengajuan: 'Ditolak',
     reviewComment: 'Mohon lengkapi dokumen legal mitra sebelum diajukan ulang.',
     reviewedAt: '2026-03-28',
     reviewedBy: 'Admin SIKERMA',
@@ -519,7 +553,7 @@ export function markPengajuanEmailVerified(id: number): PengajuanItem | null {
       return item;
     }
 
-    verifiedItem = { ...item, emailTerverifikasi: true };
+    verifiedItem = { ...item, emailTerverifikasiPada: new Date().toISOString() };
     return verifiedItem;
   });
 
@@ -528,7 +562,7 @@ export function markPengajuanEmailVerified(id: number): PengajuanItem | null {
   if (verifiedItem) {
     addAdminNotification({
       title: 'Email Pengusul Terverifikasi',
-      message: `Email untuk pengajuan '${verifiedItem.judul}' sudah dikonfirmasi aktif.`,
+      message: `Email untuk pengajuan '${verifiedItem.judulPengajuan}' sudah dikonfirmasi aktif.`,
       from: 'Sistem Verifikasi',
       href: '/admin/data_pengajuan',
       category: 'approval',
@@ -553,7 +587,7 @@ export function updatePengajuanStatus(
 
     updatedItem = {
       ...item,
-      status,
+      statusPengajuan: status,
       reviewComment: comment?.trim() || undefined,
       reviewedAt: new Date().toISOString().slice(0, 10),
       reviewedBy: 'Admin SIKERMA',
@@ -566,7 +600,7 @@ export function updatePengajuanStatus(
   if (updatedItem && status === 'Disetujui') {
     initAktivitasOnApproval(
       updatedItem.id,
-      updatedItem.mitra,
+      updatedItem.namaMitra,
       updatedItem.reviewedAt ?? new Date().toISOString().slice(0, 10)
     );
   }
@@ -575,8 +609,8 @@ export function updatePengajuanStatus(
     addAdminNotification({
       title: status === 'Disetujui' ? 'Pengajuan Disetujui' : status === 'Ditolak' ? 'Pengajuan Ditolak' : 'Status Pengajuan Diperbarui',
       message: comment?.trim()
-        ? `${updatedItem.judul} diperbarui menjadi ${status}. Catatan: ${comment}`
-        : `${updatedItem.judul} diperbarui menjadi ${status}.`,
+        ? `${updatedItem.judulPengajuan} diperbarui menjadi ${status}. Catatan: ${comment}`
+        : `${updatedItem.judulPengajuan} diperbarui menjadi ${status}.`,
       from: 'Admin SIKERMA',
       href: '/admin/data_pengajuan',
       category: status === 'Ditolak' ? 'reminder' : 'approval',
@@ -590,15 +624,15 @@ export function updatePengajuanStatus(
 export function getPengajuanStats(items: PengajuanItem[]) {
   return {
     totalPengajuan: items.length,
-    menunggu: items.filter((item) => item.status === 'Menunggu').length,
-    diproses: items.filter((item) => item.status === 'Diproses').length,
-    disetujui: items.filter((item) => item.status === 'Disetujui').length,
+    menunggu: items.filter((item) => item.statusPengajuan === 'Menunggu').length,
+    diproses: items.filter((item) => item.statusPengajuan === 'Diproses').length,
+    disetujui: items.filter((item) => item.statusPengajuan === 'Disetujui').length,
   };
 }
 
 // Ambil daftar tahun unik dari data pengajuan untuk isi dropdown filter.
 export function getPengajuanYearOptions(items: PengajuanItem[]): string[] {
-  return Array.from(new Set(items.map((item) => item.tanggal.slice(0, 4))))
+  return Array.from(new Set(items.map((item) => item.diajukanPada.slice(0, 4))))
     .filter(Boolean)
     .sort((a, b) => Number(b) - Number(a));
 }
@@ -611,7 +645,7 @@ export function savePengajuanReview(id: number, status: PengajuanStatus, comment
 // Mengubah data pengajuan tertentu dari halaman admin.
 export function updatePengajuanItem(
   id: number,
-  updates: Partial<Omit<PengajuanItem, 'id' | 'tanggal'>>
+  updates: Partial<Omit<PengajuanItem, 'id' | 'diajukanPada'>>
 ): PengajuanItem[] {
   let updatedItem: PengajuanItem | null = null;
 
@@ -624,7 +658,7 @@ export function updatePengajuanItem(
       ...item,
       ...updates,
       id: item.id,
-      tanggal: item.tanggal,
+      diajukanPada: item.diajukanPada,
     };
 
     return updatedItem;
@@ -635,9 +669,9 @@ export function updatePengajuanItem(
   if (updatedItem) {
     upsertRekapFromPengajuan({
       id: updatedItem.id,
-      mitra: updatedItem.mitra,
+      namaMitra: updatedItem.namaMitra,
       jenisDokumen: updatedItem.jenisDokumen,
-      jurusan: updatedItem.jurusan,
+      namaUnitProdi: updatedItem.namaUnitProdi,
       tanggalMulai: updatedItem.tanggalMulai,
       tanggalBerakhir: updatedItem.tanggalBerakhir,
       whatsappPengusul: updatedItem.whatsappPengusul,
@@ -645,7 +679,7 @@ export function updatePengajuanItem(
 
     upsertMonitoringFromPengajuan({
       id: updatedItem.id,
-      mitra: updatedItem.mitra,
+      namaMitra: updatedItem.namaMitra,
       jenisDokumen: updatedItem.jenisDokumen,
       tanggalMulai: updatedItem.tanggalMulai,
       tanggalBerakhir: updatedItem.tanggalBerakhir,
@@ -696,7 +730,7 @@ export function deletePengajuanItem(id: number): PengajuanItem[] {
   if (removed) {
     addAdminNotification({
       title: 'Pengajuan Dihapus',
-      message: `Pengajuan '${removed.judul}' telah dihapus dari daftar admin.`,
+      message: `Pengajuan '${removed.judulPengajuan}' telah dihapus dari daftar admin.`,
       from: 'Admin SIKERMA',
       href: '/admin/data_pengajuan',
       category: 'reminder',
@@ -707,11 +741,11 @@ export function deletePengajuanItem(id: number): PengajuanItem[] {
 }
 
 function getKategoriPengajuan(item: PengajuanItem): 'Internal' | 'Eksternal' {
-  if (item.kategori) {
-    return item.kategori;
+  if (item.kategoriPengajuan) {
+    return item.kategoriPengajuan;
   }
 
-  const source = `${item.mitra} ${item.jurusan}`.toLowerCase();
+  const source = `${item.namaMitra} ${item.namaUnitProdi}`.toLowerCase();
   return source.includes('polibatam') || source.includes('upt') ? 'Internal' : 'Eksternal';
 }
 
@@ -732,22 +766,22 @@ export function filterPengajuanData(
     // HANYA filter data admin jika memang untuk view internal (excludeAdmin true)
     // Di halaman admin, data admin harus tetap muncul
 
-    const matchStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
+    const matchStatus = filterStatus === 'Semua Status' || item.statusPengajuan === filterStatus;
     const matchJurusan =
       filterJurusan === 'Semua Jurusan/unit' ||
       filterJurusan === 'Semua Ruang Kerjasama' ||
       filterJurusan === 'Semua Kategori Kerjasama' ||
-      item.jurusan === filterJurusan ||
+      item.namaUnitProdi === filterJurusan ||
       getKategoriPengajuan(item) === filterJurusan;
     const keyword = search.toLowerCase().trim();
     const kategori = getKategoriPengajuan(item).toLowerCase();
     const ruangLingkupText = item.ruangLingkup.join(' ').toLowerCase();
     const matchSearch =
       keyword === '' ||
-      item.mitra.toLowerCase().includes(keyword) ||
-      item.judul.toLowerCase().includes(keyword) ||
-      item.pengusul.toLowerCase().includes(keyword) ||
-      item.jurusan.toLowerCase().includes(keyword) ||
+      item.namaMitra.toLowerCase().includes(keyword) ||
+      item.judulPengajuan.toLowerCase().includes(keyword) ||
+      item.namaPengusul.toLowerCase().includes(keyword) ||
+      item.namaUnitProdi.toLowerCase().includes(keyword) ||
       item.jenisDokumen.toLowerCase().includes(keyword) ||
       kategori.includes(keyword) ||
       ruangLingkupText.includes(keyword);
@@ -764,5 +798,5 @@ export function getFilteredPengajuanData(items: PengajuanItem[], filters: Pengaj
     return filtered;
   }
 
-  return filtered.filter((item) => item.tanggal.startsWith(filters.filterTahun));
+  return filtered.filter((item) => item.diajukanPada.startsWith(filters.filterTahun));
 }

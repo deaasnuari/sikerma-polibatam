@@ -20,7 +20,7 @@ export function getInternalPengajuanData(options?: { filterAdmin?: boolean }): P
 
 // Submit pengajuan internal
 export function submitInternalPengajuan(
-  data: Omit<PengajuanItem, 'id' | 'tanggal' | 'status' | 'isFromAdmin'> & {
+  data: Omit<PengajuanItem, 'id' | 'diajukanPada' | 'nomorPengajuan' | 'statusPengajuan' | 'isFromAdmin'> & {
     unitProdiId?: number | null;
   }
 ): Promise<PengajuanItem> {
@@ -41,8 +41,8 @@ export function getInternalPengajuanDisetujui(): PengajuanItem[] {
   // dan yang kategorinya Internal ATAU tidak punya kategori (data lama)
   const adminData = getPengajuanData();
   const fromAdmin = adminData.filter(
-    (item) => !item.isFromAdmin && item.status === 'Disetujui' &&
-    (item.kategori === 'Internal' || !item.kategori)
+    (item) => !item.isFromAdmin && item.statusPengajuan === 'Disetujui' &&
+    (item.kategoriPengajuan === 'Internal' || !item.kategoriPengajuan)
   );
 
   // Baca dari internal storage untuk menangkap data yang mungkin tidak tersimpan di admin storage
@@ -53,10 +53,10 @@ export function getInternalPengajuanDisetujui(): PengajuanItem[] {
   const fromInternal = internalData
     .map((item) => {
       const adminItem = adminMap.get(item.id);
-      if (adminItem) return { ...item, status: adminItem.status as PengajuanStatus };
+      if (adminItem) return { ...item, statusPengajuan: adminItem.statusPengajuan as PengajuanStatus };
       return item;
     })
-    .filter((item) => item.status === 'Disetujui');
+    .filter((item) => item.statusPengajuan === 'Disetujui');
 
   // Gabungkan dan deduplikasi berdasarkan id
   const combined = [...fromAdmin, ...fromInternal];

@@ -39,9 +39,9 @@ import {
 
 type EditFormState = {
   id: number;
-  judul: string;
-  mitra: string;
-  jurusan: string;
+  judulPengajuan: string;
+  namaMitra: string;
+  namaUnitProdi: string;
   jenisDokumen: string;
   tanggalMulai: string;
   tanggalBerakhir: string;
@@ -544,7 +544,7 @@ export default function PengajuanKerjasama() {
 
   function openReview(item: PengajuanItem) {
     setReviewItem(item);
-    setReviewDecision(item.status === 'Ditolak' ? 'Ditolak' : 'Disetujui');
+    setReviewDecision(item.statusPengajuan === 'Ditolak' ? 'Ditolak' : 'Disetujui');
     setReviewComment('');
   }
 
@@ -570,18 +570,17 @@ export default function PengajuanKerjasama() {
   }
 
   function openEditLegacy(item: PengajuanItem) {
-    const asalDefault: 'Jurusan' | 'Unit' = pengajuanUnitOptions.includes(item.jurusan) ? 'Unit' : 'Jurusan';
-
+    const asalDefault: 'Jurusan' | 'Unit' = pengajuanUnitOptions.includes(item.namaUnitProdi) ? 'Unit' : 'Jurusan';
 
     setEditForm({
       id: item.id,
-      judul: item.judul,
-      mitra: item.mitra,
-      jurusan: item.jurusan,
+      judulPengajuan: item.judulPengajuan,
+      namaMitra: item.namaMitra,
+      namaUnitProdi: item.namaUnitProdi,
       jenisDokumen: item.jenisDokumen,
       tanggalMulai: item.tanggalMulai || '',
       tanggalBerakhir: item.tanggalBerakhir || '',
-      ruangLingkup: item.ruangLingkup,
+      ruangLingkup: item.ruangLingkup || [],
     });
 
     setEditAsal(asalDefault);
@@ -646,7 +645,7 @@ export default function PengajuanKerjasama() {
       if (!editAllUnitOptions.includes(trimmed)) setEditCustomUnitOpts((prev) => [...prev, trimmed]);
     }
 
-    setEditForm((prev) => (prev ? { ...prev, jurusan: trimmed } : prev));
+    setEditForm((prev) => (prev ? { ...prev, namaUnitProdi: trimmed } : prev));
     setEditJurusanInput('');
     setEditJurusanOpen(false);
   }
@@ -660,8 +659,8 @@ export default function PengajuanKerjasama() {
 
     setEditForm((prev) => {
       if (!prev) return prev;
-      if (prev.jurusan === option) {
-        return { ...prev, jurusan: '' };
+      if (prev.namaUnitProdi === option) {
+        return { ...prev, namaUnitProdi: '' };
       }
       return prev;
     });
@@ -685,7 +684,7 @@ export default function PengajuanKerjasama() {
   async function saveEdit() {
     if (!editForm) return;
 
-    if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
+    if (!editForm.judulPengajuan.trim() || !editForm.namaMitra.trim() || !editForm.namaUnitProdi.trim()) {
       setInfoModalMessage('Judul, mitra, dan jurusan wajib diisi untuk menyimpan perubahan.');
       return;
     }
@@ -705,13 +704,14 @@ export default function PengajuanKerjasama() {
       : [];
 
     const editPayload = {
-      judul: editForm.judul.trim(),
-      mitra: editForm.mitra.trim(),
-      jurusan: editForm.jurusan.trim(),
+      judulPengajuan: editForm.judulPengajuan.trim(),
+      namaMitra: editForm.namaMitra.trim(),
+      namaUnitProdi: editForm.namaUnitProdi.trim(),
       jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
       tanggalMulai: editForm.tanggalMulai || undefined,
       tanggalBerakhir: editForm.tanggalBerakhir || undefined,
       ruangLingkup: editForm.ruangLingkup,
+      ruangLingkupIds: (editForm.ruangLingkup || []).map((name) => ruangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
       ...(editUploadedFiles.length > 0
         ? {
             fileName: editUploadedFiles.map((file) => file.name).join(', '),
@@ -782,7 +782,7 @@ export default function PengajuanKerjasama() {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
-    dokumenAttachments: { file: File; dataUrl: string }[];
+    dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
   }): boolean {
     if (!editingItem) {
@@ -800,18 +800,19 @@ export default function PengajuanKerjasama() {
     }
 
     const editPayload = {
-      judul: payload.formData.judulKerjasama.trim(),
-      mitra: payload.formData.namaMitra.trim(),
-      jurusan: payload.formData.unitPelaksana.trim(),
-      unitProdiId: payload.selectedProdiId,
+      judulPengajuan: payload.formData.judulKerjasama.trim(),
+      namaMitra: payload.formData.namaMitra.trim(),
+      namaUnitProdi: payload.formData.unitPelaksana.trim(),
+      unitProdiId: payload.selectedProdiId ?? undefined,
       jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
       tanggalMulai: payload.formData.tanggalMulai || undefined,
       tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,
       ruangLingkup: payload.selectedRuangLingkup,
+      ruangLingkupIds: (payload.selectedRuangLingkup || []).map((name) => ruangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
       emailPengusul: payload.formData.emailKontak || editingItem.emailPengusul,
       whatsappPengusul: payload.formData.teleponKontak || editingItem.whatsappPengusul,
-      alamatMitra: payload.formData.alamatMitra || editingItem.alamatMitra,
-      negara: payload.formData.negara || editingItem.negara,
+      deskripsiPengajuan: payload.formData.deskripsi.trim() || undefined,
+      jabatanPengusul: payload.formData.jabatanKontak.trim() || undefined,
       ...(payload.dokumen.length > 0
         ? {
             fileName: payload.dokumen.map((file) => file.name).join(', '),
@@ -819,7 +820,7 @@ export default function PengajuanKerjasama() {
               name: item.file.name,
               type: item.file.type,
               size: item.file.size,
-              url: item.dataUrl,
+              url: item.dataUrl || '',
             })),
           }
         : {}),
@@ -1226,7 +1227,7 @@ export default function PengajuanKerjasama() {
       {/* Cards List */}
       <div className="space-y-4">
         {filtered.map((item) => {
-          const sc = statusConfig[item.status];
+          const sc = statusConfig[item.statusPengajuan] || statusConfig['Menunggu'];
           return (
             <div
               key={item.id}
@@ -1235,9 +1236,9 @@ export default function PengajuanKerjasama() {
               {/* Top row */}
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900">{item.judul}</h3>
+                  <h3 className="text-base font-bold text-gray-900">{item.judulPengajuan}</h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    Pengusul: {item.pengusul} &bull; {item.tanggal}
+                    Pengusul: {item.namaPengusul} &bull; {item.diajukanPada}
                   </p>
                 </div>
                 <span className={`flex items-center gap-1.5 flex-shrink-0 ${sc.className}`}>
@@ -1250,7 +1251,7 @@ export default function PengajuanKerjasama() {
               <div className="flex flex-wrap items-start gap-6 mt-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Mitra Tujuan</p>
-                  <p className="text-sm font-semibold text-gray-900">{item.mitra}</p>
+                  <p className="text-sm font-semibold text-gray-900">{item.namaMitra}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Jenis Dokumen</p>
@@ -1260,7 +1261,7 @@ export default function PengajuanKerjasama() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Jurusan</p>
-                  <p className="text-sm text-gray-700">{item.jurusan}</p>
+                  <p className="text-sm text-gray-700">{item.namaUnitProdi}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                   <button
@@ -1402,21 +1403,21 @@ export default function PengajuanKerjasama() {
                 initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                 initialMasterRuangLingkupRows={ruangLingkupRows}
                 initialData={{
-                  asal: pengajuanUnitOptions.includes(editingItem.jurusan) ? 'Unit' : 'Jurusan',
-                  namaMitra: editingItem.mitra,
-                  jenisMitra: '',
-                  teleponMitra: editingItem.whatsappPengusul || '',
-                  emailMitra: editingItem.emailPengusul || '',
-                  alamatMitra: editingItem.alamatMitra || '',
-                  negara: editingItem.negara || 'Indonesia',
+                  asal: pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan',
+                  namaMitra: editingItem.namaMitra,
+                  jenisMitra: editingItem.mitraKategori || '',
+                  teleponMitra: editingItem.mitraTelepon || editingItem.whatsappPengusul || '',
+                  emailMitra: editingItem.mitraEmail || editingItem.emailPengusul || '',
+                  alamatMitra: editingItem.mitraAlamat || '',
+                  negara: editingItem.mitraNegara || 'Indonesia',
                   jenisKerjasama: editingItem.jenisDokumen,
-                  unitPelaksana: editingItem.jurusan,
+                  unitPelaksana: editingItem.namaUnitProdi,
                   tanggalMulai: editingItem.tanggalMulai || '',
                   tanggalBerakhir: editingItem.tanggalBerakhir || '',
-                  judulKerjasama: editingItem.judul,
-                  deskripsi: '',
-                  namaKontak: editingItem.pengusul,
-                  jabatanKontak: '',
+                  judulKerjasama: editingItem.judulPengajuan,
+                  deskripsi: editingItem.deskripsiPengajuan || '',
+                  namaKontak: editingItem.namaPengusul,
+                  jabatanKontak: editingItem.jabatanPengusul || '',
                   emailKontak: editingItem.emailPengusul || '',
                   teleponKontak: editingItem.whatsappPengusul || '',
                   selectedRuangLingkup: editingItem.ruangLingkup,
@@ -1446,12 +1447,12 @@ export default function PengajuanKerjasama() {
             <div className="p-5 space-y-4">
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
                 <p className="text-xs text-gray-500">Status:</p>
-                <p className="text-sm font-semibold text-gray-900 mt-0.5">{statusConfig[detailItem.status].label}</p>
+                <p className="text-sm font-semibold text-gray-900 mt-0.5">{statusConfig[detailItem.statusPengajuan]?.label || 'Menunggu'}</p>
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-sm font-semibold text-gray-900">{detailItem.judul}</p>
-                <p className="text-xs text-gray-600 mt-1">Diajukan oleh: {detailItem.pengusul}</p>
+                <p className="text-sm font-semibold text-gray-900">{detailItem.judulPengajuan}</p>
+                <p className="text-xs text-gray-600 mt-1">Diajukan oleh: {detailItem.namaPengusul}</p>
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
@@ -1459,7 +1460,7 @@ export default function PengajuanKerjasama() {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                   <div>
                     <p className="text-gray-500">Tanggal Pengajuan</p>
-                    <p className="text-gray-900 font-medium">{detailItem.tanggal}</p>
+                    <p className="text-gray-900 font-medium">{detailItem.diajukanPada}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Jenis Dokumen</p>
@@ -1469,11 +1470,11 @@ export default function PengajuanKerjasama() {
                   </div>
                   <div>
                     <p className="text-gray-500">Jurusan/Unit</p>
-                    <p className="text-gray-900 font-medium">{detailItem.jurusan}</p>
+                    <p className="text-gray-900 font-medium">{detailItem.namaUnitProdi}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Mitra Tujuan</p>
-                    <p className="text-gray-900 font-medium">{detailItem.mitra}</p>
+                    <p className="text-gray-900 font-medium">{detailItem.namaMitra}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Tanggal Mulai</p>
@@ -1557,7 +1558,7 @@ export default function PengajuanKerjasama() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Review Pengajuan</h3>
-                <p className="text-sm text-gray-700 mt-0.5">{reviewItem.judul}</p>
+                <p className="text-sm text-gray-700 mt-0.5">{reviewItem.judulPengajuan}</p>
               </div>
               <button type="button" onClick={() => setReviewItem(null)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
@@ -1568,15 +1569,15 @@ export default function PengajuanKerjasama() {
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4] grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                 <div>
                   <p className="text-gray-500">Pengusul:</p>
-                  <p className="text-gray-900 font-medium">{reviewItem.pengusul}</p>
+                  <p className="text-gray-900 font-medium">{reviewItem.namaPengusul}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Mitra Tujuan:</p>
-                  <p className="text-gray-900 font-medium">{reviewItem.mitra}</p>
+                  <p className="text-gray-900 font-medium">{reviewItem.namaMitra}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Jurusan</p>
-                  <p className="text-gray-900 font-medium">{reviewItem.jurusan}</p>
+                  <p className="text-gray-900 font-medium">{reviewItem.namaUnitProdi}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Jenis Dokumen</p>
@@ -2005,8 +2006,8 @@ export default function PengajuanKerjasama() {
                 <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
                 <input
                   type="text"
-                  value={editForm.judul}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, judul: e.target.value } : prev))}
+                  value={editForm.judulPengajuan}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, judulPengajuan: e.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                 />
               </div>
@@ -2014,8 +2015,8 @@ export default function PengajuanKerjasama() {
                 <label className="text-xs font-semibold text-slate-700">Mitra Tujuan</label>
                 <input
                   type="text"
-                  value={editForm.mitra}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, mitra: e.target.value } : prev))}
+                  value={editForm.namaMitra}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, namaMitra: e.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                 />
               </div>
@@ -2023,8 +2024,8 @@ export default function PengajuanKerjasama() {
                 <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
                 <input
                   type="text"
-                  value={editForm.jurusan}
-                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jurusan: e.target.value } : prev))}
+                  value={editForm.namaUnitProdi}
+                  onChange={(e) => setEditForm((prev) => (prev ? { ...prev, namaUnitProdi: e.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                 />
               </div>
@@ -2252,7 +2253,7 @@ export default function PengajuanKerjasama() {
             </div>
             <div className="px-5 py-4">
               <p className="text-sm text-slate-700">
-                Yakin ingin menghapus pengajuan <span className="font-semibold">{deleteTarget.judul}</span>? Tindakan ini tidak bisa dibatalkan.
+                Apakah Anda yakin ingin menghapus data pengajuan <span className="font-semibold">{deleteTarget.judulPengajuan}</span>? Tindakan ini tidak bisa dibatalkan.
               </p>
             </div>
             <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">

@@ -25,7 +25,7 @@ function toDisplayDate(value?: string): string {
 
 function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
   const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as KerjasamaItem['jenis'];
-  const tahun = (item.tanggalMulai || item.tanggal || new Date().toISOString()).slice(0, 4);
+  const tahun = (item.tanggalMulai || item.diajukanPada || new Date().toISOString()).slice(0, 4);
   const statusMap: Record<string, KerjasamaItem['status']> = {
     Menunggu: 'Menunggu',
     Diproses: 'Diproses',
@@ -35,13 +35,13 @@ function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
   return {
     id: item.id,
     noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
-    namaMitra: item.mitra,
+    namaMitra: item.namaMitra,
     jenis,
-    unit: item.jurusan,
+    unit: item.namaUnitProdi,
     tanggalMulai: toDisplayDate(item.tanggalMulai),
     berlakuHingga: toDisplayDate(item.tanggalBerakhir),
     tahun,
-    status: statusMap[item.status] ?? 'Menunggu',
+    status: statusMap[item.statusPengajuan] ?? 'Menunggu',
   };
 }
 
@@ -72,7 +72,7 @@ export default function DaftarKerjasamaEksternalPage() {
       }
 
       const eksternalItems = getPengajuanData()
-        .filter((item) => item.kategori === 'Eksternal')
+        .filter((item) => item.kategoriPengajuan === 'Eksternal')
         .map(mapPengajuanToItem);
       setData(eksternalItems);
     };

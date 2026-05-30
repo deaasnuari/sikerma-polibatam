@@ -508,8 +508,8 @@ export function createNonactiveRecord(
 
 type PengajuanSyncPayload = {
   id: number;
-  judul?: string;
-  mitra: string;
+  judulPengajuan?: string;
+  namaMitra: string;
   jenisDokumen: string;
   tanggalMulai?: string;
   tanggalBerakhir?: string;
@@ -529,8 +529,8 @@ export function upsertMonitoringFromPengajuan(payload: PengajuanSyncPayload): Ke
   const nextItem: Kerjasama = {
     id: payload.id,
     sourcePengajuanId: payload.id,
-    judul: payload.judul,
-    namaMitra: payload.mitra,
+    judul: payload.judulPengajuan,
+    namaMitra: payload.namaMitra,
     noDokumen: `PGJ/${payload.id}`,
     jenis,
     status,

@@ -35,9 +35,9 @@ import DetailPengajuanModal from './DetailPengajuanModal';
 
 type EditFormState = {
   id: number;
-  judul: string;
-  mitra: string;
-  jurusan: string;
+  judulPengajuan: string;
+  namaMitra: string;
+  namaUnitProdi: string;
   jenisDokumen: string;
   tanggalMulai: string;
   tanggalBerakhir: string;
@@ -114,7 +114,7 @@ export default function InternalDataPengajuanPage() {
       }
 
       const internalOnly = getPengajuanData({ excludeAdmin: true }).filter(
-        (item) => item.kategori === 'Internal'
+        (item) => item.kategoriPengajuan === 'Internal'
       );
       // Dedup berdasarkan id
       const seen = new Set();
@@ -138,7 +138,7 @@ export default function InternalDataPengajuanPage() {
   }, []);
 
   const jurusanOptions = useMemo(() => {
-    const currentValues = pengajuanData.map((item) => item.jurusan);
+    const currentValues = pengajuanData.map((item) => item.namaUnitProdi);
 
     if (filterKategori === 'Jurusan') {
       return [...new Set([...pengajuanJurusanOptions, ...currentValues.filter((value) => !isUnitValue(value))])];
@@ -161,9 +161,9 @@ export default function InternalDataPengajuanPage() {
 
     let filtered = baseItems;
     if (filterKategori === 'Jurusan') {
-      filtered = baseItems.filter((item) => !isUnitValue(item.jurusan));
+      filtered = baseItems.filter((item) => !isUnitValue(item.namaUnitProdi));
     } else if (filterKategori === 'Unit') {
-      filtered = baseItems.filter((item) => isUnitValue(item.jurusan));
+      filtered = baseItems.filter((item) => isUnitValue(item.namaUnitProdi));
     }
     // Dedup sebelum render
     const seen = new Set();
@@ -182,19 +182,19 @@ export default function InternalDataPengajuanPage() {
   function openEdit(item: PengajuanItem) {
     setEditForm({
       id: item.id,
-      judul: item.judul,
-      mitra: item.mitra,
-      jurusan: item.jurusan,
+      judulPengajuan: item.judulPengajuan,
+      namaMitra: item.namaMitra,
+      namaUnitProdi: item.namaUnitProdi,
       jenisDokumen: item.jenisDokumen,
       tanggalMulai: item.tanggalMulai || '',
       tanggalBerakhir: item.tanggalBerakhir || '',
-      ruangLingkup: item.ruangLingkup,
+      ruangLingkup: item.ruangLingkup || [],
     });
   }
 
   async function saveEdit() {
     if (!editForm) return;
-    if (!editForm.judul.trim() || !editForm.mitra.trim() || !editForm.jurusan.trim()) {
+    if (!editForm.judulPengajuan.trim() || !editForm.namaMitra.trim() || !editForm.namaUnitProdi.trim()) {
       setInfoModalMessage('Judul, mitra, dan jurusan wajib diisi.');
       return;
     }
@@ -204,15 +204,15 @@ export default function InternalDataPengajuanPage() {
     }
     try {
       const next = await updatePengajuanItem(editForm.id, {
-        judul: editForm.judul.trim(),
-        mitra: editForm.mitra.trim(),
-        jurusan: editForm.jurusan.trim(),
+        judulPengajuan: editForm.judulPengajuan.trim(),
+        namaMitra: editForm.namaMitra.trim(),
+        namaUnitProdi: editForm.namaUnitProdi.trim(),
         jenisDokumen: editForm.jenisDokumen.trim() || 'MoU',
         tanggalMulai: editForm.tanggalMulai || undefined,
         tanggalBerakhir: editForm.tanggalBerakhir || undefined,
         ruangLingkup: editForm.ruangLingkup,
       });
-      const internalOnly = next.filter((i) => i.kategori === 'Internal');
+      const internalOnly = next.filter((i) => i.kategoriPengajuan === 'Internal');
       setPengajuanData(internalOnly);
       setEditForm(null);
       setInfoModalMessage('Data pengajuan berhasil diperbarui.');
@@ -227,7 +227,7 @@ export default function InternalDataPengajuanPage() {
     const deletedId = deleteTarget.id;
     try {
       const next = await deletePengajuanItem(deletedId);
-      setPengajuanData(next.filter((i) => i.kategori === 'Internal'));
+      setPengajuanData(next.filter((i) => i.kategoriPengajuan === 'Internal'));
       setDeleteTarget(null);
       if (detailItem?.id === deletedId) setDetailItem(null);
       if (reviewItem?.id === deletedId) setReviewItem(null);
@@ -371,23 +371,23 @@ export default function InternalDataPengajuanPage() {
           </div>
         ) : (
           filteredItems.map((item) => {
-            const sc = statusConfig[item.status];
+            const sc = statusConfig[item.statusPengajuan] || statusConfig['Menunggu'];
 
             return (
               <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">{item.judul}</h3>
+                      <h3 className="text-lg font-bold text-slate-900">{item.judulPengajuan}</h3>
                       <p className="text-xs text-slate-500">
-                        Pengusul: {item.pengusul} • {item.tanggal}
+                        Pengusul: {item.namaPengusul} • {item.diajukanPada}
                       </p>
                     </div>
 
                     <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
                       <div>
                         <p className="text-xs text-slate-400">Mitra Tujuan</p>
-                        <p className="font-semibold">{item.mitra}</p>
+                        <p className="font-semibold">{item.namaMitra}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-400">Jenis Dokumen</p>
@@ -397,14 +397,14 @@ export default function InternalDataPengajuanPage() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-400">Jurusan / Unit</p>
-                        <p className="font-semibold">{item.jurusan}</p>
+                        <p className="font-semibold">{item.namaUnitProdi}</p>
                       </div>
                     </div>
                   </div>
 
                   <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${sc.className}`}>
                     {sc.icon}
-                    {item.status}
+                    {item.statusPengajuan}
                   </span>
                 </div>
 
@@ -442,7 +442,7 @@ export default function InternalDataPengajuanPage() {
                     <FileText size={15} />
                     Hasil Review Admin
                   </div>
-                  <p className="text-sm text-slate-600">{item.reviewComment || reviewCopy[item.status]}</p>
+                  <p className="text-sm text-slate-600">{item.reviewComment || reviewCopy[item.statusPengajuan] || 'Belum ada review'}</p>
                   {item.reviewedAt && (
                     <p className="mt-2 text-xs text-slate-500">
                       Diperbarui oleh {item.reviewedBy || 'Admin'} pada {item.reviewedAt}
@@ -473,15 +473,15 @@ export default function InternalDataPengajuanPage() {
             <div className="grid grid-cols-1 gap-4 px-5 py-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
-                <input type="text" value={editForm.judul} onChange={(e) => setEditForm((p) => p ? { ...p, judul: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+                <input type="text" value={editForm.judulPengajuan} onChange={(e) => setEditForm((p) => p ? { ...p, judulPengajuan: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Mitra Tujuan</label>
-                <input type="text" value={editForm.mitra} onChange={(e) => setEditForm((p) => p ? { ...p, mitra: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+                <input type="text" value={editForm.namaMitra} onChange={(e) => setEditForm((p) => p ? { ...p, namaMitra: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
-                <input type="text" value={editForm.jurusan} onChange={(e) => setEditForm((p) => p ? { ...p, jurusan: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
+                <input type="text" value={editForm.namaUnitProdi} onChange={(e) => setEditForm((p) => p ? { ...p, namaUnitProdi: e.target.value } : p)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
@@ -528,7 +528,7 @@ export default function InternalDataPengajuanPage() {
               <h3 className="text-lg font-bold text-slate-900">Hapus Pengajuan</h3>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm text-slate-700">Yakin ingin menghapus pengajuan <span className="font-semibold">{deleteTarget.judul}</span>? Tindakan ini tidak bisa dibatalkan.</p>
+              <p className="text-sm text-slate-700">Yakin ingin menghapus pengajuan <span className="font-semibold">{deleteTarget.judulPengajuan}</span>? Tindakan ini tidak bisa dibatalkan.</p>
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
               <button type="button" onClick={() => setDeleteTarget(null)} className="h-9 rounded-lg bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200">Batal</button>

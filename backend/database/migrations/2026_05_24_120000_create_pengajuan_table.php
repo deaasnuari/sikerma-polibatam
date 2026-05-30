@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,36 +14,29 @@ return new class extends Migration
     {
         Schema::create('pengajuan', function (Blueprint $table) {
             $table->id();
-            $table->string('judul', 255);
-            $table->text('deskripsi')->nullable();
-            $table->string('pengusul', 200);
-            $table->date('tanggal');
-            $table->string('mitra', 255);
-            $table->string('jenis_dokumen', 20);
-            $table->string('jurusan', 150);
-            $table->string('kategori', 20)->nullable();
-            $table->date('tanggal_mulai')->nullable();
-            $table->date('tanggal_berakhir')->nullable();
+            $table->string('nomor_pengajuan', 50);
+            $table->foreignId('user_pengusul_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('nama_pengusul', 200);
+            $table->string('jabatan_pengusul', 150)->nullable();
             $table->string('email_pengusul', 255)->nullable();
             $table->string('whatsapp_pengusul', 50)->nullable();
-            $table->text('alamat_mitra')->nullable();
-            $table->string('negara', 100)->nullable();
-            $table->boolean('email_terverifikasi')->default(false);
-            $table->json('ruang_lingkup')->nullable();
-            $table->string('status', 20)->default('menunggu');
-            $table->string('file_name', 500)->nullable();
-            $table->json('file_attachments')->nullable();
-            $table->text('review_comment')->nullable();
-            $table->date('reviewed_at')->nullable();
-            $table->string('reviewed_by', 200)->nullable();
-            $table->boolean('is_from_admin')->default(false);
-            $table->string('source_role', 50)->nullable();
-            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('unit_prodi_id')->nullable()->constrained('master_unit_prodi')->nullOnDelete();
+            $table->foreignId('mitra_id')->nullable()->constrained('master_mitra')->nullOnDelete();
+            $table->string('judul_pengajuan', 255);
+            $table->text('deskripsi_pengajuan')->nullable();
+            $table->string('jenis_dokumen', 20);
+            $table->string('kategori_pengajuan', 20)->nullable();
+            $table->json('ruang_lingkup_ids')->default('[]'); // Menggunakan JSON sebagai standar Laravel untuk array
+            $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_berakhir')->nullable();
+            $table->string('status_pengajuan', 20)->default('menunggu');
+            $table->timestamp('diajukan_pada')->useCurrent();
+            $table->timestamp('email_terverifikasi_pada')->nullable();
             $table->timestamps();
+            $table->string('nama_mitra', 255)->nullable();
 
-            $table->index(['status', 'tanggal']);
-            $table->index(['kategori', 'is_from_admin']);
-            $table->index('created_by_user_id');
+            $table->index(['status_pengajuan', 'diajukan_pada']);
+            $table->index('user_pengusul_id');
         });
     }
 

@@ -64,7 +64,7 @@ export default function MonitoringdanstatusPage() {
       };
     }
 
-    if (sourceItem.kategori === 'Eksternal') {
+    if (sourceItem.kategoriPengajuan === 'Eksternal') {
       return {
         targetRole: 'eksternal' as const,
         href: '/eksternal/daftar_kerjasama',

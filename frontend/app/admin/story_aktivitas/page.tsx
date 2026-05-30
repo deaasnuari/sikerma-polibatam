@@ -72,21 +72,21 @@ function getKerjasamaStatus(tanggalBerakhir?: string): Kerjasama['status'] {
 }
 
 function mapPengajuanToKerjasama(item: PengajuanItem): Kerjasama {
-  const tahun = Number(item.tanggal?.slice(0, 4)) || new Date().getFullYear();
+  const tahun = Number(item.diajukanPada?.slice(0, 4)) || new Date().getFullYear();
   const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as Kerjasama['jenis'];
 
   return {
     id: item.id,
-    nama: item.mitra,
+    nama: item.namaMitra,
     nomorDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
     jenis,
     berakhir: toDisplayDate(item.tanggalBerakhir),
     tahun,
     status: getKerjasamaStatus(item.tanggalBerakhir),
     aktivitas: getAktivitasByKerjasamaId(item.id).length,
-    jurusanTerlibat: item.jurusan ? 1 : 0,
+    jurusanTerlibat: item.namaUnitProdi ? 1 : 0,
     ruangLingkup: [...item.ruangLingkup],
-    jurusan: item.jurusan ? [item.jurusan] : [],
+    jurusan: item.namaUnitProdi ? [item.namaUnitProdi] : [],
   };
 }
 

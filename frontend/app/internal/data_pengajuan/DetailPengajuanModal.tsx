@@ -48,7 +48,7 @@ const templatePreviewUrlByJenis: Record<string, string> = {
 };
 
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
-  const sc = statusConfig[item.status];
+  const sc = statusConfig[item.statusPengajuan];
   const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
   const fileEntries = item.fileAttachments?.length
     ? item.fileAttachments
@@ -67,9 +67,9 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{item.judul}</h2>
+            <h2 className="text-xl font-bold text-slate-900">{item.judulPengajuan}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              {item.tanggal} · {item.pengusul}
+              {item.diajukanPada} · {item.namaPengusul}
             </p>
           </div>
           <button
@@ -100,9 +100,9 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               Informasi Umum
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <InfoRow icon={<Building2 size={15} />} label="Mitra" value={item.mitra} />
-              <InfoRow icon={<User size={15} />} label="Pengusul" value={item.pengusul} />
-              <InfoRow icon={<Tag size={15} />} label="Jurusan / Unit" value={item.jurusan} />
+              <InfoRow icon={<Building2 size={15} />} label="Mitra" value={item.namaMitra} />
+              <InfoRow icon={<User size={15} />} label="Pengusul" value={item.namaPengusul} />
+              <InfoRow icon={<Tag size={15} />} label="Jurusan / Unit" value={item.namaUnitProdi} />
               <InfoRow icon={<FileText size={15} />} label="Jenis Dokumen" value={item.jenisDokumen} />
               {item.tanggalMulai && (
                 <InfoRow icon={<CalendarDays size={15} />} label="Tanggal Mulai" value={item.tanggalMulai} />
@@ -133,7 +133,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           )}
 
           {/* Kontak / info tambahan */}
-          {(item.emailPengusul || item.whatsappPengusul || item.alamatMitra) && (
+          {(item.emailPengusul || item.whatsappPengusul) && (
             <section>
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
                 Kontak
@@ -144,9 +144,6 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                 )}
                 {item.whatsappPengusul && (
                   <InfoRow icon={<User size={15} />} label="WhatsApp" value={item.whatsappPengusul} />
-                )}
-                {item.alamatMitra && (
-                  <InfoRow icon={<Building2 size={15} />} label="Alamat Mitra" value={item.alamatMitra} />
                 )}
               </div>
             </section>
@@ -168,7 +165,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               Hasil Review Admin
             </div>
             <p className="text-sm text-slate-700">
-              {item.reviewComment || reviewCopy[item.status]}
+              {item.reviewComment || reviewCopy[item.statusPengajuan]}
             </p>
             {item.reviewedAt && (
               <p className="mt-2 text-xs text-slate-500">

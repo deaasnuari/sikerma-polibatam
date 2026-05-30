@@ -48,7 +48,7 @@ const templatePreviewUrlByJenis: Record<string, string> = {
 };
 
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
-  const sc = statusConfig[item.status];
+  const sc = statusConfig[item.statusPengajuan] || statusConfig['Menunggu'];
   const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
   const fileEntries = item.fileAttachments?.length
     ? item.fileAttachments
@@ -67,9 +67,9 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{item.judul}</h2>
+            <h2 className="text-xl font-bold text-slate-900">{item.judulPengajuan}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              {item.tanggal} · {item.pengusul}
+              {item.diajukanPada} · {item.namaPengusul}
             </p>
           </div>
           <button
@@ -92,14 +92,14 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               {item.jenisDokumen}
             </span>
           </div>
-          <div className="mb-2 text-lg font-bold text-slate-900">{item.judul}</div>
-          <div className="mb-2 text-sm text-slate-600">{item.deskripsi || '-'}</div>
-          <div className="mb-2 text-xs text-slate-500">Pengusul: {item.pengusul}</div>
-          <div className="mb-2 text-xs text-slate-500">Tanggal: {item.tanggal}</div>
-          <div className="mb-2 text-xs text-slate-500">Jurusan/Unit: {item.jurusan}</div>
-          <div className="mb-2 text-xs text-slate-500">Mitra: {item.mitra}</div>
+          <div className="mb-2 text-lg font-bold text-slate-900">{item.judulPengajuan}</div>
+          <div className="mb-2 text-sm text-slate-600">{item.deskripsiPengajuan || '-'}</div>
+          <div className="mb-2 text-xs text-slate-500">Pengusul: {item.namaPengusul}</div>
+          <div className="mb-2 text-xs text-slate-500">Tanggal: {item.diajukanPada}</div>
+          <div className="mb-2 text-xs text-slate-500">Jurusan/Unit: {item.namaUnitProdi}</div>
+          <div className="mb-2 text-xs text-slate-500">Mitra: {item.namaMitra}</div>
           <div className="mb-2 text-xs text-slate-500">Ruang Lingkup: {item.ruangLingkup?.join(', ')}</div>
-          <div className="mb-2 text-xs text-slate-500">Review: {item.reviewComment || reviewCopy[item.status]}</div>
+          <div className="mb-2 text-xs text-slate-500">Review: {item.reviewComment || reviewCopy[item.statusPengajuan]}</div>
           {/* Lampiran file */}
           {fileEntries.length > 0 && (
             <div className="mt-4">

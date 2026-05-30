@@ -116,6 +116,7 @@ type InternalAjukanKerjasamaFormProps = {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
+    dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
   }) => boolean | void | Promise<boolean | void>;
 };
@@ -202,7 +203,7 @@ export default function InternalAjukanKerjasamaForm({
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
   const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>([]);
-  const [masterRuangLingkupOpts, setMasterRuangLingkupOpts] = useState<string[]>(initialMasterRuangLingkupRows?.map((item) => item.nama_ruang_lingkup) ?? []);
+  const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>(initialMasterRuangLingkupRows ?? []);
   const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(initialMasterUnitProdiTree ?? []);
   const [selectedJurusanId, setSelectedJurusanId] = useState<number | null>(null);
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null);
@@ -223,12 +224,13 @@ export default function InternalAjukanKerjasamaForm({
   const prodiOptionsForJurusan = (selectedJurusanNode?.children ?? []).filter((child) => child.jenis_node === 'prodi' && child.aktif);
   const selectedProdiOption = prodiOptionsForJurusan.find((item) => item.id === selectedProdiId) ?? null;
   const asalOptions = asal === 'Jurusan' ? allJurusanOptions : allUnitOptions;
+  const masterRuangLingkupOpts = masterRuangLingkupRows.map((item) => item.nama_ruang_lingkup);
   const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
   const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
 
   useEffect(() => {
     if (Array.isArray(initialMasterRuangLingkupRows)) {
-      setMasterRuangLingkupOpts(initialMasterRuangLingkupRows.map((item) => item.nama_ruang_lingkup));
+      setMasterRuangLingkupRows(initialMasterRuangLingkupRows);
       return;
     }
 
@@ -242,10 +244,10 @@ export default function InternalAjukanKerjasamaForm({
           return;
         }
 
-        setMasterRuangLingkupOpts(rows.map((item) => item.nama_ruang_lingkup));
+        setMasterRuangLingkupRows(rows);
       } catch {
         if (mounted) {
-          setMasterRuangLingkupOpts([]);
+          setMasterRuangLingkupRows([]);
         }
       }
     };
@@ -550,6 +552,7 @@ export default function InternalAjukanKerjasamaForm({
           asal,
           selectedRuangLingkup,
           dokumen: dokumen.map((item) => item.file),
+          dokumenAttachments: dokumen,
           selectedProdiId,
         }));
 
@@ -566,18 +569,18 @@ export default function InternalAjukanKerjasamaForm({
       }
 
       await submitInternalPengajuan({
-        judul: formData.judulKerjasama,
-        pengusul: formData.namaKontak || 'Internal Polibatam',
-        mitra: formData.namaMitra,
+        judulPengajuan: formData.judulKerjasama,
+        namaPengusul: formData.namaKontak || 'Internal Polibatam',
+        namaMitra: formData.namaMitra,
         jenisDokumen: formData.jenisKerjasama,
-        jurusan: formData.unitPelaksana,
+        namaUnitProdi: formData.unitPelaksana,
         unitProdiId: selectedProdiId,
-        kategori: 'Internal',
-        negara: formData.negara,
+        kategoriPengajuan: 'Internal',
         tanggalMulai: formData.tanggalMulai,
         tanggalBerakhir: formData.tanggalBerakhir,
         emailPengusul: formData.emailKontak,
         whatsappPengusul: formData.teleponKontak,
+        ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
         ruangLingkup: selectedRuangLingkup,
         fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
         fileAttachments: buildFileAttachments(),

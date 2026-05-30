@@ -116,6 +116,7 @@ type InternalAjukanKerjasamaFormProps = {
     asal: 'Jurusan' | 'Unit';
     selectedRuangLingkup: string[];
     dokumen: File[];
+    dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
   }) => boolean | void | Promise<boolean | void>;
 };
@@ -551,6 +552,7 @@ export default function AdminAjukanKerjasamaForm({
           asal,
           selectedRuangLingkup,
           dokumen: dokumen.map((item) => item.file),
+          dokumenAttachments: dokumen,
           selectedProdiId,
         }));
 
@@ -567,19 +569,19 @@ export default function AdminAjukanKerjasamaForm({
       }
 
       await submitPengajuanApi({
-        judul: formData.judulKerjasama,
-        pengusul: formData.namaKontak || 'Internal Polibatam',
-        mitra: formData.namaMitra,
+        judulPengajuan: formData.judulKerjasama,
+        namaPengusul: formData.namaKontak || 'Internal Polibatam',
+        namaMitra: formData.namaMitra,
         jenisDokumen: formData.jenisKerjasama,
-        jurusan: formData.unitPelaksana,
+        namaUnitProdi: formData.unitPelaksana,
         unitProdiId: selectedProdiId,
-        kategori: 'Internal',
-        negara: formData.negara,
+        kategoriPengajuan: 'Internal',
         tanggalMulai: formData.tanggalMulai,
         tanggalBerakhir: formData.tanggalBerakhir,
         emailPengusul: formData.emailKontak,
         whatsappPengusul: formData.teleponKontak,
         ruangLingkup: selectedRuangLingkup,
+        ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
         fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
         fileAttachments: buildFileAttachments(),
       }, true, 'admin');

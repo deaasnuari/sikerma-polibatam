@@ -85,7 +85,7 @@ function toDisplayDate(value?: string): string {
 
 function mapPengajuanToStory(item: PengajuanItem): KerjasamaStory {
   const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as Jenis;
-  const tahun = item.tanggal?.slice(0, 4) || String(new Date().getFullYear());
+  const tahun = item.diajukanPada?.slice(0, 4) || String(new Date().getFullYear());
   const activities = getAktivitasByKerjasamaId(item.id).map((a) => ({
     id: String(a.id),
     judul: a.judul,
@@ -99,19 +99,19 @@ function mapPengajuanToStory(item: PengajuanItem): KerjasamaStory {
 
   return {
     id: String(item.id),
-    namaMitra: item.mitra,
+    namaMitra: item.namaMitra,
     noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
     jenis,
     status: computeStatus(item.tanggalBerakhir),
     tanggalMulai: toDisplayDate(item.tanggalMulai),
     tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
-    kategoriMitra: item.kategori || '-',
-    alamat: item.alamatMitra || '-',
+    kategoriMitra: item.kategoriPengajuan || '-',
+    alamat: '-',
     email: item.emailPengusul || '-',
     telepon: item.whatsappPengusul || '-',
     sisaWaktu: computeSisaWaktu(item.tanggalBerakhir),
     ruangLingkup: [...item.ruangLingkup],
-    jurusanTerlibat: item.jurusan ? [item.jurusan] : [],
+    jurusanTerlibat: item.namaUnitProdi ? [item.namaUnitProdi] : [],
     aktivitas: activities,
   };
 }

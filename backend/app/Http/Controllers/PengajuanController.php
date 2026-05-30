@@ -230,7 +230,7 @@ class PengajuanController extends Controller
         $query = Pengajuan::query();
 
         if ($this->shouldLoadPengajuanRelations()) {
-            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra']);
         }
 
         if ($request->filled('status_pengajuan')) {
@@ -275,7 +275,7 @@ class PengajuanController extends Controller
     public function show(Pengajuan $pengajuan): Response
     {
         if ($this->shouldLoadPengajuanRelations()) {
-            $pengajuan->load(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra']);
+            $pengajuan->load(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra']);
         }
 
         return response([
@@ -324,6 +324,7 @@ class PengajuanController extends Controller
             'whatsapp_pengusul' => ['nullable', 'string', 'max:50'],
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
+            'nama_mitra' => ['nullable', 'string', 'max:255'],
             'judul_pengajuan' => ['required', 'string', 'max:255'],
             'deskripsi_pengajuan' => ['nullable', 'string'],
             'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
@@ -394,6 +395,7 @@ class PengajuanController extends Controller
             'whatsapp_pengusul' => ['nullable', 'string', 'max:50'],
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
+            'nama_mitra' => ['nullable', 'string', 'max:255'],
             'judul_pengajuan' => ['sometimes', 'required', 'string', 'max:255'],
             'deskripsi_pengajuan' => ['nullable', 'string'],
             'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
