@@ -1508,31 +1508,21 @@ export default function PengajuanKerjasama() {
                 {detailFileEntries.length > 0 && (
                   <div className="space-y-2">
                     {detailFileEntries.map((doc, index) => {
-                      const sourceUrl = doc.url || detailFallbackTemplateUrl;
-                      const canDownload = Boolean(sourceUrl);
+                      const sourceUrl = doc.url || detailFallbackTemplateUrl || `http://localhost:8000/storage/uploads/${doc.name}`;
 
                       return (
                         <div key={`${doc.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                           <div className="min-w-0 flex items-center gap-2">
                             <Paperclip size={14} className="shrink-0 text-slate-500" />
-                            <p className="truncate text-xs font-medium text-slate-800">{doc.name}</p>
-                          </div>
-                          {canDownload ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void downloadAttachmentFile(sourceUrl, doc.name);
-                              }}
-                              className="inline-flex items-center gap-1 rounded-md bg-[#1E376C] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#2A4A8F]"
+                            <a 
+                              href={sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800"
                             >
-                              <ExternalLink size={12} />
-                              Unduh
-                            </button>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                              Tidak Tersedia
-                            </span>
-                          )}
+                              {doc.name}
+                            </a>
+                          </div>
                         </div>
                       );
                     })}

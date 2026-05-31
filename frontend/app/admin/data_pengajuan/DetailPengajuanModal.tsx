@@ -95,9 +95,12 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           <div className="mb-2 text-lg font-bold text-slate-900">{item.judulPengajuan}</div>
           <div className="mb-2 text-sm text-slate-600">{item.deskripsiPengajuan || '-'}</div>
           <div className="mb-2 text-xs text-slate-500">Pengusul: {item.namaPengusul}</div>
-          <div className="mb-2 text-xs text-slate-500">Tanggal: {item.diajukanPada}</div>
+          <div className="mb-2 text-xs text-slate-500">Tanggal Pengajuan: {item.diajukanPada}</div>
+          {item.tanggalMulai && <div className="mb-2 text-xs text-slate-500">Tanggal Mulai: {item.tanggalMulai.split('T')[0]}</div>}
+          {item.tanggalBerakhir && <div className="mb-2 text-xs text-slate-500">Tanggal Berakhir: {item.tanggalBerakhir.split('T')[0]}</div>}
           <div className="mb-2 text-xs text-slate-500">Jurusan/Unit: {item.namaUnitProdi}</div>
           <div className="mb-2 text-xs text-slate-500">Mitra: {item.namaMitra}</div>
+          <div className="mb-2 text-xs text-slate-500">WhatsApp: {item.whatsappPengusul || '-'}</div>
           <div className="mb-2 text-xs text-slate-500">Ruang Lingkup: {item.ruangLingkup?.join(', ')}</div>
           <div className="mb-2 text-xs text-slate-500">Review: {item.reviewComment || reviewCopy[item.statusPengajuan]}</div>
           {/* Lampiran file */}
@@ -107,11 +110,15 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               <ul className="list-disc pl-5 text-xs text-slate-700">
                 {fileEntries.map((file, idx) => (
                   <li key={idx}>
-                    {file.url ? (
-                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{file.name}</a>
-                    ) : (
-                      file.name
-                    )}
+                    <a 
+                      href={file.url || `http://localhost:8000/storage/${file.name}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <Paperclip size={12} />
+                      {file.name}
+                    </a>
                   </li>
                 ))}
               </ul>

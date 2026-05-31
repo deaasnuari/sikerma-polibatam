@@ -138,6 +138,12 @@ type ApiPengajuanRow = {
   kategori?: 'Internal' | 'Eksternal' | null;
   ruang_lingkup?: string[] | null;
   status?: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
+  dokumen_files?: {
+    id: number;
+    nama_file: string;
+    path_file: string;
+    peran_berkas: string;
+  }[];
 };
 
 function extractApiRows(response: ApiListResponse<ApiPengajuanRow>): ApiPengajuanRow[] {
@@ -163,11 +169,12 @@ function mapJenisDokumenToApi(value: string): 'MOU' | 'MOA' | 'IA' {
 }
 
 function mapStatusFromApi(value: ApiPengajuanRow['status_pengajuan']): PengajuanStatus {
-  if (value === 'diproses') return 'Diproses';
-  if (value === 'disetujui') return 'Disetujui';
-  if (value === 'selesai') return 'Disetujui';
-  if (value === 'verifikasi') return 'Diproses'; // atau mapping lain sesuai kebutuhan
-  if (value === 'ditolak') return 'Ditolak';
+  const valStr = value as string;
+  if (valStr === 'diproses') return 'Diproses';
+  if (valStr === 'disetujui') return 'Disetujui';
+  if (valStr === 'selesai') return 'Disetujui';
+  if (valStr === 'verifikasi') return 'Diproses';
+  if (valStr === 'ditolak') return 'Ditolak';
   return 'Menunggu';
 }
 
@@ -228,13 +235,19 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
       row.kategori_pengajuan === 'internal' || row.kategori === 'Internal'
         ? 'Internal'
         : 'Eksternal',
-    tanggalMulai: row.tanggal_mulai ?? undefined,
-    tanggalBerakhir: row.tanggal_berakhir ?? undefined,
+    tanggalMulai: row.tanggal_mulai ? new Date(row.tanggal_mulai).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : undefined,
+    tanggalBerakhir: row.tanggal_berakhir ? new Date(row.tanggal_berakhir).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : undefined,
     emailPengusul: row.email_pengusul ?? undefined,
     whatsappPengusul: row.whatsapp_pengusul ?? undefined,
     ruangLingkupIds: row.ruang_lingkup_ids ?? [],
     ruangLingkup: resolvedRuangLingkup,
     statusPengajuan: mapStatusFromApi(statusApi),
+    fileAttachments: row.dokumen_files
+      ? row.dokumen_files.map((file) => ({
+          name: file.nama_file,
+          url: `http://localhost:8000/storage/uploads/${file.path_file}`,
+        }))
+      : undefined,
   };
 }
 

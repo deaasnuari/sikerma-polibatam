@@ -43,6 +43,7 @@ interface DetailKerjasama {
   tanggalMulai: string;
   tanggalBerakhir: string;
   status: 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa';
+  negara: string;
   alamat: string;
   email: string;
   telepon: string;
@@ -66,6 +67,7 @@ const dummyDetail: Record<string, DetailKerjasama> = {
     tanggalMulai: '01/01/2025',
     tanggalBerakhir: '01/01/2028',
     status: 'Aktif',
+    negara: 'Indonesia',
     alamat: 'Batam, Kepulauan Riau',
     email: 'info@bp-batam.go.id',
     telepon: '+6281234567890',
@@ -121,6 +123,7 @@ const dummyDetail: Record<string, DetailKerjasama> = {
     tanggalMulai: '01/01/2025',
     tanggalBerakhir: '01/01/2028',
     status: 'Akan Berakhir',
+    negara: 'Indonesia',
     alamat: 'Batam, Kepulauan Riau',
     email: 'info@bp-batam.go.id',
     telepon: '+6281234567890',
@@ -176,6 +179,7 @@ const dummyDetail: Record<string, DetailKerjasama> = {
     tanggalMulai: '15/03/2025',
     tanggalBerakhir: '20/12/2027',
     status: 'Aktif',
+    negara: 'Indonesia',
     alamat: 'Muka Kuning, Batam, Kepulauan Riau',
     email: 'info@batamindo.co.id',
     telepon: '+6277812345678',
@@ -231,6 +235,7 @@ const dummyDetail: Record<string, DetailKerjasama> = {
     tanggalMulai: '01/03/2024',
     tanggalBerakhir: '01/03/2026',
     status: 'Akan Berakhir',
+    negara: 'Malaysia',
     alamat: 'Johor Bahru, Malaysia',
     email: 'international@utm.my',
     telepon: '+607-5530000',
@@ -308,6 +313,7 @@ const dummyDetail: Record<string, DetailKerjasama> = {
     tanggalMulai: '10/06/2024',
     tanggalBerakhir: '10/06/2027',
     status: 'Aktif',
+    negara: 'United Kingdom',
     alamat: 'Glasgow, Scotland, United Kingdom',
     email: 'international@cityofglasgowcollege.ac.uk',
     telepon: '+44-141-566-3333',
@@ -457,7 +463,8 @@ function mapPengajuanToDetail(item: PengajuanItem): DetailKerjasama {
     tanggalMulai: toDisplayDate(item.tanggalMulai),
     tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
     status: getKerjasamaStatus(item.tanggalBerakhir),
-    alamat: '-',
+    negara: item.mitraNegara || '-',
+    alamat: item.mitraAlamat || '-',
     email: item.emailPengusul || '-',
     telepon: item.whatsappPengusul || '-',
     masaBerlaku: computeMasaBerlaku(item.tanggalBerakhir),
@@ -712,14 +719,18 @@ export default function DetailStoryPage() {
             <p className="text-xs text-blue-300">Kategori Mitra</p>
             <p className="font-semibold mt-1">{dokInfo.kategoriMitra}</p>
           </div>
-          <div>
-            <p className="text-xs text-blue-300">Tanggal Mulai</p>
-            <p className="font-semibold mt-1">{dokInfo.tanggalMulai}</p>
-          </div>
-          <div>
-            <p className="text-xs text-blue-300">Tanggal Berakhir</p>
-            <p className="font-semibold mt-1">{dokInfo.tanggalBerakhir}</p>
-          </div>
+          {dokInfo.tanggalMulai && dokInfo.tanggalMulai !== '-' && (
+            <div>
+              <p className="text-xs text-blue-300">Tanggal Mulai</p>
+              <p className="font-semibold mt-1">{dokInfo.tanggalMulai}</p>
+            </div>
+          )}
+          {dokInfo.tanggalBerakhir && dokInfo.tanggalBerakhir !== '-' && (
+            <div>
+              <p className="text-xs text-blue-300">Tanggal Berakhir</p>
+              <p className="font-semibold mt-1">{dokInfo.tanggalBerakhir}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -732,18 +743,30 @@ export default function DetailStoryPage() {
               Informasi Mitra
             </h3>
             <div className="space-y-2 text-sm text-gray-600">
-              <p className="flex items-center gap-2">
-                <MapPin size={14} className="text-gray-400" />
-                {dokInfo.alamat}
-              </p>
-              <p className="flex items-center gap-2">
-                <Mail size={14} className="text-gray-400" />
-                {dokInfo.email}
-              </p>
-              <p className="flex items-center gap-2">
-                <Phone size={14} className="text-gray-400" />
-                {dokInfo.telepon}
-              </p>
+              {data.negara && data.negara !== '-' && (
+                <p className="flex items-center gap-2">
+                  <MapPin size={14} className="text-gray-400" />
+                  {data.negara}
+                </p>
+              )}
+              {dokInfo.alamat && dokInfo.alamat !== '-' && (
+                <p className="flex items-center gap-2">
+                  <MapPin size={14} className="text-gray-400" />
+                  {dokInfo.alamat}
+                </p>
+              )}
+              {dokInfo.email && dokInfo.email !== '-' && (
+                <p className="flex items-center gap-2">
+                  <Mail size={14} className="text-gray-400" />
+                  {dokInfo.email}
+                </p>
+              )}
+              {dokInfo.telepon && dokInfo.telepon !== '-' && (
+                <p className="flex items-center gap-2">
+                  <Phone size={14} className="text-gray-400" />
+                  {dokInfo.telepon}
+                </p>
+              )}
             </div>
           </div>
           <div>

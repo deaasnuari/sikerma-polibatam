@@ -28,9 +28,9 @@ class DokumenKerjasamaController extends Controller
     public function index(Request $request): Response
     {
         $query = DokumenKerjasama::query()->with([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul',
             'unitProdi:id,nama,jenis_node,kategori_unit',
-            'mitra:id,nama_mitra',
+            'mitra:id,nama_mitra,negara',
         ]);
 
         if ($request->filled('status_siklus')) {
@@ -63,9 +63,9 @@ class DokumenKerjasamaController extends Controller
     public function show(DokumenKerjasama $dokumen_kerjasama): Response
     {
         $dokumen_kerjasama->load([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul',
             'unitProdi:id,nama,jenis_node,kategori_unit',
-            'mitra:id,nama_mitra',
+            'mitra:id,nama_mitra,negara',
         ]);
 
         return response([

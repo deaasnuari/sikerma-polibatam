@@ -230,7 +230,7 @@ class PengajuanController extends Controller
         $query = Pengajuan::query();
 
         if ($this->shouldLoadPengajuanRelations()) {
-            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra']);
+            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra', 'dokumenFiles']);
         }
 
         if ($request->filled('status_pengajuan')) {

@@ -83,4 +83,9 @@ class Pengajuan extends Model
     {
         return $this->belongsTo(MasterMitra::class, 'mitra_id');
     }
+
+    public function dokumenFiles()
+    {
+        return $this->hasMany(\App\Models\DokumenFile::class, 'dokumen_id', 'id');
+    }
 }

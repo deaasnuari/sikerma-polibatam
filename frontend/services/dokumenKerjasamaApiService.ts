@@ -21,6 +21,7 @@ type ApiDokumenRow = {
   mitra?: { id: number; nama_mitra: string } | null;
   unit_prodi?: { id: number; nama: string } | null;
   file?: string | null;
+  pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string } | null;
 };
 
 function mapJenis(value?: string | null): 'MoA' | 'MoU' | 'IA' {
@@ -72,6 +73,17 @@ export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
       }
     }
 
+    let dokumenTerkait: any[] = [];
+    if (row.file) {
+      dokumenTerkait.push({
+        nama: row.file.split('/').pop() || row.file,
+        url: row.file.startsWith('http') ? row.file : `http://localhost:8000/storage/uploads/${row.file}`,
+        tipe: row.file.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream',
+        ukuran: 'File System',
+        tanggal: toDisplayDate(tanggalMulaiRaw),
+      });
+    }
+
     return {
       sourcePengajuanId: row.sumber_pengajuan_id || undefined,
       noDokumen: nomor,
@@ -82,8 +94,8 @@ export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
       berlakuHingga: toDisplayDate(row.tanggal_berakhir),
       tahun: (tanggalMulaiRaw || new Date().toISOString()).slice(0, 4),
       status: mapStatus(row.status_siklus),
-      whatsappNumber: undefined,
-      dokumenTerkait: [],
+      whatsappNumber: row.pengajuan?.whatsapp_pengusul || undefined,
+      dokumenTerkait,
     };
   });
 }
