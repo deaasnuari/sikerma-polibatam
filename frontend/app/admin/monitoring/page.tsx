@@ -78,14 +78,26 @@ export default function MonitoringdanstatusPage() {
   };
 
   useEffect(() => {
-    const syncMonitoringData = () => {
+    let mounted = true;
+    const syncMonitoringData = async () => {
+      // First, immediately show cached/default data so UI doesn't blink empty
       setMonitoringData(getMonitoringData());
+      
+      // Then fetch real data from API and update
+      const { fetchMonitoringDataFromApi } = await import('@/services/adminMonitoringService');
+      const realData = await fetchMonitoringDataFromApi();
+      if (mounted) {
+        setMonitoringData(realData);
+      }
     };
 
-    syncMonitoringData();
+    void syncMonitoringData();
     window.addEventListener('monitoring-data-updated', syncMonitoringData);
 
-    return () => window.removeEventListener('monitoring-data-updated', syncMonitoringData);
+    return () => {
+      mounted = false;
+      window.removeEventListener('monitoring-data-updated', syncMonitoringData);
+    };
   }, []);
   const { totalAktif, totalAkanBerakhir, totalKadaluarsa } = getMonitoringStats(monitoringData);
   const filteredByTab = getFilteredMonitoringData(monitoringData, activeTab);

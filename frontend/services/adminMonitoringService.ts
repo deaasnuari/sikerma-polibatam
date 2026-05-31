@@ -39,6 +39,9 @@ export function generateNoDokumen({
 // Service monitoring kerjasama untuk halaman admin.
 // File ini dipakai agar data, tipe, dan helper bisnis tidak bercampur dengan komponen UI Next.js.
 
+import { apiRequest } from '@/lib/api';
+
+
 export interface RenewalRecord {
   id: string;
   tanggalPermintaan: string;
@@ -397,6 +400,55 @@ export function getMonitoringData(): Kerjasama[] {
     return normalized;
   } catch {
     return normalizeMonitoringData(defaultMonitoringData);
+  }
+}
+
+export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
+  try {
+    const response = await apiRequest<any>('/dokumen-kerjasama?per_page=2000');
+    const items = response.data?.data || [];
+    
+    const mapped = items.map((row: any) => {
+      const { status, sisaMasaBerlaku } = resolveStatusAndSisa(row.tanggal_berakhir);
+      
+      let namaMitra = row.mitra?.nama_mitra;
+      if (!namaMitra && row.keterangan && row.keterangan.includes('Mitra:')) {
+        const match = row.keterangan.match(/Mitra:\s*(.*?)(?:\s*\|\s*Bidang:|$)/i);
+        if (match && match[1]) {
+          namaMitra = match[1].trim();
+        }
+      }
+      if (!namaMitra && row.file) {
+        const cleanedFile = row.file.replace(/^\d+\s*(MOU|MOA|IA)\s*/i, '').replace(/\.pdf.*$/i, '').trim();
+        if (cleanedFile && cleanedFile.length > 2) {
+          namaMitra = cleanedFile;
+        }
+      }
+      
+      return {
+        id: row.id,
+        sourcePengajuanId: row.sumber_pengajuan_id || undefined,
+        judul: row.judul_dokumen || undefined,
+        namaMitra: namaMitra || '-',
+        noDokumen: row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`,
+        jenis: (row.jenis_dokumen?.toUpperCase() === 'MOA' ? 'MoA' : row.jenis_dokumen?.toUpperCase() === 'IA' ? 'IA' : 'MoU'),
+        status: status,
+        tanggalMulai: formatDisplayDate(row.tanggal_mulai),
+        tanggalBerakhir: formatDisplayDate(row.tanggal_berakhir),
+        sisaMasaBerlaku: sisaMasaBerlaku,
+        ruangLingkup: [],
+        whatsappNumber: '-',
+        emailMitra: '-'
+      } as Kerjasama;
+    });
+    
+    if (canUseStorage()) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+    }
+    return mapped;
+  } catch (error) {
+    console.error('Failed to fetch monitoring data:', error);
+    return getMonitoringData();
   }
 }
 
