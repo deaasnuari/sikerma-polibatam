@@ -92,6 +92,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               {item.jenisDokumen}
             </span>
           </div>
+          <div className="mb-1 text-xs font-semibold text-slate-500">Judul Pengajuan:</div>
           <div className="mb-2 text-lg font-bold text-slate-900">{item.judulPengajuan}</div>
           <div className="mb-2 text-sm text-slate-600">{item.deskripsiPengajuan || '-'}</div>
           <div className="mb-2 text-xs text-slate-500">Pengusul: {item.namaPengusul}</div>

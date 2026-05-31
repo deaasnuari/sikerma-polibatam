@@ -1236,6 +1236,7 @@ export default function PengajuanKerjasama() {
               {/* Top row */}
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-500 mb-0.5">Judul Pengajuan:</p>
                   <h3 className="text-base font-bold text-gray-900">{item.judulPengajuan}</h3>
                   <p className="text-xs text-gray-500 mt-1">
                     Pengusul: {item.namaPengusul} &bull; {item.diajukanPada}

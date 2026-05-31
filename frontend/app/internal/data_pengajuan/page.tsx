@@ -378,6 +378,7 @@ export default function InternalDataPengajuanPage() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div>
+                      <p className="text-xs text-slate-500 mb-0.5">Judul Pengajuan:</p>
                       <h3 className="text-lg font-bold text-slate-900">{item.judulPengajuan}</h3>
                       <p className="text-xs text-slate-500">
                         Pengusul: {item.namaPengusul} • {item.diajukanPada}

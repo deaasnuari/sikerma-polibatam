@@ -67,6 +67,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>
+            <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
             <h2 className="text-xl font-bold text-slate-900">{item.judulPengajuan}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
               {item.diajukanPada} · {item.namaPengusul}
