@@ -50,7 +50,7 @@ function toDisplayDate(value?: string | null): string {
 }
 
 export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
-  const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=500');
+  const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000');
   return (response.data?.data ?? []).map((row) => {
     const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';

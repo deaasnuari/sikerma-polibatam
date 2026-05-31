@@ -1872,8 +1872,8 @@ export default function PengajuanKerjasama() {
 
       {ruangLingkupModalOpen && (
         <div className="fixed inset-0 z-[76] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center" onClick={() => setRuangLingkupModalOpen(false)}>
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex-none flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Tambah Ruang Lingkup</h3>
                 <p className="text-xs text-slate-500">Tambahkan opsi ruang lingkup untuk form pengajuan.</p>
@@ -1887,7 +1887,7 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="flex-1 overflow-y-auto space-y-4 p-5">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   value={ruangLingkupNama}

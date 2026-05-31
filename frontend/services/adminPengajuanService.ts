@@ -243,7 +243,7 @@ export async function fetchPengajuanDataFromApi(filters?: {
   perPage?: number;
 }): Promise<PengajuanItem[]> {
   const params = new URLSearchParams();
-  params.set('per_page', String(filters?.perPage ?? 500));
+  params.set('per_page', String(filters?.perPage ?? 2000));
   if (filters?.search) params.set('search', filters.search);
   if (filters?.status && filters.status !== 'Semua Status') {
     const mappedStatus = mapStatusToApi(filters.status as PengajuanStatus);
