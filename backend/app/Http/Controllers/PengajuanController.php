@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 class PengajuanController extends Controller
 {
     private static array $pengajuanColumnCache = [];
+    private static ?bool $pengajuanFileTableExists = null;
 
     private function hasPengajuanColumn(string $column): bool
     {
@@ -26,6 +27,76 @@ class PengajuanController extends Controller
     private function useNewPengajuanSchema(): bool
     {
         return $this->hasPengajuanColumn('nomor_pengajuan');
+    }
+
+    private function hasPengajuanFileTable(): bool
+    {
+        if (self::$pengajuanFileTableExists !== null) {
+            return self::$pengajuanFileTableExists;
+        }
+
+        self::$pengajuanFileTableExists = Schema::hasTable('pengajuan_file');
+
+        return self::$pengajuanFileTableExists;
+    }
+
+    private function normalizeAttachmentPath(array $row): string
+    {
+        $rawPath = trim((string) ($row['path'] ?? $row['path_file'] ?? ''));
+        if ($rawPath !== '') {
+            return $rawPath;
+        }
+
+        $rawUrl = trim((string) ($row['url'] ?? ''));
+        if ($rawUrl !== '' && !str_starts_with($rawUrl, 'data:')) {
+            return $rawUrl;
+        }
+
+        return trim((string) ($row['name'] ?? $row['nama_file'] ?? 'lampiran'));
+    }
+
+    private function syncPengajuanFiles(Pengajuan $pengajuan, Request $request): void
+    {
+        if (! $this->hasPengajuanFileTable()) {
+            return;
+        }
+
+        if (! $request->has('file_attachments')) {
+            return;
+        }
+
+        $attachments = $request->input('file_attachments');
+        if (! is_array($attachments)) {
+            return;
+        }
+
+        $payload = [];
+        foreach ($attachments as $attachment) {
+            if (! is_array($attachment)) {
+                continue;
+            }
+
+            $name = trim((string) ($attachment['name'] ?? $attachment['nama_file'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $path = $this->normalizeAttachmentPath($attachment);
+
+            $payload[] = [
+                'nama_file' => $name,
+                'path_file' => $path,
+                'mime_type' => isset($attachment['type']) && is_string($attachment['type']) ? $attachment['type'] : null,
+                'ukuran_file_bytes' => isset($attachment['size']) && is_numeric($attachment['size']) ? (int) $attachment['size'] : null,
+                'diunggah_oleh_user_id' => $request->user()?->id,
+            ];
+        }
+
+        $pengajuan->pengajuanFiles()->delete();
+
+        if (! empty($payload)) {
+            $pengajuan->pengajuanFiles()->createMany($payload);
+        }
     }
 
     private function shouldLoadPengajuanRelations(): bool
@@ -335,8 +406,22 @@ class PengajuanController extends Controller
         $validated['jenis_dokumen'] = strtoupper((string) $validated['jenis_dokumen']);
         $validated['ruang_lingkup_ids'] = $ruangLingkupIds;
 
+        if ($this->hasPengajuanColumn('file_name') && $request->has('file_name')) {
+            $validated['file_name'] = (string) $request->input('file_name', '');
+        }
+
+        if ($this->hasPengajuanColumn('file_attachments') && $request->has('file_attachments')) {
+            $validated['file_attachments'] = $request->input('file_attachments');
+        }
+
         try {
             $pengajuan = Pengajuan::create($validated);
+
+            try {
+                $this->syncPengajuanFiles($pengajuan, $request);
+            } catch (\Throwable $ignored) {
+                // Do not fail main pengajuan creation when optional attachment sync is incompatible.
+            }
         } catch (QueryException $exception) {
             return response([
                 'success' => false,
@@ -411,8 +496,22 @@ class PengajuanController extends Controller
             $validated['ruang_lingkup_ids'] = $ruangLingkupIds;
         }
 
+        if ($this->hasPengajuanColumn('file_name') && $request->has('file_name')) {
+            $validated['file_name'] = (string) $request->input('file_name', '');
+        }
+
+        if ($this->hasPengajuanColumn('file_attachments') && $request->has('file_attachments')) {
+            $validated['file_attachments'] = $request->input('file_attachments');
+        }
+
         try {
             $pengajuan->update($validated);
+
+            try {
+                $this->syncPengajuanFiles($pengajuan, $request);
+            } catch (\Throwable $ignored) {
+                // Do not fail main pengajuan update when optional attachment sync is incompatible.
+            }
         } catch (QueryException $exception) {
             return response([
                 'success' => false,

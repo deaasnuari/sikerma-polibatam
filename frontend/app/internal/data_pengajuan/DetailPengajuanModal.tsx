@@ -150,6 +150,38 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
             </section>
           )}
 
+          {fileEntries.length > 0 && (
+            <section>
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+                Dokumen Pendukung
+              </h3>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <ul className="space-y-2 text-sm">
+                  {fileEntries.map((file, index) => (
+                    <li key={`${file.name}-${index}`}>
+                      {file.url ? (
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-blue-700 hover:underline"
+                        >
+                          <Paperclip size={14} />
+                          {file.name}
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-slate-700">
+                          <Paperclip size={14} />
+                          {file.name}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          )}
+
 
 
           {/* Hasil Review Admin */}
