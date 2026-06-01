@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
-import { submitPengajuanApi } from '@/services/adminPengajuanService';
+import { submitExternalPengajuan } from '@/services/externalPengajuanService';
 import { getCachedMasterUnitProdiTree, getMasterUnitProdiTree, type MasterUnitProdi } from '@/services/masterUnitProdiService';
 import { getCachedMasterRuangLingkup, getMasterRuangLingkup, type MasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
@@ -82,7 +82,7 @@ export default function PengajuanBaruEksternalPage() {
             .map((name) => masterRuangLingkupRows.find((row) => row.nama_ruang_lingkup === name)?.id)
             .filter((id): id is number => typeof id === 'number');
 
-          await submitPengajuanApi({
+          await submitExternalPengajuan({
             judulPengajuan: formData.judulKerjasama,
             namaPengusul: formData.namaKontak || 'Mitra Eksternal',
             namaMitra: formData.namaMitra,
@@ -103,7 +103,7 @@ export default function PengajuanBaruEksternalPage() {
               size: item.file.size,
               url: item.dataUrl,
             })),
-          }, false, 'eksternal');
+          });
 
           setIsSuccessModalOpen(true);
           return false;
@@ -114,7 +114,7 @@ export default function PengajuanBaruEksternalPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
-            <p className="mt-2 text-sm text-slate-600">Pengajuan kerjasama berhasil dikirim ke admin untuk direview.</p>
+            <p className="mt-2 text-sm text-slate-600">Pengajuan kerjasama berhasil disimpan untuk akun mitra ini.</p>
 
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button

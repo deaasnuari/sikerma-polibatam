@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Filter, Search, X } from 'lucide-react';
-import { getPengajuanData, refreshPengajuanDataFromApi, type PengajuanItem } from '../../../services/adminPengajuanService';
+import type { PengajuanItem } from '../../../services/adminPengajuanService';
+import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
+import {
+  getExternalPengajuanData,
+  getExternalPengajuanUpdateEventName,
+  syncExternalPengajuanWithAdminData,
+} from '@/services/externalPengajuanService';
 
 interface KerjasamaItem {
   id: number;
@@ -14,6 +20,10 @@ interface KerjasamaItem {
   berlakuHingga: string;
   tahun: string;
   status: 'Menunggu' | 'Diproses' | 'Aktif' | 'Berakhir';
+  reviewState: 'Belum Direview' | 'Sudah Direview';
+  reviewComment?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
 }
 
 function toDisplayDate(value?: string): string {
@@ -42,6 +52,10 @@ function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
     berlakuHingga: toDisplayDate(item.tanggalBerakhir),
     tahun,
     status: statusMap[item.statusPengajuan] ?? 'Menunggu',
+    reviewState: item.reviewedAt || item.reviewComment ? 'Sudah Direview' : 'Belum Direview',
+    reviewComment: item.reviewComment,
+    reviewedAt: item.reviewedAt,
+    reviewedBy: item.reviewedBy,
   };
 }
 
@@ -52,11 +66,17 @@ const statusStyle: Record<KerjasamaItem['status'], string> = {
   Berakhir: 'bg-rose-100 text-rose-700',
 };
 
+const reviewStateStyle: Record<KerjasamaItem['reviewState'], string> = {
+  'Belum Direview': 'bg-slate-100 text-slate-700',
+  'Sudah Direview': 'bg-indigo-100 text-indigo-700',
+};
+
 export default function DaftarKerjasamaEksternalPage() {
   const [data, setData] = useState<KerjasamaItem[]>([]);
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
+  const [filterReview, setFilterReview] = useState<'Semua Review' | 'Belum Direview' | 'Sudah Direview'>('Semua Review');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const currentYear = new Date().getFullYear();
@@ -65,24 +85,36 @@ export default function DaftarKerjasamaEksternalPage() {
 
   useEffect(() => {
     let isMounted = true;
+    const updateEventName = getExternalPengajuanUpdateEventName();
 
     const sync = () => {
       if (!isMounted) {
         return;
       }
 
-      const eksternalItems = getPengajuanData()
-        .filter((item) => item.kategoriPengajuan === 'Eksternal')
-        .map(mapPengajuanToItem);
+      const eksternalItems = getExternalPengajuanData().map(mapPengajuanToItem);
       setData(eksternalItems);
     };
 
-    void refreshPengajuanDataFromApi(true).finally(sync);
-    window.addEventListener('pengajuan-data-updated', sync);
+    const syncFromAdmin = async () => {
+      try {
+        await refreshPengajuanDataFromApi(true);
+      } catch {
+        // Ignore refresh failures and keep local account-specific data.
+      }
+
+      syncExternalPengajuanWithAdminData();
+      sync();
+    };
+
+    void syncFromAdmin();
+    window.addEventListener(updateEventName, sync);
+    window.addEventListener('pengajuan-data-updated', syncFromAdmin);
 
     return () => {
       isMounted = false;
-      window.removeEventListener('pengajuan-data-updated', sync);
+      window.removeEventListener(updateEventName, sync);
+      window.removeEventListener('pengajuan-data-updated', syncFromAdmin);
     };
   }, []);
 
@@ -97,11 +129,19 @@ export default function DaftarKerjasamaEksternalPage() {
         item.unit.toLowerCase().includes(keyword);
 
       const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
+      const matchesReview = filterReview === 'Semua Review' || item.reviewState === filterReview;
       const matchesTahun = filterTahun === null || item.tahun === filterTahun;
 
-      return matchesSearch && matchesStatus && matchesTahun;
+      return matchesSearch && matchesStatus && matchesReview && matchesTahun;
     });
-  }, [data, search, filterStatus, filterTahun]);
+  }, [data, search, filterStatus, filterReview, filterTahun]);
+
+  const reviewStats = useMemo(() => {
+    const belumDireview = data.filter((item) => item.reviewState === 'Belum Direview').length;
+    const sudahDireview = data.filter((item) => item.reviewState === 'Sudah Direview').length;
+
+    return { belumDireview, sudahDireview };
+  }, [data]);
 
   const handleExport = () => {
     const header = [
@@ -195,6 +235,16 @@ export default function DaftarKerjasamaEksternalPage() {
               <option>Berakhir</option>
             </select>
 
+            <select
+              value={filterReview}
+              onChange={(event) => setFilterReview(event.target.value as 'Semua Review' | 'Belum Direview' | 'Sudah Direview')}
+              className="input-field h-10 px-3 text-sm text-slate-700"
+            >
+              <option>Semua Review</option>
+              <option>Belum Direview</option>
+              <option>Sudah Direview</option>
+            </select>
+
             <div className="relative">
               <button
                 type="button"
@@ -270,8 +320,17 @@ export default function DaftarKerjasamaEksternalPage() {
           </div>
         </div>
 
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+            Belum Direview: {reviewStats.belumDireview}
+          </span>
+          <span className="rounded-full bg-indigo-100 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+            Sudah Direview: {reviewStats.sudahDireview}
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full border-collapse text-sm">
+          <table className="min-w-[1080px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3">No. Dokumen</th>
@@ -281,13 +340,14 @@ export default function DaftarKerjasamaEksternalPage() {
                 <th className="px-4 py-3">Tanggal Mulai</th>
                 <th className="px-4 py-3">Berlaku Hingga</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Review</th>
                 <th className="px-4 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
                     Tidak ada data kerjasama.
                   </td>
                 </tr>
@@ -307,6 +367,11 @@ export default function DaftarKerjasamaEksternalPage() {
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle[item.status]}`}>
                         {item.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[item.reviewState]}`}>
+                        {item.reviewState}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -357,6 +422,25 @@ export default function DaftarKerjasamaEksternalPage() {
                 <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${statusStyle[detailItem.status]}`}>
                   {detailItem.status}
                 </span>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-500">Review Admin</p>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[detailItem.reviewState]}`}>
+                    {detailItem.reviewState}
+                  </span>
+                </div>
+                {detailItem.reviewComment ? (
+                  <p className="mt-2 text-sm text-slate-800">{detailItem.reviewComment}</p>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">Belum ada catatan review dari admin.</p>
+                )}
+                {(detailItem.reviewedAt || detailItem.reviewedBy) && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {detailItem.reviewedBy ? `Oleh ${detailItem.reviewedBy}` : 'Direview admin'}
+                    {detailItem.reviewedAt ? ` pada ${toDisplayDate(detailItem.reviewedAt)}` : ''}
+                  </p>
+                )}
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-xs text-slate-500 mb-0.5">Nama Mitra</p>
