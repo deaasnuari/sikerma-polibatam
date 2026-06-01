@@ -53,6 +53,64 @@ export interface PengajuanItem {
 
 // Key localStorage untuk menyimpan seluruh data pengajuan di sisi frontend.
 const STORAGE_KEY = 'pengajuanKerjasamaData';
+const ATTACHMENT_CACHE_KEY = 'pengajuanAttachmentCache';
+
+type AttachmentCacheEntry = {
+  fileName?: string;
+  fileAttachments?: PengajuanFileAttachment[];
+};
+
+function getAttachmentCache(): Record<string, AttachmentCacheEntry> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(ATTACHMENT_CACHE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, AttachmentCacheEntry>;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveAttachmentCacheEntry(id: number, entry: AttachmentCacheEntry): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const normalizedAttachments = (entry.fileAttachments || [])
+    .filter((item) => item && typeof item.name === 'string' && item.name.trim().length > 0)
+    .map((item) => ({
+      name: item.name,
+      url: item.url || '',
+      type: item.type,
+      size: item.size,
+    }));
+
+  const nextEntry: AttachmentCacheEntry = {
+    fileName: entry.fileName,
+    fileAttachments: normalizedAttachments.length > 0 ? normalizedAttachments : undefined,
+  };
+
+  const cache = getAttachmentCache();
+  cache[String(id)] = nextEntry;
+
+  try {
+    window.localStorage.setItem(ATTACHMENT_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore quota/storage errors for best-effort cache.
+  }
+}
+
+function getAttachmentCacheEntry(id: number): AttachmentCacheEntry | undefined {
+  const cache = getAttachmentCache();
+  return cache[String(id)];
+}
 
 // Mapping warna badge berdasarkan jenis dokumen.
 export const pengajuanDokumenBadge: Record<string, string> = {
@@ -142,13 +200,58 @@ type ApiPengajuanRow = {
   status?: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
   catatan?: string | null;
   keputusan?: string | null;
+  file_name?: string | null;
+  file_attachments?: {
+    name?: string;
+    url?: string;
+    type?: string;
+    size?: number;
+  }[] | null;
   dokumen_files?: {
     id: number;
     nama_file: string;
     path_file: string;
-    peran_berkas: string;
+    peran_berkas?: string;
+  }[];
+  pengajuan_files?: {
+    id: number;
+    nama_file: string;
+    path_file: string;
+    peran_berkas?: string;
   }[];
 };
+
+function getBackendOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured && /^https?:\/\//i.test(configured)) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      // fall through to default
+    }
+  }
+
+  return 'http://127.0.0.1:8000';
+}
+
+function buildAttachmentUrl(pathFile: string): string {
+  if (/^https?:\/\//i.test(pathFile)) {
+    return pathFile;
+  }
+
+  const origin = getBackendOrigin();
+  const normalized = pathFile.replace(/\\/g, '/').replace(/^\/+/, '');
+
+  if (normalized.startsWith('storage/')) {
+    return `${origin}/${normalized}`;
+  }
+
+  if (normalized.startsWith('uploads/')) {
+    return `${origin}/storage/${normalized}`;
+  }
+
+  return `${origin}/storage/uploads/${normalized}`;
+}
 
 function extractApiRows(response: ApiListResponse<ApiPengajuanRow>): ApiPengajuanRow[] {
   if (Array.isArray(response.data)) {
@@ -217,6 +320,34 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     });
   }
 
+  const attachmentRows = row.pengajuan_files ?? row.dokumen_files;
+  const cachedAttachment = getAttachmentCacheEntry(row.id);
+  const fallbackAttachments = Array.isArray(row.file_attachments)
+    ? row.file_attachments
+        .filter((file) => typeof file?.name === 'string' && file.name.trim().length > 0)
+        .map((file) => ({
+          name: String(file.name),
+          url: typeof file.url === 'string' ? file.url : '',
+          type: typeof file.type === 'string' ? file.type : undefined,
+          size: typeof file.size === 'number' ? file.size : undefined,
+        }))
+    : [];
+
+  const resolvedFileName = row.file_name || cachedAttachment?.fileName || undefined;
+  const resolvedAttachments = attachmentRows
+    ? attachmentRows.map((file) => ({
+        name: file.nama_file,
+        url: buildAttachmentUrl(file.path_file),
+      }))
+    : (fallbackAttachments.length > 0 ? fallbackAttachments : cachedAttachment?.fileAttachments);
+
+  if (resolvedFileName || (resolvedAttachments && resolvedAttachments.length > 0)) {
+    saveAttachmentCacheEntry(row.id, {
+      fileName: resolvedFileName,
+      fileAttachments: resolvedAttachments,
+    });
+  }
+
   return {
     id: row.id,
     nomorPengajuan: row.nomor_pengajuan || `PGJ-LEGACY-${row.id}`,
@@ -246,12 +377,8 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     ruangLingkupIds: row.ruang_lingkup_ids ?? [],
     ruangLingkup: resolvedRuangLingkup,
     statusPengajuan: mapStatusFromApi(statusApi),
-    fileAttachments: row.dokumen_files
-      ? row.dokumen_files.map((file) => ({
-          name: file.nama_file,
-          url: `http://localhost:8000/storage/uploads/${file.path_file}`,
-        }))
-      : undefined,
+    fileName: resolvedFileName,
+    fileAttachments: resolvedAttachments,
     catatan: row.catatan || undefined,
     keputusan: row.keputusan || undefined,
   };
@@ -329,13 +456,30 @@ export async function updatePengajuanItemApi(
   if (typeof updates.tanggalBerakhir === 'string') payload.tanggal_berakhir = updates.tanggalBerakhir;
   if (typeof updates.statusPengajuan === 'string') payload.status_pengajuan = mapStatusToApi(updates.statusPengajuan as PengajuanStatus);
   if (updates.ruangLingkupIds !== undefined) payload.ruang_lingkup_ids = updates.ruangLingkupIds;
+  if (typeof updates.fileName === 'string') payload.file_name = updates.fileName;
+  if (updates.fileAttachments !== undefined) {
+    payload.file_attachments = updates.fileAttachments.map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      // Avoid sending huge data URLs to backend as JSON payload.
+      url: file.url && !file.url.startsWith('data:') ? file.url : '',
+    }));
+  }
 
   const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>(`/pengajuan/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
 
-  return mapApiPengajuanToItem(response.data);
+  const mapped = mapApiPengajuanToItem(response.data);
+
+  saveAttachmentCacheEntry(mapped.id, {
+    fileName: mapped.fileName || updates.fileName,
+    fileAttachments: mapped.fileAttachments || updates.fileAttachments,
+  });
+
+  return mapped;
 }
 
 export async function deletePengajuanItemApi(id: number): Promise<void> {
@@ -374,6 +518,14 @@ export async function submitPengajuanApi(
     tanggal_berakhir: data.tanggalBerakhir || null,
     ruang_lingkup_ids: data.ruangLingkupIds ?? [],
     status_pengajuan: 'menunggu',
+    file_name: data.fileName || null,
+    file_attachments: (data.fileAttachments || []).map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      // Avoid sending huge data URLs to backend as JSON payload.
+      url: file.url && !file.url.startsWith('data:') ? file.url : '',
+    })),
   };
 
   const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>('/pengajuan', {
@@ -385,6 +537,12 @@ export async function submitPengajuanApi(
   mapped.isFromAdmin = Boolean(isFromAdmin);
   mapped.fileName = data.fileName;
   mapped.fileAttachments = data.fileAttachments;
+
+  saveAttachmentCacheEntry(mapped.id, {
+    fileName: mapped.fileName,
+    fileAttachments: mapped.fileAttachments,
+  });
+
   return mapped;
 }
 

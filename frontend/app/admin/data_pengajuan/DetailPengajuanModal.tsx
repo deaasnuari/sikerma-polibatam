@@ -111,15 +111,22 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               <ul className="list-disc pl-5 text-xs text-slate-700">
                 {fileEntries.map((file, idx) => (
                   <li key={idx}>
-                    <a 
-                      href={file.url || `http://localhost:8000/storage/${file.name}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
-                    >
-                      <Paperclip size={12} />
-                      {file.name}
-                    </a>
+                    {file.url ? (
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <Paperclip size={12} />
+                        {file.name}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1 text-slate-700">
+                        <Paperclip size={12} />
+                        {file.name}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

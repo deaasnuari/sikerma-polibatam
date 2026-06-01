@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Casts\PgArrayCast;
 
 class Pengajuan extends Model
@@ -86,8 +87,14 @@ class Pengajuan extends Model
         return $this->belongsTo(MasterMitra::class, 'mitra_id');
     }
 
-    public function dokumenFiles()
+    public function pengajuanFiles(): HasMany
     {
-        return $this->hasMany(\App\Models\DokumenFile::class, 'dokumen_id', 'id');
+        return $this->hasMany(PengajuanFile::class, 'pengajuan_id', 'id');
+    }
+
+    public function dokumenFiles(): HasMany
+    {
+        // Keep legacy relation name so existing API payload still exposes "dokumen_files".
+        return $this->pengajuanFiles();
     }
 }
