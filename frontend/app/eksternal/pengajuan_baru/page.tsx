@@ -73,6 +73,7 @@ export default function PengajuanBaruEksternalPage() {
 
       <InternalAjukanKerjasamaForm
         disableDraftPersistence
+        nomorPengajuanSource="eksternal"
         initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
         initialMasterRuangLingkupRows={masterRuangLingkupRows}
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}

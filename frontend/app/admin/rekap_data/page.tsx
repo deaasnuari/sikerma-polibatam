@@ -21,7 +21,7 @@ import {
   type DokumenData,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
-import { fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
+import { deleteDokumenKerjasamaById, fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
@@ -46,9 +46,6 @@ export default function RekapDataPage() {
     let mounted = true;
 
     const cachedRows = getRekapData();
-    if (mounted && cachedRows.length > 0) {
-      setRekapData(cachedRows);
-    }
 
     const loadFromApi = async () => {
       try {
@@ -59,7 +56,7 @@ export default function RekapDataPage() {
       } catch (err) {
         console.error("Failed to load rekap dokumen from API:", err);
         if (mounted) {
-          setRekapData([]);
+          setRekapData(cachedRows);
         }
       }
     };
@@ -177,19 +174,44 @@ export default function RekapDataPage() {
     setDeleteCandidate(item);
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteCandidate) {
       return;
     }
 
-    deleteRekapDokumen(deleteCandidate.noDokumen);
-    if (detailItem?.noDokumen === deleteCandidate.noDokumen) {
+    const candidate = deleteCandidate;
+
+    try {
+      if (typeof candidate.id === 'number') {
+        await deleteDokumenKerjasamaById(candidate.id);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal menghapus data di server.';
+      setFeedbackModal({
+        title: 'Gagal Menghapus Dokumen',
+        message,
+      });
+      return;
+    }
+
+    deleteRekapDokumen(candidate.noDokumen);
+    if (detailItem?.noDokumen === candidate.noDokumen) {
       setDetailItem(null);
     }
     setDeleteCandidate(null);
+
+    if (typeof candidate.id === 'number') {
+      try {
+        const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
+        setRekapData(rows);
+      } catch {
+        // Keep optimistic local state when refresh fails.
+      }
+    }
+
     setFeedbackModal({
       title: 'Dokumen Berhasil Dihapus',
-      message: `Dokumen ${deleteCandidate.noDokumen} berhasil dihapus dari rekap data.`,
+      message: `Dokumen ${candidate.noDokumen} berhasil dihapus dari rekap data.`,
     });
   }
 

@@ -1,15 +1,54 @@
-// Utility untuk generate nomor dokumen sesuai format: urutan-JENIS.PL29-bulanRomawi-tahun
+// Utility untuk generate nomor dokumen sesuai format:
+// no-urut/JENIS.KODE-DIREKTUR/BULAN-ROMAWI/TAHUN
 export function generateNoDokumen({
   urutan,
   jenis,
   tanggal,
+  unitName,
 }: {
   urutan: number;
   jenis: 'MoU' | 'MoA' | 'IA';
   tanggal: string; // format: 'dd/mm/yyyy' atau ISO string
+  unitName?: string;
 }): string {
-  // Konversi urutan ke 2 digit
-  const urutanStr = (typeof urutan === 'number' && !isNaN(urutan) ? urutan : 1).toString().padStart(2, '0');
+  const resolveDirekturCode = (name?: string) => {
+    const normalized = (name || '').trim().toLowerCase();
+    if (!normalized) return 'PL29';
+
+    const patterns: Array<{ code: string; keys: string[] }> = [
+      { code: 'PL29.5', keys: ['spi', 'satuan pengawas internal'] },
+      { code: 'PL29.6', keys: ['p4m', 'penjaminan mutu'] },
+      { code: 'PL29.7', keys: ['p3m', 'penelitian dan pengabdian'] },
+      { code: 'PL29.8', keys: ['akademik', 'subag akademik'] },
+      { code: 'PL29.9', keys: ['sbum', 'sub bagian umum'] },
+      { code: 'PL29.10', keys: ['teknik elektro'] },
+      { code: 'PL29.11', keys: ['teknik informatika'] },
+      { code: 'PL29.12', keys: ['teknik mesin'] },
+      { code: 'PL29.13', keys: ['manajemen dan bisnis'] },
+      { code: 'PL29.14', keys: ['shilau'] },
+      { code: 'PL29.15', keys: ['upa perpustakaan'] },
+      { code: 'PL29.16', keys: ['upa tik'] },
+      { code: 'PL29.17', keys: ['upa pp', 'perawatan dan perbaikan'] },
+      { code: 'PL29.18', keys: ['upa pkk', 'pengembangan karier'] },
+      { code: 'PL29.19', keys: ['osdm', 'organisasi dan sdm'] },
+      { code: 'PL29.20', keys: ['pokja keuangan'] },
+      { code: 'PL29.21', keys: ['pokja perencanaan'] },
+      { code: 'PL29.22', keys: ['pokja bmn', 'pengadaan'] },
+      { code: 'PL29.23', keys: ['pokja kemahasiswaan'] },
+      { code: 'PL29.24', keys: ['pokja humas', 'kerja sama'] },
+    ];
+
+    for (const pattern of patterns) {
+      if (pattern.keys.some((key) => normalized.includes(key))) {
+        return pattern.code;
+      }
+    }
+
+    return 'PL29';
+  };
+
+  // Nomor urut dokumen mengikuti nilai urutan asli.
+  const urutanDokumen = Math.max(1, Math.trunc(typeof urutan === 'number' && !isNaN(urutan) ? urutan : 1));
   // Jenis kapital
   const jenisUpper = jenis.toUpperCase();
   // Ambil bulan dan tahun
@@ -34,7 +73,8 @@ export function generateNoDokumen({
     '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII',
   ];
   const bulanRomawi = bulanRomawiArr[bulan] || '';
-  return `${urutanStr}-${jenisUpper}-PL29-${bulanRomawi}-${tahun}`;
+  const kodeDirektur = resolveDirekturCode(unitName);
+  return `${urutanDokumen}/${jenisUpper}.${kodeDirektur}/${bulanRomawi}/${tahun}`;
 }
 // Service monitoring kerjasama untuk halaman admin.
 // File ini dipakai agar data, tipe, dan helper bisnis tidak bercampur dengan komponen UI Next.js.

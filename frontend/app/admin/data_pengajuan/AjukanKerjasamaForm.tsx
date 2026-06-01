@@ -105,6 +105,7 @@ type InternalAjukanKerjasamaFormProps = {
   initialData?: Partial<typeof initialForm> & {
     asal?: 'Jurusan' | 'Unit';
     selectedRuangLingkup?: string[];
+    nomorPengajuan?: string;
   };
   initialMasterUnitProdiTree?: MasterUnitProdi[];
   initialMasterRuangLingkupRows?: MasterRuangLingkup[];
@@ -579,7 +580,7 @@ export default function AdminAjukanKerjasamaForm({
         return;
       }
 
-      await submitPengajuanApi({
+      const submitPayload: Parameters<typeof submitPengajuanApi>[0] = {
         judulPengajuan: formData.judulKerjasama,
         namaPengusul: formData.namaKontak || 'Internal Polibatam',
         namaMitra: formData.namaMitra,
@@ -595,7 +596,9 @@ export default function AdminAjukanKerjasamaForm({
         ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
         fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
         fileAttachments: buildFileAttachments(),
-      }, true, 'admin');
+      };
+
+      await submitPengajuanApi(submitPayload, true, 'admin');
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
       }

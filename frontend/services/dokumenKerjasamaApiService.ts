@@ -102,6 +102,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     }
 
       return {
+      id: row.id,
       sourcePengajuanId: row.sumber_pengajuan_id || undefined,
       noDokumen: nomor,
       namaMitra: namaMitra || '-',
@@ -131,6 +132,14 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
   } finally {
     rekapDokumenInFlight = null;
   }
+}
+
+export async function deleteDokumenKerjasamaById(id: number): Promise<void> {
+  await apiRequest(`/dokumen-kerjasama/${id}`, {
+    method: 'DELETE',
+  });
+
+  rekapDokumenCache = null;
 }
 
 export type ArsipDokumenApiItem = {

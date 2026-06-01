@@ -105,7 +105,9 @@ type InternalAjukanKerjasamaFormProps = {
   initialData?: Partial<typeof initialForm> & {
     asal?: 'Jurusan' | 'Unit';
     selectedRuangLingkup?: string[];
+    nomorPengajuan?: string;
   };
+  nomorPengajuanSource?: 'admin' | 'internal' | 'eksternal';
   initialMasterUnitProdiTree?: MasterUnitProdi[];
   initialMasterRuangLingkupRows?: MasterRuangLingkup[];
   disableDraftPersistence?: boolean;
@@ -189,6 +191,7 @@ export default function InternalAjukanKerjasamaForm({
   enableAppearanceEdit = false,
   appearanceStorageKey = DEFAULT_APPEARANCE_STORAGE_KEY,
   initialData,
+  nomorPengajuanSource = 'internal',
   initialMasterUnitProdiTree,
   initialMasterRuangLingkupRows,
   disableDraftPersistence = false,

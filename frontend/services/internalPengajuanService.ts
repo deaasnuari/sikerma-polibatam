@@ -22,6 +22,7 @@ export function getInternalPengajuanData(options?: { filterAdmin?: boolean }): P
 export function submitInternalPengajuan(
   data: Omit<PengajuanItem, 'id' | 'diajukanPada' | 'nomorPengajuan' | 'statusPengajuan' | 'isFromAdmin'> & {
     unitProdiId?: number | null;
+    nomorPengajuan?: string;
   }
 ): Promise<PengajuanItem> {
   return submitPengajuanApi(data, false, 'internal');

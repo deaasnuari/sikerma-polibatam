@@ -1412,10 +1412,12 @@ export default function PengajuanKerjasama() {
               <InternalAjukanKerjasamaForm
                 disableDraftPersistence
                 lockJenisKerjasama
+                nomorPengajuanSource="admin"
                 submitButtonLabel="Simpan Perubahan"
                 initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                 initialMasterRuangLingkupRows={ruangLingkupRows}
                 initialData={{
+                  nomorPengajuan: editingItem.nomorPengajuan,
                   asal: pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan',
                   namaMitra: editingItem.namaMitra,
                   jenisMitra: editingItem.mitraKategori || '',

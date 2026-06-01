@@ -494,6 +494,22 @@ function buildNomorPengajuan(prefix: 'ADM' | 'INT' | 'EXT'): string {
   const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
   return `PGJ-${prefix}-${stamp}-${random}`;
 }
+export function buildNomorPengajuanPreview(
+  source: 'admin' | 'internal' | 'eksternal',
+  unitName?: string,
+  existingNomorPengajuan?: string
+): string {
+  if (existingNomorPengajuan && existingNomorPengajuan.trim() !== '') {
+    return existingNomorPengajuan.trim();
+  }
+
+  const prefix: 'ADM' | 'INT' | 'EXT' = source === 'admin' ? 'ADM' : source === 'eksternal' ? 'EXT' : 'INT';
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const normalizedUnit = (unitName || '').trim().replace(/\s+/g, '-').toUpperCase();
+  const unitPreview = normalizedUnit ? normalizedUnit.slice(0, 12) : 'UNIT';
+  return `PGJ-${prefix}-${stamp}-${unitPreview}-XXXX`;
+}
 
 export async function submitPengajuanApi(
   data: Omit<PengajuanItem, 'id' | 'diajukanPada' | 'statusPengajuan' | 'isFromAdmin' | 'nomorPengajuan'>,

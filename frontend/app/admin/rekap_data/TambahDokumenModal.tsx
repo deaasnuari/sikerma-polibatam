@@ -204,6 +204,7 @@ export default function TambahDokumenModal({
         urutan: nextId,
         jenis: formData.jenisDokumen,
         tanggal: formData.tanggalMulai,
+        unitName: formData.unitKerja,
       });
     } catch {
       nomorDokumen = nextId.toString().padStart(2, '0');

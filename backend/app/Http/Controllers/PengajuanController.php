@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DokumenFile;
 use App\Models\DokumenKerjasama;
+use App\Models\MasterUnitProdi;
 use App\Models\Pengajuan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -69,15 +70,91 @@ class PengajuanController extends Controller
         return self::$dokumenFileTableExists;
     }
 
+    private function resolveDirekturCode(?string $unitName): string
+    {
+        $normalized = strtolower(trim((string) $unitName));
+        if ($normalized === '') {
+            return 'PL29';
+        }
+
+        $patterns = [
+            'PL29.5' => ['spi', 'satuan pengawas internal'],
+            'PL29.6' => ['p4m', 'penjaminan mutu'],
+            'PL29.7' => ['p3m', 'penelitian dan pengabdian'],
+            'PL29.8' => ['akademik', 'subag akademik'],
+            'PL29.9' => ['sbum', 'sub bagian umum'],
+            'PL29.10' => ['teknik elektro'],
+            'PL29.11' => ['teknik informatika'],
+            'PL29.12' => ['teknik mesin'],
+            'PL29.13' => ['manajemen dan bisnis'],
+            'PL29.14' => ['shilau'],
+            'PL29.15' => ['upa perpustakaan'],
+            'PL29.16' => ['upa tik'],
+            'PL29.17' => ['upa pp', 'perawatan dan perbaikan'],
+            'PL29.18' => ['upa pkk', 'pengembangan karier'],
+            'PL29.19' => ['osdm', 'organisasi dan sdm'],
+            'PL29.20' => ['pokja keuangan'],
+            'PL29.21' => ['pokja perencanaan'],
+            'PL29.22' => ['pokja bmn', 'pengadaan'],
+            'PL29.23' => ['pokja kemahasiswaan'],
+            'PL29.24' => ['pokja humas', 'kerja sama'],
+        ];
+
+        foreach ($patterns as $code => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($normalized, $keyword)) {
+                    return $code;
+                }
+            }
+        }
+
+        return 'PL29';
+    }
+
+    private function toRomanMonth(int $month): string
+    {
+        $roman = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
+            7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
+        ];
+
+        return $roman[$month] ?? 'I';
+    }
+
     private function generateNomorDokumen(Pengajuan $pengajuan): string
     {
-        $jenis = strtoupper((string) ($pengajuan->jenis_dokumen ?? 'DOC'));
-        $prefix = in_array($jenis, ['MOU', 'MOA', 'IA'], true) ? $jenis : 'DOC';
-        $baseNomorPengajuan = trim((string) ($pengajuan->nomor_pengajuan ?? ''));
-        $fallback = 'PGJ-' . $pengajuan->id;
-        $safeKey = preg_replace('/[^A-Za-z0-9.-]+/', '-', $baseNomorPengajuan !== '' ? $baseNomorPengajuan : $fallback) ?? $fallback;
+        $jenis = strtoupper((string) ($pengajuan->jenis_dokumen ?? 'MOU'));
+        $jenis = in_array($jenis, ['MOU', 'MOA', 'IA'], true) ? $jenis : 'MOU';
 
-        return 'DK-' . $prefix . '-' . $safeKey;
+        $unitName = null;
+        if ($pengajuan->unit_prodi_id) {
+            $unitName = MasterUnitProdi::query()->where('id', $pengajuan->unit_prodi_id)->value('nama');
+        }
+
+        $kodeDirektur = $this->resolveDirekturCode($unitName);
+        $tanggalMulai = trim((string) ($pengajuan->tanggal_mulai ?? ''));
+        $bulan = $tanggalMulai !== '' ? (int) date('n', strtotime($tanggalMulai)) : (int) now()->format('n');
+        if ($bulan < 1 || $bulan > 12) {
+            $bulan = (int) now()->format('n');
+        }
+
+        $bulanRomawi = $this->toRomanMonth($bulan);
+        $tahunPengajuan = (string) ($pengajuan->created_at?->format('Y') ?? now()->format('Y'));
+
+        $urutan = DokumenKerjasama::query()
+            ->count() + 1;
+
+        return $urutan . '/' . $jenis . '.' . $kodeDirektur . '/' . $bulanRomawi . '/' . $tahunPengajuan;
+    }
+
+    private function isStandardNomorDokumen(string $nomorDokumen): bool
+    {
+        $nomor = strtoupper(trim($nomorDokumen));
+        if ($nomor === '') {
+            return false;
+        }
+
+        return (bool) preg_match('/^\d+\/((MOU)|(MOA)|(IA))\.PL29(?:\.\d+)?\/(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)\/\d{4}(?:-\d+)?$/', $nomor);
     }
 
     private function ensureUniqueNomorDokumen(string $candidate, ?int $ignoreId = null): string
@@ -117,9 +194,12 @@ class PengajuanController extends Controller
             ->first();
 
         $requestedNomorDokumen = trim((string) $request->input('nomor_dokumen', ''));
-        $nomorDokumenBase = $requestedNomorDokumen !== ''
-            ? $requestedNomorDokumen
-            : ($existingDokumen?->nomor_dokumen ?: $this->generateNomorDokumen($pengajuan));
+        $existingNomorDokumen = trim((string) ($existingDokumen?->nomor_dokumen ?? $existingDokumen?->no_dokumen ?? ''));
+
+        // Existing nomor_dokumen di database dipertahankan apa adanya.
+        $nomorDokumenBase = $existingNomorDokumen !== ''
+            ? $existingNomorDokumen
+            : ($requestedNomorDokumen !== '' ? $requestedNomorDokumen : $this->generateNomorDokumen($pengajuan));
 
         $nomorDokumen = $this->ensureUniqueNomorDokumen($nomorDokumenBase, $existingDokumen?->id);
 

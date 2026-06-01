@@ -13,6 +13,7 @@ export interface DokumenTerkait {
 }
 
 export interface RekapDokumen {
+  id?: number;
   sourcePengajuanId?: number;
   noDokumen: string;
   namaMitra: string;
