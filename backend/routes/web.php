@@ -17,53 +17,7 @@ Route::get('/test-old-db', function () {
 });
 // db ajuan migration dari mysql lama ke postgre baru
 Route::get('/migrate-ajuan', function () {
-
-    $data = DB::connection('mysql_old')
-                ->table('ajuan')
-                ->get();
-
-    foreach ($data as $item) {
-
-    DB::table('ajuan')->updateOrInsert(
-
-        ['no_permohonan' => $item->no_permohonan],
-
-        [
-            'nama_pemohon' => $item->nama_pemohon,
-            'jabatan_pemohon' => $item->jabatan_pemohon,
-            'unit' => $item->unit,
-            'prodi' => $item->prodi,
-            'email' => $item->email,
-            'wa_pemohon' => $item->wa_pemohon,
-
-            'nama_institusi' => $item->nama_institusi,
-            'kategori_institusi' => $item->kategori_institusi,
-            'negara' => $item->negara,
-
-            'web_institusi' => $item->web_institusi,
-
-            'nama_pic' => $item->nama_pic,
-            'jabatan_pic' => $item->jabatan_pic,
-            'wa_pic' => $item->wa_pic,
-            'email_pic' => $item->email_pic,
-
-            'jenis_ajuan' => $item->jenis_ajuan,
-            'ruang_lingkup' => $item->ruang_lingkup,
-
-            'catatan' => $item->catatan,
-
-            'status_ajuan' => $item->status_ajuan,
-
-            'tgl_ajuan' => $item->tgl_ajuan,
-            'tgl_verifikasi' => $item->tgl_verifikasi,
-            'tgl_disetujui' => $item->tgl_disetujui,
-            'tgl_selesai' => $item->tgl_selesai,
-
-            'komentar' => $item->komentar,
-        ]
-    );
-}
-    return 'Data ajuan berhasil dipindahkan';
+    return response('Route migrasi /migrate-ajuan sudah deprecated. Gunakan migrasi ke pengajuan_v2.', 410);
 });
 
 // db arsip migration dari mysql lama ke postgre baru

@@ -1,6 +1,10 @@
 import { apiRequest } from '@/lib/api';
 import type { RekapDokumen } from '@/services/adminRekapDataService';
 
+const REKAP_CACHE_TTL_MS = 60 * 1000;
+let rekapDokumenCache: { data: RekapDokumen[]; expiresAt: number } | null = null;
+let rekapDokumenInFlight: Promise<RekapDokumen[]> | null = null;
+
 type ApiPaginatedResponse<T> = {
   success: boolean;
   message: string;
@@ -51,9 +55,21 @@ function toDisplayDate(value?: string | null): string {
   return parsed.toLocaleDateString('en-GB');
 }
 
-export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
-  const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000');
-  return (response.data?.data ?? []).map((row) => {
+export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolean }): Promise<RekapDokumen[]> {
+  const shouldUseCache = !options?.forceRefresh;
+  const now = Date.now();
+
+  if (shouldUseCache && rekapDokumenCache && rekapDokumenCache.expiresAt > now) {
+    return rekapDokumenCache.data;
+  }
+
+  if (rekapDokumenInFlight) {
+    return rekapDokumenInFlight;
+  }
+
+  rekapDokumenInFlight = (async () => {
+    const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000');
+    const mapped = (response.data?.data ?? []).map((row) => {
     const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
     
@@ -85,7 +101,7 @@ export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
       });
     }
 
-    return {
+      return {
       sourcePengajuanId: row.sumber_pengajuan_id || undefined,
       noDokumen: nomor,
       namaMitra: namaMitra || '-',
@@ -101,6 +117,20 @@ export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
       buktiPdf: dokumenTerkait.length > 0 ? dokumenTerkait[0].url : null,
     };
   });
+
+    rekapDokumenCache = {
+      data: mapped,
+      expiresAt: Date.now() + REKAP_CACHE_TTL_MS,
+    };
+
+    return mapped;
+  })();
+
+  try {
+    return await rekapDokumenInFlight;
+  } finally {
+    rekapDokumenInFlight = null;
+  }
 }
 
 export type ArsipDokumenApiItem = {

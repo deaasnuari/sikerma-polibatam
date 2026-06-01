@@ -45,6 +45,11 @@ export default function RekapDataPage() {
   useEffect(() => {
     let mounted = true;
 
+    const cachedRows = getRekapData();
+    if (mounted && cachedRows.length > 0) {
+      setRekapData(cachedRows);
+    }
+
     const loadFromApi = async () => {
       try {
         const rows = await fetchRekapDokumenFromApi();

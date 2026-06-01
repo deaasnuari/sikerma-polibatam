@@ -16,8 +16,8 @@ class DokumenKerjasamaSeeder extends Seeder
             return;
         }
 
-        if (!Schema::hasTable('ajuan')) {
-            $this->command?->error('Tabel ajuan belum ada. Seeder dibatalkan agar FK tetap aman.');
+        if (!Schema::hasTable('pengajuan_v2')) {
+            $this->command?->error('Tabel pengajuan_v2 belum ada. Seeder dibatalkan.');
             return;
         }
 
@@ -43,7 +43,7 @@ class DokumenKerjasamaSeeder extends Seeder
                 ->keyBy(static fn ($row) => trim((string) $row->no_dokumen));
         }
 
-        $ajuanNumbers = DB::table('ajuan')->pluck('no_permohonan')->map(
+        $ajuanNumbers = DB::table('pengajuan_v2')->pluck('nomor_pengajuan')->map(
             static fn ($noPermohonan) => trim((string) $noPermohonan)
         )->flip();
 
@@ -132,7 +132,7 @@ class DokumenKerjasamaSeeder extends Seeder
         $this->command?->info('DokumenKerjasamaSeeder selesai.');
         $this->command?->line('Total baris rekap diproses: ' . $processed);
         $this->command?->line('Berhasil insert/update: ' . $insertedOrUpdated);
-        $this->command?->line('Skip no_permohonan tidak valid/ tidak ada di ajuan: ' . $skippedMissingPermohonan);
+        $this->command?->line('Skip no_permohonan tidak valid/ tidak ada di pengajuan_v2: ' . $skippedMissingPermohonan);
         $this->command?->line('Skip karena file kosong: ' . $skippedMissingFile);
     }
 }

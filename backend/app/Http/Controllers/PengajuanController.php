@@ -2,16 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DokumenFile;
+use App\Models\DokumenKerjasama;
 use App\Models\Pengajuan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PengajuanController extends Controller
 {
     private static array $pengajuanColumnCache = [];
     private static ?bool $pengajuanFileTableExists = null;
+    private static ?bool $dokumenKerjasamaTableExists = null;
+    private static ?bool $dokumenFileTableExists = null;
 
     private function hasPengajuanColumn(string $column): bool
     {
@@ -40,6 +47,147 @@ class PengajuanController extends Controller
         return self::$pengajuanFileTableExists;
     }
 
+    private function hasDokumenKerjasamaTable(): bool
+    {
+        if (self::$dokumenKerjasamaTableExists !== null) {
+            return self::$dokumenKerjasamaTableExists;
+        }
+
+        self::$dokumenKerjasamaTableExists = Schema::hasTable('dokumen_kerjasama');
+
+        return self::$dokumenKerjasamaTableExists;
+    }
+
+    private function hasDokumenFileTable(): bool
+    {
+        if (self::$dokumenFileTableExists !== null) {
+            return self::$dokumenFileTableExists;
+        }
+
+        self::$dokumenFileTableExists = Schema::hasTable('dokumen_file');
+
+        return self::$dokumenFileTableExists;
+    }
+
+    private function generateNomorDokumen(Pengajuan $pengajuan): string
+    {
+        $jenis = strtoupper((string) ($pengajuan->jenis_dokumen ?? 'DOC'));
+        $prefix = in_array($jenis, ['MOU', 'MOA', 'IA'], true) ? $jenis : 'DOC';
+        $baseNomorPengajuan = trim((string) ($pengajuan->nomor_pengajuan ?? ''));
+        $fallback = 'PGJ-' . $pengajuan->id;
+        $safeKey = preg_replace('/[^A-Za-z0-9.-]+/', '-', $baseNomorPengajuan !== '' ? $baseNomorPengajuan : $fallback) ?? $fallback;
+
+        return 'DK-' . $prefix . '-' . $safeKey;
+    }
+
+    private function ensureUniqueNomorDokumen(string $candidate, ?int $ignoreId = null): string
+    {
+        $final = $candidate;
+        $suffix = 1;
+
+        while (true) {
+            $query = DokumenKerjasama::query()->where('nomor_dokumen', $final);
+            if ($ignoreId !== null) {
+                $query->where('id', '!=', $ignoreId);
+            }
+
+            if (! $query->exists()) {
+                return $final;
+            }
+
+            $final = $candidate . '-' . $suffix;
+            $suffix++;
+        }
+    }
+
+    private function moveApprovedPengajuanToDokumen(Pengajuan $pengajuan, Request $request): void
+    {
+        if (! $this->hasDokumenKerjasamaTable()) {
+            return;
+        }
+
+        $nomorPengajuan = trim((string) ($pengajuan->nomor_pengajuan ?? ''));
+        if ($nomorPengajuan === '') {
+            $nomorPengajuan = 'PGJ-' . $pengajuan->id;
+        }
+
+        $existingDokumen = DokumenKerjasama::query()
+            ->where('sumber_pengajuan_id', $pengajuan->id)
+            ->orWhere('no_permohonan', $nomorPengajuan)
+            ->first();
+
+        $requestedNomorDokumen = trim((string) $request->input('nomor_dokumen', ''));
+        $nomorDokumenBase = $requestedNomorDokumen !== ''
+            ? $requestedNomorDokumen
+            : ($existingDokumen?->nomor_dokumen ?: $this->generateNomorDokumen($pengajuan));
+
+        $nomorDokumen = $this->ensureUniqueNomorDokumen($nomorDokumenBase, $existingDokumen?->id);
+
+        $pengajuanFiles = $this->hasPengajuanFileTable()
+            ? $pengajuan->pengajuanFiles()->get()
+            : collect();
+
+        $primaryPath = trim((string) ($pengajuanFiles->first()?->path_file ?? ''));
+        if ($primaryPath === '') {
+            $primaryPath = trim((string) ($pengajuan->file_name ?? ''));
+        }
+        if ($primaryPath === '') {
+            $primaryPath = 'pending-file';
+        }
+
+        $dokumenPayload = [
+            'no_permohonan' => $nomorPengajuan,
+            'nomor_dokumen' => $nomorDokumen,
+            'no_dokumen' => $nomorDokumen,
+            'nama_dokumen' => trim((string) ($pengajuan->judul_pengajuan ?? 'Dokumen Kerjasama ' . $nomorPengajuan)),
+            'jenis_dokumen' => strtoupper((string) ($pengajuan->jenis_dokumen ?? 'MOU')),
+            'judul_dokumen' => trim((string) ($pengajuan->judul_pengajuan ?? '')),
+            'ruang_lingkup_ids' => $pengajuan->ruang_lingkup_ids,
+            'tanggal_mulai' => $pengajuan->tanggal_mulai,
+            'tanggal_berakhir' => $pengajuan->tanggal_berakhir,
+            'status_siklus' => 'active',
+            'sumber_pengajuan_id' => $pengajuan->id,
+            'unit_prodi_id' => $pengajuan->unit_prodi_id,
+            'mitra_id' => $pengajuan->mitra_id,
+            'dibuat_oleh_user_id' => $request->user()?->id,
+            'file' => $primaryPath,
+            'keterangan' => trim((string) ($pengajuan->deskripsi_pengajuan ?? '')),
+        ];
+
+        if ($existingDokumen) {
+            $existingDokumen->update($dokumenPayload);
+            $dokumen = $existingDokumen->fresh();
+        } else {
+            $dokumen = DokumenKerjasama::create($dokumenPayload);
+        }
+
+        if ($this->hasDokumenFileTable()) {
+            DokumenFile::query()->where('dokumen_id', $dokumen->id)->delete();
+
+            if ($pengajuanFiles->isNotEmpty()) {
+                $dokumenFilesPayload = $pengajuanFiles->map(fn ($file) => [
+                    'dokumen_id' => $dokumen->id,
+                    'peran_berkas' => 'final-acc',
+                    'nama_file' => (string) $file->nama_file,
+                    'path_file' => (string) $file->path_file,
+                    'mime_type' => $file->mime_type,
+                    'ukuran_file_bytes' => $file->ukuran_file_bytes,
+                    'diunggah_oleh_user_id' => $file->diunggah_oleh_user_id ?? $request->user()?->id,
+                    'diunggah_pada' => $file->diunggah_pada ?? now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->values()->all();
+
+                DokumenFile::query()->insert($dokumenFilesPayload);
+            }
+        }
+
+        // Setelah ACC final, lampiran tidak lagi disimpan di pengajuan_file.
+        if ($this->hasPengajuanFileTable()) {
+            $pengajuan->pengajuanFiles()->delete();
+        }
+    }
+
     private function normalizeAttachmentPath(array $row): string
     {
         $rawPath = trim((string) ($row['path'] ?? $row['path_file'] ?? ''));
@@ -53,6 +201,67 @@ class PengajuanController extends Controller
         }
 
         return trim((string) ($row['name'] ?? $row['nama_file'] ?? 'lampiran'));
+    }
+
+    private function sanitizeAttachmentBasename(string $name): string
+    {
+        $clean = trim($name);
+        $clean = preg_replace('/[^A-Za-z0-9._-]+/', '-', $clean) ?? '';
+        $clean = trim($clean, '-_.');
+
+        if ($clean === '') {
+            return 'lampiran';
+        }
+
+        return Str::limit($clean, 120, '');
+    }
+
+    private function guessAttachmentExtensionFromMime(?string $mime): string
+    {
+        if (! is_string($mime) || trim($mime) === '') {
+            return 'bin';
+        }
+
+        $normalized = strtolower(trim($mime));
+
+        return match ($normalized) {
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => 'bin',
+        };
+    }
+
+    private function persistDataUrlAttachment(array $attachment): ?string
+    {
+        $rawUrl = trim((string) ($attachment['url'] ?? ''));
+        if (! str_starts_with($rawUrl, 'data:')) {
+            return null;
+        }
+
+        if (! preg_match('/^data:([\w\/+.-]+);base64,(.+)$/', $rawUrl, $matches)) {
+            return null;
+        }
+
+        $mimeType = strtolower($matches[1]);
+        $base64 = preg_replace('/\s+/', '', $matches[2]) ?? '';
+        $binary = base64_decode($base64, true);
+
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        $name = trim((string) ($attachment['name'] ?? $attachment['nama_file'] ?? 'lampiran'));
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $extFromName = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
+        $extension = $extFromName !== '' ? $extFromName : $this->guessAttachmentExtensionFromMime($mimeType);
+        $fileName = $this->sanitizeAttachmentBasename($base) . '-' . Str::random(10) . '.' . $extension;
+
+        $relativePath = 'pengajuan/' . date('Y/m') . '/' . $fileName;
+        Storage::disk('public')->put($relativePath, $binary);
+
+        return $relativePath;
     }
 
     private static ?bool $pengajuanLogTableExists = null;
@@ -137,7 +346,7 @@ class PengajuanController extends Controller
                 continue;
             }
 
-            $path = $this->normalizeAttachmentPath($attachment);
+            $path = $this->persistDataUrlAttachment($attachment) ?? $this->normalizeAttachmentPath($attachment);
 
             $payload[] = [
                 'nama_file' => $name,
@@ -567,32 +776,44 @@ class PengajuanController extends Controller
         $statusBaru = (string) ($validated[$statusColumn] ?? $statusLama);
 
         try {
-            $pengajuan->update($validated);
+            DB::transaction(function () use ($pengajuan, $validated, $statusBaru, $statusLama, $request) {
+                $pengajuan->update($validated);
 
-            // Write to pengajuan_log when status changes.
-            if ($statusBaru !== $statusLama) {
-                try {
-                    $this->writeReviewLog(
-                        $pengajuan,
-                        $statusLama,
-                        $statusBaru,
-                        $request->input('review_comment') ?? $request->input('catatan'),
-                        $request->user()?->id
-                    );
-                } catch (\Throwable $exception) {
-                    report($exception);
+                // Write to pengajuan_log when status changes.
+                if ($statusBaru !== $statusLama) {
+                    try {
+                        $this->writeReviewLog(
+                            $pengajuan,
+                            $statusLama,
+                            $statusBaru,
+                            $request->input('review_comment') ?? $request->input('catatan'),
+                            $request->user()?->id
+                        );
+                    } catch (\Throwable $exception) {
+                        report($exception);
+                    }
                 }
-            }
 
-            try {
-                $this->syncPengajuanFiles($pengajuan, $request);
-            } catch (\Throwable $ignored) {
-                // Do not fail main pengajuan update when optional attachment sync is incompatible.
-            }
+                try {
+                    $this->syncPengajuanFiles($pengajuan, $request);
+                } catch (\Throwable $ignored) {
+                    // Do not fail main pengajuan update when optional attachment sync is incompatible.
+                }
+
+                if (strtolower(trim($statusBaru)) === 'disetujui') {
+                    $this->moveApprovedPengajuanToDokumen($pengajuan->fresh(), $request);
+                }
+            });
         } catch (QueryException $exception) {
             return response([
                 'success' => false,
                 'message' => 'Gagal mengubah pengajuan.',
+                'error' => $exception->getMessage(),
+            ], 422);
+        } catch (\Throwable $exception) {
+            return response([
+                'success' => false,
+                'message' => 'Gagal sinkronisasi pengajuan ke rekap dokumen.',
                 'error' => $exception->getMessage(),
             ], 422);
         }

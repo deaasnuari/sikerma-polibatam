@@ -176,7 +176,7 @@ class MigrateLegacyData extends Command
                 $status = 'menunggu';
             }
 
-            $pengajuanId = DB::table('pengajuan')->insertGetId([
+            $pengajuanId = DB::table('pengajuan_v2')->insertGetId([
                 'nomor_pengajuan' => $ajuan->no_permohonan,
                 'nama_pengusul' => $ajuan->nama_pemohon ?? 'Unknown',
                 'jabatan_pengusul' => $ajuan->jabatan_pemohon ?? null,

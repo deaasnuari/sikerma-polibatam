@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import {
   LayoutDashboard, FileText, RefreshCw, BarChart3,
   BookOpen, Archive, Users, Handshake, ChevronLeft, ChevronRight,
@@ -52,6 +53,27 @@ export default function AdminSidebar({
   activeItemClassName = 'border-l-[#57C9E8] bg-[#57C9E8]/15 text-white shadow-sm',
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const hrefs = new Set<string>();
+
+    menuItems.forEach((item) => {
+      if (item.href) {
+        hrefs.add(item.href);
+      }
+
+      item.children?.forEach((child) => {
+        if (child.href) {
+          hrefs.add(child.href);
+        }
+      });
+    });
+
+    hrefs.forEach((href) => {
+      router.prefetch(href);
+    });
+  }, [menuItems, router]);
 
   const exactOnlyRoutes = new Set(['/admin', '/internal/dashboard', '/eksternal', '/pimpinan']);
 
@@ -61,6 +83,10 @@ export default function AdminSidebar({
     }
 
     return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const handlePrefetch = (href: string) => {
+    router.prefetch(href);
   };
 
   return (
@@ -129,6 +155,10 @@ export default function AdminSidebar({
               <div key={`${item.label}-${item.href}`} className="space-y-1">
                 <Link
                   href={item.href}
+                  prefetch
+                  onMouseEnter={() => handlePrefetch(item.href)}
+                  onFocus={() => handlePrefetch(item.href)}
+                  onTouchStart={() => handlePrefetch(item.href)}
                   title={!isOpen ? item.label : undefined}
                   className={sharedClassName}
                 >
@@ -145,6 +175,10 @@ export default function AdminSidebar({
                         <Link
                           key={child.href}
                           href={child.href}
+                          prefetch
+                          onMouseEnter={() => handlePrefetch(child.href)}
+                          onFocus={() => handlePrefetch(child.href)}
+                          onTouchStart={() => handlePrefetch(child.href)}
                           className={`block rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
                             childActive
                               ? 'bg-[#57C9E8]/20 text-white'

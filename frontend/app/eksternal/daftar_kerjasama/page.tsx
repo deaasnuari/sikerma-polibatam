@@ -107,14 +107,20 @@ export default function DaftarKerjasamaEksternalPage() {
       sync();
     };
 
+    const handlePengajuanUpdated = () => {
+      // Avoid recursive refresh loop: refreshPengajuanDataFromApi emits this event.
+      syncExternalPengajuanWithAdminData();
+      sync();
+    };
+
     void syncFromAdmin();
     window.addEventListener(updateEventName, sync);
-    window.addEventListener('pengajuan-data-updated', syncFromAdmin);
+    window.addEventListener('pengajuan-data-updated', handlePengajuanUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener(updateEventName, sync);
-      window.removeEventListener('pengajuan-data-updated', syncFromAdmin);
+      window.removeEventListener('pengajuan-data-updated', handlePengajuanUpdated);
     };
   }, []);
 

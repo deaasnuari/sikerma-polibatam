@@ -156,11 +156,17 @@ Artisan::command('legacy:migrate-simplified {--truncate-new : Kosongkan tabel ba
     }
 
     $pengajuanByNomor = [];
-    $legacyAjuanNumberSet = DB::table('ajuan')->pluck('no_permohonan')->map(
-        static fn ($value) => trim((string) $value)
-    )->flip();
+    $legacyAjuanNumberSet = Schema::hasTable('ajuan')
+        ? DB::table('ajuan')->pluck('no_permohonan')->map(
+            static fn ($value) => trim((string) $value)
+        )->flip()
+        : collect();
 
     $ensureLegacyAjuanExists = static function (string $noPermohonan) use (&$legacyAjuanNumberSet) {
+        if (! Schema::hasTable('ajuan')) {
+            return;
+        }
+
         $key = trim($noPermohonan);
         if ($key === '' || $legacyAjuanNumberSet->has($key)) {
             return;

@@ -37,8 +37,10 @@ class DummyDataSeeder extends Seeder
         // 1. Seed Pengajuan
         $pengajuanIds = [];
         for ($i = 0; $i < 10; $i++) {
-            $pengajuanId = DB::table('pengajuan')->insertGetId([
-                'nomor_pengajuan' => 'REQ-' . strtoupper(Str::random(8)),
+            $nomorPengajuan = 'REQ-' . strtoupper(Str::random(8));
+
+            $pengajuanId = DB::table('pengajuan_v2')->insertGetId([
+                'nomor_pengajuan' => $nomorPengajuan,
                 'user_pengusul_id' => !empty($users) ? $faker->randomElement($users) : null,
                 'nama_pengusul' => $faker->name,
                 'jabatan_pengusul' => 'Dosen / Staf',
@@ -80,35 +82,10 @@ class DummyDataSeeder extends Seeder
             // Not all pengajuan become documents
             if ($index % 2 == 0) continue;
 
-            // Seed ajuan to satisfy FK
-            DB::table('ajuan')->insert([
-                'no_permohonan' => (string) $pId,
-                'nama_pemohon' => $faker->name,
-                'jabatan_pemohon' => 'Dosen',
-                'unit' => 'Unit',
-                'prodi' => 'Prodi',
-                'email' => $faker->email,
-                'wa_pemohon' => $faker->phoneNumber,
-                'nama_institusi' => $faker->company,
-                'kategori_institusi' => 'Kategori',
-                'negara' => 'Indonesia',
-                'web_institusi' => $faker->url,
-                'nama_pic' => $faker->name,
-                'jabatan_pic' => 'PIC',
-                'wa_pic' => $faker->phoneNumber,
-                'email_pic' => $faker->email,
-                'jenis_ajuan' => 'MoU',
-                'ruang_lingkup' => 'Pendidikan',
-                'status_ajuan' => 'disetujui',
-                'tgl_ajuan' => now()->format('Y-m-d'),
-                'tgl_verifikasi' => now()->format('Y-m-d'),
-                'tgl_disetujui' => now()->format('Y-m-d'),
-                'tgl_selesai' => now()->format('Y-m-d'),
-                'komentar' => 'Dummy',
-            ]);
+            $nomorPengajuan = DB::table('pengajuan_v2')->where('id', $pId)->value('nomor_pengajuan') ?? (string) $pId;
 
             $dokumenId = DB::table('dokumen_kerjasama')->insertGetId([
-                'no_permohonan' => (string) $pId,
+                'no_permohonan' => $nomorPengajuan,
                 'sumber_pengajuan_id' => $pId,
                 'nomor_dokumen' => 'DOC-' . strtoupper(Str::random(8)),
                 'nama_dokumen' => 'Dokumen Kerja Sama Resmi ' . $faker->sentence(3),

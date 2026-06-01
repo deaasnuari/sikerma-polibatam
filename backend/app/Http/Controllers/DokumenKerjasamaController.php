@@ -83,7 +83,7 @@ class DokumenKerjasamaController extends Controller
 
         $validated = $request->validate([
             'nomor_dokumen' => ['required', 'string', 'max:100', 'unique:dokumen_kerjasama,nomor_dokumen'],
-            'no_permohonan' => ['required', 'string', 'exists:ajuan,no_permohonan'],
+            'no_permohonan' => ['required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
             'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen'],
             'nama_dokumen' => ['required', 'string', 'max:255'],
             'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
@@ -96,7 +96,7 @@ class DokumenKerjasamaController extends Controller
             'status_siklus' => ['nullable', 'in:active,expiring,archived'],
             'diarsipkan_pada' => ['nullable', 'date'],
             'alasan_arsip' => ['nullable', 'string'],
-            'sumber_pengajuan_id' => ['nullable', 'integer', 'exists:pengajuan,id'],
+            'sumber_pengajuan_id' => ['nullable', 'integer', 'exists:pengajuan_v2,id'],
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
             'dibuat_oleh_user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -131,7 +131,7 @@ class DokumenKerjasamaController extends Controller
 
         $validated = $request->validate([
             'nomor_dokumen' => ['sometimes', 'required', 'string', 'max:100', 'unique:dokumen_kerjasama,nomor_dokumen,' . $dokumen_kerjasama->id],
-            'no_permohonan' => ['sometimes', 'required', 'string', 'exists:ajuan,no_permohonan'],
+            'no_permohonan' => ['sometimes', 'required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
             'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen,' . $dokumen_kerjasama->id],
             'nama_dokumen' => ['sometimes', 'required', 'string', 'max:255'],
             'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
@@ -144,7 +144,7 @@ class DokumenKerjasamaController extends Controller
             'status_siklus' => ['nullable', 'in:active,expiring,archived'],
             'diarsipkan_pada' => ['nullable', 'date'],
             'alasan_arsip' => ['nullable', 'string'],
-            'sumber_pengajuan_id' => ['nullable', 'integer', 'exists:pengajuan,id'],
+            'sumber_pengajuan_id' => ['nullable', 'integer', 'exists:pengajuan_v2,id'],
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
             'dibuat_oleh_user_id' => ['nullable', 'integer', 'exists:users,id'],

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CalendarDays, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
+import { CalendarDays, CheckCircle, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   pengajuanJurusanOptions,
@@ -215,6 +215,8 @@ export default function AdminAjukanKerjasamaForm({
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submittedInfo, setSubmittedInfo] = useState<{ judul: string; mitra: string; jenis: string } | null>(null);
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
@@ -535,6 +537,15 @@ export default function AdminAjukanKerjasamaForm({
     }));
   };
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    if (onSubmitted) {
+      onSubmitted();
+      return;
+    }
+    router.push('/admin/data_pengajuan');
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -589,14 +600,12 @@ export default function AdminAjukanKerjasamaForm({
         window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
       }
 
-      alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
-
-      if (onSubmitted) {
-        onSubmitted();
-        return;
-      }
-
-      router.push('/admin/data_pengajuan');
+      setSubmittedInfo({
+        judul: formData.judulKerjasama || '—',
+        mitra: formData.namaMitra || '—',
+        jenis: formData.jenisKerjasama || '—',
+      });
+      setShowSuccessModal(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal mengirim pengajuan ke server.';
       setSubmitError(message);
@@ -606,6 +615,7 @@ export default function AdminAjukanKerjasamaForm({
   };
 
   return (
+    <>
     <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
         <div>
@@ -1210,5 +1220,59 @@ export default function AdminAjukanKerjasamaForm({
       </form>
 
     </div>
+
+      {/* Success Modal */}
+
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex flex-col items-center gap-3 rounded-t-2xl bg-gradient-to-br from-[#091222] to-[#173B82] px-6 py-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
+                <CheckCircle size={36} className="text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Pengajuan Berhasil Dikirim!</h2>
+              <p className="text-center text-sm text-blue-100">
+                Pengajuan kerjasama Anda telah berhasil dikirim dan sedang menunggu review dari admin.
+              </p>
+            </div>
+
+            {/* Detail */}
+            <div className="space-y-3 px-6 py-5">
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Judul</span>
+                  <span className="break-words text-sm font-semibold text-slate-800">{submittedInfo?.judul}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Mitra</span>
+                  <span className="break-words text-sm text-slate-700">{submittedInfo?.mitra}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Jenis</span>
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                    {submittedInfo?.jenis}
+                  </span>
+                </div>
+              </div>
+              <p className="text-center text-xs text-slate-500">
+                Anda akan dihubungi oleh tim admin apabila ada tindak lanjut.
+              </p>
+            </div>
+
+            {/* Action */}
+            <div className="border-t border-slate-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={handleSuccessModalClose}
+                className="w-full rounded-xl bg-[#173B82] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
+              >
+                Kembali ke Daftar Pengajuan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

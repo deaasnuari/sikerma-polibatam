@@ -26,6 +26,7 @@ import {
   deletePengajuanItemApi,
   fetchPengajuanDataFromApi,
   getFilteredPengajuanData,
+  getPengajuanData,
   getPengajuanStats,
   getPengajuanYearOptions,
   pengajuanDokumenBadge,
@@ -226,36 +227,34 @@ export default function PengajuanKerjasama() {
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
   const [editingItem, setEditingItem] = useState<PengajuanItem | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const refreshPengajuanData = useCallback(async (silent = false) => {
+    if (!silent) {
+      setPengajuanLoading(true);
+    }
 
-    const loadFromApi = async () => {
-      if (mounted) {
-        setPengajuanLoading(true);
+    try {
+      const rows = await fetchPengajuanDataFromApi({ perPage: 500 });
+      setPengajuanData(rows);
+    } catch {
+      setInfoModalMessage('Gagal memuat data pengajuan dari server.');
+    } finally {
+      if (!silent) {
+        setPengajuanLoading(false);
       }
-
-      try {
-        const rows = await fetchPengajuanDataFromApi({ perPage: 500 });
-        if (mounted) {
-          setPengajuanData(rows);
-        }
-      } catch {
-        if (mounted) {
-          setInfoModalMessage('Gagal memuat data pengajuan dari server.');
-        }
-      } finally {
-        if (mounted) {
-          setPengajuanLoading(false);
-        }
-      }
-    };
-
-    loadFromApi();
-
-    return () => {
-      mounted = false;
-    };
+    }
   }, []);
+
+  useEffect(() => {
+    const cached = getPengajuanData();
+    if (cached.length > 0) {
+      setPengajuanData(cached);
+      setPengajuanLoading(false);
+      void refreshPengajuanData(true);
+      return;
+    }
+
+    void refreshPengajuanData(false);
+  }, [refreshPengajuanData]);
 
   useEffect(() => {
     if (isAjukanView) {
@@ -1390,7 +1389,10 @@ export default function PengajuanKerjasama() {
                 >
                   <AdminAjukanKerjasamaForm
                     onCancel={() => setAjukanModalOpen(false)}
-                    onSubmitted={() => setAjukanModalOpen(false)}
+                    onSubmitted={() => {
+                      setAjukanModalOpen(false);
+                      void refreshPengajuanData();
+                    }}
                     initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                     initialMasterRuangLingkupRows={ruangLingkupRows}
                   />
