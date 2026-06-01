@@ -26,6 +26,24 @@ type FormState = {
   aktif: boolean;
 };
 
+type GroupedMitraRow = {
+  primary: MasterMitra;
+  nama_mitra: string;
+  kategori_mitra: string;
+  negara: string;
+  email_mitra: string | null;
+  aktif: boolean;
+  groupCount: number;
+  hasDomestik: boolean;
+  hasLuarNegeri: boolean;
+  kontakList: Array<{
+    nama: string;
+    jabatan: string;
+    email: string;
+    telepon: string;
+  }>;
+};
+
 const emptyForm: FormState = {
   nama_mitra: '',
   kategori_mitra: '',
@@ -217,32 +235,92 @@ export default function MasterMitraPage() {
     }
   };
 
+  const groupedRows = useMemo<GroupedMitraRow[]>(() => {
+    const groups = new Map<string, MasterMitra[]>();
+
+    for (const item of rows) {
+      const key = item.nama_mitra.trim().toLowerCase();
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)?.push(item);
+    }
+
+    return Array.from(groups.values()).map((group) => {
+      const primary = group[0];
+      const kategoriSet = new Set(group.map((item) => (item.kategori_mitra || '').trim()).filter(Boolean));
+      const negaraSet = new Set(group.map((item) => (item.negara || '').trim()).filter(Boolean));
+      const kontakMap = new Map<string, { nama: string; jabatan: string; email: string; telepon: string }>();
+
+      for (const item of group) {
+        const kontak = {
+          nama: (item.nama_kontak_utama || '-').trim() || '-',
+          jabatan: (item.jabatan_kontak_utama || '-').trim() || '-',
+          email: (item.email_kontak_utama || item.email_mitra || '-').trim() || '-',
+          telepon: (item.telepon_kontak_utama || item.telepon_mitra || '-').trim() || '-',
+        };
+        const key = `${kontak.nama}|${kontak.jabatan}|${kontak.email}|${kontak.telepon}`;
+        if (!kontakMap.has(key)) {
+          kontakMap.set(key, kontak);
+        }
+      }
+
+      const hasDomestik = group.some((item) => getWilayahLabel(item.negara) === 'Dalam Negeri');
+      const hasLuarNegeri = group.some((item) => getWilayahLabel(item.negara) === 'Luar Negeri');
+      const negaraLabel =
+        negaraSet.size <= 1
+          ? (Array.from(negaraSet)[0] || primary.negara || '-')
+          : 'Multi Negara';
+
+      return {
+        primary,
+        nama_mitra: primary.nama_mitra,
+        kategori_mitra: kategoriSet.size ? Array.from(kategoriSet).join(', ') : '-',
+        negara: negaraLabel,
+        email_mitra: group.map((item) => item.email_mitra).find((value) => Boolean(value)) || null,
+        aktif: group.some((item) => item.aktif),
+        groupCount: group.length,
+        hasDomestik,
+        hasLuarNegeri,
+        kontakList: Array.from(kontakMap.values()),
+      };
+    });
+  }, [rows]);
+
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return rows.filter((item) => {
+    return groupedRows.filter((item) => {
+      const kontakText = item.kontakList
+        .map((kontak) => `${kontak.nama} ${kontak.jabatan} ${kontak.email} ${kontak.telepon}`)
+        .join(' ')
+        .toLowerCase();
+
       const matchSearch =
         !keyword ||
         item.nama_mitra.toLowerCase().includes(keyword) ||
         (item.kategori_mitra || '').toLowerCase().includes(keyword) ||
         (item.negara || '').toLowerCase().includes(keyword) ||
-        (item.email_mitra || '').toLowerCase().includes(keyword);
+        (item.email_mitra || '').toLowerCase().includes(keyword) ||
+        kontakText.includes(keyword);
       const matchKategori =
         filterKategori === 'Semua Kategori' ||
-        item.kategori_mitra === filterKategori ||
-        (filterKategori === 'Industri' && item.kategori_mitra === 'Perusahaan');
-      const matchWilayah = filterWilayah === 'Semua Wilayah' || getWilayahLabel(item.negara) === filterWilayah;
+        item.kategori_mitra.split(', ').includes(filterKategori) ||
+        (filterKategori === 'Industri' && item.kategori_mitra.includes('Perusahaan'));
+      const matchWilayah =
+        filterWilayah === 'Semua Wilayah' ||
+        (filterWilayah === 'Dalam Negeri' ? item.hasDomestik : item.hasLuarNegeri);
       const matchStatus = filterStatus === 'Semua Status' || (filterStatus === 'Aktif' ? item.aktif : !item.aktif);
 
       return matchSearch && matchKategori && matchWilayah && matchStatus;
     });
-  }, [rows, search, filterKategori, filterWilayah, filterStatus]);
+  }, [groupedRows, search, filterKategori, filterWilayah, filterStatus]);
 
   const summary = {
-    total: rows.length,
-    aktif: rows.filter((item) => item.aktif).length,
-    domestik: rows.filter((item) => (item.negara || '').toLowerCase() === 'indonesia').length,
-    luarNegeri: rows.filter((item) => (item.negara || '').toLowerCase() !== 'indonesia').length,
+    total: groupedRows.length,
+    aktif: groupedRows.filter((item) => item.aktif).length,
+    domestik: groupedRows.filter((item) => item.hasDomestik).length,
+    luarNegeri: groupedRows.filter((item) => item.hasLuarNegeri).length,
   };
 
   return (
@@ -336,19 +414,26 @@ export default function MasterMitraPage() {
               )}
 
               {!loading && filteredRows.map((item) => (
-                <tr key={item.id} className="border-b border-gray-100 transition hover:bg-gray-50/60">
+                <tr key={`${item.primary.id}-${item.nama_mitra}`} className="border-b border-gray-100 transition hover:bg-gray-50/60">
                   <td className="px-4 py-3">
                     <div>
                       <p className="font-medium text-gray-900">{item.nama_mitra}</p>
                       <p className="text-xs text-gray-500">{item.email_mitra || '-'}</p>
+                      {item.groupCount > 1 && (
+                        <p className="text-[11px] font-semibold text-[#173B82]">{item.groupCount} data kontak digabung</p>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{item.kategori_mitra || '-'}</td>
                   <td className="px-4 py-3 text-gray-600">{item.negara || '-'}</td>
                   <td className="px-4 py-3 text-gray-600">
-                    <div>
-                      <p className="font-medium text-gray-800">{item.nama_kontak_utama || '-'}</p>
-                      <p className="text-xs text-gray-500">{item.telepon_kontak_utama || item.telepon_mitra || '-'}</p>
+                    <div className="space-y-2">
+                      {item.kontakList.map((kontak, index) => (
+                        <div key={`${item.primary.id}-kontak-${index}`}>
+                          <p className="font-medium text-gray-800">{kontak.nama}</p>
+                          <p className="text-xs text-gray-500">{kontak.telepon}</p>
+                        </div>
+                      ))}
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -358,10 +443,10 @@ export default function MasterMitraPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEdit(item)} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Edit">
+                      <button onClick={() => openEdit(item.primary)} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Edit">
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => handleDelete(item)} disabled={submitting} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Hapus">
+                      <button onClick={() => handleDelete(item.primary)} disabled={submitting} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Hapus">
                         <Trash2 size={14} />
                       </button>
                     </div>
