@@ -24,7 +24,6 @@ import {
   TableProperties,
 } from 'lucide-react';
 import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
-import EventHistoryModal from '@/app/admin/monitoring/EventHistoryModal';
 import { getPengajuanData, type PengajuanItem } from '@/services/adminPengajuanService';
 import {
   getAktivitasByKerjasamaId,
@@ -509,7 +508,6 @@ export default function DetailStoryPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showEditDokumen, setShowEditDokumen] = useState(false);
   const [showLaporanModal, setShowLaporanModal] = useState(false);
-  const [eventHistoryModal, setEventHistoryModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
 
   // Persist aktivitas ke localStorage setiap kali daftar berubah (hanya untuk data dari pengajuan)
   useEffect(() => {
@@ -854,13 +852,6 @@ export default function DetailStoryPage() {
           {!showAddForm && (
             <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={() => setEventHistoryModal({ open: true, kerjasamaId: Number(id) })}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
-              >
-                📖 Event Log
-              </button>
-              <button
                 onClick={() => {
                   setEditingId(null);
                   setFormData({
@@ -1202,15 +1193,6 @@ export default function DetailStoryPage() {
         )}
       </div>
 
-      {/* Event History Modal */}
-      <EventHistoryModal
-        isOpen={eventHistoryModal.open}
-        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
-        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
-        namaMitra={data?.nama || ''}
-        noDokumen={data?.nomorDokumen || ''}
-      />
-
       {/* Edit Dokumen Modal */}
       <LaporanKegiatanTemplateModal
         isOpen={showLaporanModal}
@@ -1221,14 +1203,6 @@ export default function DetailStoryPage() {
           jenis: (['MoA', 'MoU', 'IA'].includes(dokInfo.jenisDokumen) ? dokInfo.jenisDokumen : 'MoU') as 'MoA' | 'MoU' | 'IA',
           ruangLingkup: data.ruangLingkup,
         }}
-      />
-
-      <EventHistoryModal
-        isOpen={eventHistoryModal.open}
-        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
-        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
-        namaMitra={data?.nama || ''}
-        noDokumen={data?.nomorDokumen || ''}
       />
 
       {showEditDokumen && (

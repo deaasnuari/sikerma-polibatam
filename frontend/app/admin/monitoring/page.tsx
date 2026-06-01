@@ -9,7 +9,6 @@ import RenewalForm from './RenewalForm';
 // import RenewalForm from './RenewalForm';
 import NotificationHistoryModal from './NotificationHistoryModal';
 import NonactiveConfirmationModal from './NonactiveConfirmationModal';
-import EventHistoryModal from './EventHistoryModal';
 import {
   createNonactiveRecord,
   createNotificationRecord,
@@ -47,7 +46,6 @@ export default function MonitoringdanstatusPage() {
   const [notificationHistories, setNotificationHistories] = useState<Record<number, MonitoringNotification[]>>(getDefaultNotificationHistories());
   const [nonactiveModal, setNonactiveModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [nonactiveHistories, setNonactiveHistories] = useState<Record<number, NonactiveRecord[]>>({});
-  const [eventHistoryModal, setEventHistoryModal] = useState<{ open: boolean; kerjasamaId: number | null }>({ open: false, kerjasamaId: null });
   const [monitoringData, setMonitoringData] = useState<Kerjasama[]>([]);
   // State untuk toggle form sederhana/baru
   const [showSimpleForm, setShowSimpleForm] = useState(false);
@@ -448,15 +446,6 @@ export default function MonitoringdanstatusPage() {
                       </button>
                     </>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={() => setEventHistoryModal({ open: true, kerjasamaId: item.id })}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
-                  >
-                    📖 Event Log
-                  </button>
-
                   <button
                     type="button"
                     onClick={() => handleDeleteMonitoring(item)}
@@ -613,18 +602,6 @@ export default function MonitoringdanstatusPage() {
           alert(`Kerjasama "${selectedNonactiveItem?.namaMitra || ''}" telah berhasil dinonaktifkan.`);
           setNonactiveModal({ open: false, kerjasamaId: null });
         }}
-      />
-
-      <EventHistoryModal
-        isOpen={eventHistoryModal.open}
-        onClose={() => setEventHistoryModal({ open: false, kerjasamaId: null })}
-        kerjasamaId={eventHistoryModal.kerjasamaId || 0}
-        namaMitra={
-          findKerjasamaById(monitoringData, eventHistoryModal.kerjasamaId)?.namaMitra || ''
-        }
-        noDokumen={
-          findKerjasamaById(monitoringData, eventHistoryModal.kerjasamaId)?.noDokumen || ''
-        }
       />
     </div>
   );
