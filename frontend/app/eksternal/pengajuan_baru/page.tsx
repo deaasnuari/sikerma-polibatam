@@ -78,6 +78,9 @@ export default function PengajuanBaruEksternalPage() {
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
         onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen, selectedProdiId }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
+          const ruangLingkupIds = (selectedRuangLingkup || [])
+            .map((name) => masterRuangLingkupRows.find((row) => row.nama_ruang_lingkup === name)?.id)
+            .filter((id): id is number => typeof id === 'number');
 
           await submitPengajuanApi({
             judulPengajuan: formData.judulKerjasama,
@@ -91,7 +94,7 @@ export default function PengajuanBaruEksternalPage() {
             tanggalBerakhir: formData.tanggalBerakhir,
             emailPengusul: formData.emailKontak,
             whatsappPengusul: formData.teleponKontak,
-            ruangLingkupIds: [],
+            ruangLingkupIds,
             ruangLingkup: selectedRuangLingkup,
             fileName: normalizedDokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung eksternal',
             fileAttachments: normalizedDokumen.map((item) => ({

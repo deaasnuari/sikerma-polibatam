@@ -287,10 +287,6 @@ class PengajuanController extends Controller
 
     public function store(Request $request): Response
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
-
         if (! $this->useNewPengajuanSchema()) {
             $legacyRequest = new Request($this->legacyPayloadFromRequest($request));
             $legacyRequest->setUserResolver(fn () => $request->user());
