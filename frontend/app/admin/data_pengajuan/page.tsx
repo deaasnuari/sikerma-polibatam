@@ -758,7 +758,7 @@ export default function PengajuanKerjasama() {
     setInfoModalMessage('Data pengajuan berhasil dihapus.');
   }
 
-  function handleSubmitEditFromAjukan(payload: {
+  async function handleSubmitEditFromAjukan(payload: {
     formData: {
       namaMitra: string;
       jenisMitra: string;
@@ -783,7 +783,7 @@ export default function PengajuanKerjasama() {
     dokumen: File[];
     dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
-  }): boolean {
+  }): Promise<boolean> {
     if (!editingItem) {
       return false;
     }
@@ -825,17 +825,15 @@ export default function PengajuanKerjasama() {
         : {}),
     };
 
-    updatePengajuanItemApi(editingItem.id, editPayload)
-      .then((updated) => {
-        setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
-      })
-      .catch(() => {
-        setInfoModalMessage('Gagal memperbarui data pengajuan di server.');
-      });
-
-    setEditingItem(null);
-    setInfoModalMessage('Data pengajuan berhasil diperbarui.');
-    return true;
+    try {
+      const updated = await updatePengajuanItemApi(editingItem.id, editPayload);
+      setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      setInfoModalMessage('Data pengajuan berhasil diperbarui.');
+      return true;
+    } catch {
+      setInfoModalMessage('Gagal memperbarui data pengajuan di server.');
+      return false;
+    }
   }
 
   async function handleSubmitMasterReference() {
