@@ -55,6 +55,62 @@ class PengajuanController extends Controller
         return trim((string) ($row['name'] ?? $row['nama_file'] ?? 'lampiran'));
     }
 
+    private static ?bool $pengajuanLogTableExists = null;
+
+    private function hasPengajuanLogTable(): bool
+    {
+        if (self::$pengajuanLogTableExists !== null) {
+            return self::$pengajuanLogTableExists;
+        }
+
+        self::$pengajuanLogTableExists = Schema::hasTable('pengajuan_log');
+
+        return self::$pengajuanLogTableExists;
+    }
+
+    private function writeReviewLog(
+        Pengajuan $pengajuan,
+        string $statusLama,
+        string $statusBaru,
+        ?string $comment,
+        ?int $userId
+    ): void {
+        if (! $this->hasPengajuanLogTable()) {
+            return;
+        }
+
+        $labelMap = [
+            'menunggu'  => 'Menunggu',
+            'diproses'  => 'Diproses',
+            'disetujui' => 'Disetujui',
+            'ditolak'   => 'Ditolak',
+        ];
+
+        $judul = 'Status diperbarui: '
+            . ($labelMap[$statusLama] ?? $statusLama)
+            . ' → '
+            . ($labelMap[$statusBaru] ?? $statusBaru);
+
+        $isiParts = [];
+        if ($comment !== null && trim($comment) !== '') {
+            $isiParts[] = 'Komentar: ' . trim($comment);
+        }
+        $isi = implode("\n", $isiParts) ?: null;
+
+        $pengajuan->pengajuanLogs()->create([
+            'tipe_log'           => 'status',
+            'status_lama'        => $statusLama,
+            'status_baru'        => $statusBaru,
+            'judul_log'          => $judul,
+            'isi_log'            => $isi,
+            'payload_json'       => [
+                'review_comment' => $comment,
+                'updated_by'     => $userId,
+            ],
+            'dibuat_oleh_user_id' => $userId,
+        ]);
+    }
+
     private function syncPengajuanFiles(Pengajuan $pengajuan, Request $request): void
     {
         if (! $this->hasPengajuanFileTable()) {
@@ -504,8 +560,27 @@ class PengajuanController extends Controller
             $validated['file_attachments'] = $request->input('file_attachments');
         }
 
+        $statusColumn = $this->hasPengajuanColumn('status_pengajuan') ? 'status_pengajuan' : 'status';
+        $statusLama = (string) ($pengajuan->{$statusColumn} ?? 'menunggu');
+        $statusBaru = (string) ($validated[$statusColumn] ?? $statusLama);
+
         try {
             $pengajuan->update($validated);
+
+            // Write to pengajuan_log when status changes.
+            if ($statusBaru !== $statusLama) {
+                try {
+                    $this->writeReviewLog(
+                        $pengajuan,
+                        $statusLama,
+                        $statusBaru,
+                        $request->input('review_comment') ?? $request->input('catatan'),
+                        $request->user()?->id
+                    );
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
 
             try {
                 $this->syncPengajuanFiles($pengajuan, $request);

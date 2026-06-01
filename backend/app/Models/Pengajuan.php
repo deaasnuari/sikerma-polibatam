@@ -95,4 +95,9 @@ class Pengajuan extends Model
         // Keep legacy relation name so existing API payload still exposes "dokumen_files".
         return $this->pengajuanFiles();
     }
+
+    public function pengajuanLogs(): HasMany
+    {
+        return $this->hasMany(PengajuanLog::class, 'pengajuan_id', 'id');
+    }
 }
