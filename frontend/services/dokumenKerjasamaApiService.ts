@@ -21,6 +21,7 @@ type ApiDokumenRow = {
   mitra?: { id: number; nama_mitra: string } | null;
   unit_prodi?: { id: number; nama: string } | null;
   file?: string | null;
+  alasan_arsip?: string | null;
   pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string } | null;
 };
 
@@ -96,6 +97,8 @@ export async function fetchRekapDokumenFromApi(): Promise<RekapDokumen[]> {
       status: mapStatus(row.status_siklus),
       whatsappNumber: row.pengajuan?.whatsapp_pengusul || undefined,
       dokumenTerkait,
+      alasanArsip: row.alasan_arsip || null,
+      buktiPdf: dokumenTerkait.length > 0 ? dokumenTerkait[0].url : null,
     };
   });
 }
@@ -107,6 +110,8 @@ export type ArsipDokumenApiItem = {
   jenis: 'MoA' | 'MoU' | 'IA';
   tanggalMulai: string;
   berlakuHingga: string;
+  alasanArsip: string | null;
+  buktiPdf: string | null;
 };
 
 export async function fetchArsipDokumenFromApi(): Promise<ArsipDokumenApiItem[]> {
@@ -120,5 +125,7 @@ export async function fetchArsipDokumenFromApi(): Promise<ArsipDokumenApiItem[]>
       jenis: item.jenis,
       tanggalMulai: item.tanggalMulai,
       berlakuHingga: item.berlakuHingga,
+      alasanArsip: (item as any).alasanArsip || null,
+      buktiPdf: (item as any).buktiPdf || null,
     }));
 }

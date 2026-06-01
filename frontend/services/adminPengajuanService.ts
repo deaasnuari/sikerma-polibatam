@@ -46,6 +46,8 @@ export interface PengajuanItem {
   reviewComment?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  catatan?: string | null;
+  keputusan?: string | null;
   isFromAdmin?: boolean;
 }
 
@@ -196,6 +198,8 @@ type ApiPengajuanRow = {
   kategori?: 'Internal' | 'Eksternal' | null;
   ruang_lingkup?: string[] | null;
   status?: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
+  catatan?: string | null;
+  keputusan?: string | null;
   file_name?: string | null;
   file_attachments?: {
     name?: string;
@@ -375,6 +379,8 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     statusPengajuan: mapStatusFromApi(statusApi),
     fileName: resolvedFileName,
     fileAttachments: resolvedAttachments,
+    catatan: row.catatan || undefined,
+    keputusan: row.keputusan || undefined,
   };
 }
 
@@ -418,6 +424,8 @@ export async function savePengajuanReviewApi(id: number, status: PengajuanStatus
     body: JSON.stringify({
       status_pengajuan: mapStatusToApi(status),
       status: mapStatusToApi(status),
+      catatan: comment?.trim() || null,
+      keputusan: status,
       review_comment: comment?.trim() || null,
     }),
   });

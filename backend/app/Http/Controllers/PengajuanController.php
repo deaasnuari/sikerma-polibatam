@@ -540,6 +540,8 @@ class PengajuanController extends Controller
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
             'status_pengajuan' => ['nullable', 'in:menunggu,diproses,disetujui,ditolak'],
+            'catatan' => ['nullable', 'string'],
+            'keputusan' => ['nullable', 'string'],
             'diajukan_pada' => ['nullable', 'date'],
             'email_terverifikasi_pada' => ['nullable', 'date'],
         ]);

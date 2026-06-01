@@ -19,8 +19,8 @@ interface ArsipDokumen {
   jenis: 'MoA' | 'MoU' | 'IA';
   tanggalMulai: string;
   berlakuHingga: string;
-  statusFollowUp: 'Direspon' | 'Tidak Direspon' | 'Menunggu';
-  buktiFollowUp: string | null;
+  alasanArsip: string | null;
+  buktiPdf: string | null;
 }
 
 function toDisplayDate(value?: string): string {
@@ -114,8 +114,8 @@ export default function ArsipDokumenPage() {
             jenis: item.jenis,
             tanggalMulai: item.tanggalMulai,
             berlakuHingga: item.berlakuHingga,
-            statusFollowUp: 'Menunggu',
-            buktiFollowUp: null,
+            alasanArsip: item.alasanArsip,
+            buktiPdf: item.buktiPdf,
           }))
         );
       } catch {
@@ -165,8 +165,8 @@ export default function ArsipDokumenPage() {
       item.jenis,
       item.tanggalMulai,
       item.berlakuHingga,
-      item.statusFollowUp,
-      item.buktiFollowUp || '-',
+      item.alasanArsip || '-',
+      item.buktiPdf || '-',
     ]);
 
     const header = [
@@ -176,8 +176,8 @@ export default function ArsipDokumenPage() {
       'Jenis',
       'Tanggal Mulai',
       'Berlaku Hingga',
-      'Follow Up',
-      'Bukti',
+      'Alasan Arsip',
+      'Bukti PDF',
     ];
 
     const content = [header, ...rows]
@@ -206,9 +206,9 @@ export default function ArsipDokumenPage() {
   }).length;
   const akanKadaluarsa = data.filter((item) => getDocumentStatus(item.berlakuHingga) === 'akan-kadaluarsa').length;
   const sudahKadaluarsa = data.filter((item) => getDocumentStatus(item.berlakuHingga) === 'kadaluarsa').length;
-  const tidakDirespon = data.filter(
-    (item) => item.statusFollowUp === 'Tidak Direspon'
-  ).length;
+  // const tidakDirespon = data.filter(
+  //   (item) => item.statusFollowUp === 'Tidak Direspon'
+  // ).length;
 
   return (
     <div className="space-y-6">
@@ -365,10 +365,10 @@ export default function ArsipDokumenPage() {
                   Status
                 </th>
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Follow Up
+                  Alasan Arsip
                 </th>
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Bukti
+                  Bukti PDF
                 </th>
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
                   Aksi
@@ -422,22 +422,21 @@ export default function ArsipDokumenPage() {
                       {getDocumentStatus(item.berlakuHingga) === 'kadaluarsa' ? '❌ Kadaluarsa' : '⏰ Akan Kadaluarsa'}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${followUpColor[item.statusFollowUp].bg} ${followUpColor[item.statusFollowUp].text}`}
-                    >
-                      {item.statusFollowUp}
-                    </span>
+                  <td className="py-3.5 px-4 text-sm text-gray-700 max-w-xs truncate" title={item.alasanArsip || '-'}>
+                    {item.alasanArsip || '-'}
                   </td>
                   <td className="py-3.5 px-4">
-                    {item.buktiFollowUp ? (
-                      <button
+                    {item.buktiPdf ? (
+                      <a
+                        href={item.buktiPdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs font-medium"
-                        title={`Download ${item.buktiFollowUp}`}
+                        title="Lihat Bukti PDF"
                       >
                         <FileText size={14} />
-                        Lihat Bukti
-                      </button>
+                        Lihat PDF
+                      </a>
                     ) : (
                       <span className="text-xs text-gray-400 italic">
                         Tidak ada
