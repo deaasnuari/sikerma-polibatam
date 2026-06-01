@@ -193,6 +193,7 @@ class MigrateLegacyData extends Command
                 'tanggal_mulai' => $tanggal,
                 'tanggal_berakhir' => null,
                 'status_pengajuan' => $status,
+                'catatan' => $ajuan->komentar ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -315,6 +316,40 @@ class MigrateLegacyData extends Command
                         'peran_berkas' => 'lampiran',
                         'nama_file' => 'File Rekap',
                         'path_file' => $rekap->file,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                }
+            }
+        }
+
+        if (Schema::hasTable('arsip')) {
+            $arsips = DB::table('arsip')->get();
+            foreach ($arsips as $arsip) {
+                $dokumenId = DB::table('dokumen_kerjasama')->insertGetId([
+                    'nomor_dokumen' => 'ARSIP-' . $arsip->id . '-' . uniqid(),
+                    'no_permohonan' => 'MIGRATED',
+                    'no_dokumen' => null,
+                    'nama_dokumen' => $arsip->nama_file ?? 'Arsip ' . $arsip->id,
+                    'file' => $arsip->nama_file ?? 'no_file',
+                    'judul_dokumen' => 'Arsip ' . ($arsip->nama_file ?? uniqid()),
+                    'jenis_dokumen' => $arsip->jenis ?? 'MOU',
+                    'ruang_lingkup_ids' => '[]',
+                    'tanggal_mulai' => now(),
+                    'tanggal_berakhir' => now()->subDay(),
+                    'status_siklus' => 'archived',
+                    'alasan_arsip' => $arsip->catatan ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                if (!empty($arsip->nama_file)) {
+                    DB::table('dokumen_file')->insert([
+                        'dokumen_id' => $dokumenId,
+                        'peran_berkas' => 'lampiran',
+                        'nama_file' => 'Bukti Arsip',
+                        'path_file' => $arsip->nama_file,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

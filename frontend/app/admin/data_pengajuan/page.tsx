@@ -1264,6 +1264,18 @@ export default function PengajuanKerjasama() {
                   <p className="text-xs text-gray-400 mb-1">Jurusan</p>
                   <p className="text-sm text-gray-700">{item.namaUnitProdi}</p>
                 </div>
+                {item.keputusan && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Keputusan</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.keputusan}</p>
+                  </div>
+                )}
+                {item.catatan && (
+                  <div className="max-w-[200px]">
+                    <p className="text-xs text-gray-400 mb-1">Catatan Review</p>
+                    <p className="text-sm text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
+                  </div>
+                )}
                 <div className="ml-auto flex items-center gap-2">
                   <button
                     type="button"

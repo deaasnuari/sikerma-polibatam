@@ -53,6 +53,8 @@ class Pengajuan extends Model
         'diajukan_pada',
         'email_terverifikasi_pada',
         'nama_mitra',
+        'catatan',
+        'keputusan',
     ];
 
     protected $casts = [
