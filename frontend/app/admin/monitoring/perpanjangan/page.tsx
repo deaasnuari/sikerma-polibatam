@@ -26,14 +26,24 @@ export default function MonitoringPerpanjanganPage() {
   const [items, setItems] = useState<RenewalRequestItem[]>([]);
 
   useEffect(() => {
-    const syncItems = () => {
-      setItems(getRenewalRequests());
+    const syncItems = async () => {
+      try {
+        const data = await getRenewalRequests();
+        setItems(data);
+      } catch (error) {
+        console.error('Gagal memuat permintaan perpanjangan:', error);
+        setItems([]);
+      }
     };
 
-    syncItems();
-    window.addEventListener('renewal-requests-updated', syncItems);
+    void syncItems();
 
-    return () => window.removeEventListener('renewal-requests-updated', syncItems);
+    const handleUpdated = () => {
+      void syncItems();
+    };
+    window.addEventListener('renewal-requests-updated', handleUpdated);
+
+    return () => window.removeEventListener('renewal-requests-updated', handleUpdated);
   }, []);
 
   const counts = useMemo(() => {
@@ -53,24 +63,29 @@ export default function MonitoringPerpanjanganPage() {
     return items.filter((item) => item.status === filter);
   }, [filter, items]);
 
-  const handleDecision = (item: RenewalRequestItem, status: 'disetujui' | 'ditolak') => {
-    const updated = updateRenewalRequestStatus(item.id, status);
-    setItems(updated);
+  const handleDecision = async (item: RenewalRequestItem, status: 'disetujui' | 'ditolak') => {
+    try {
+      const updated = await updateRenewalRequestStatus(item.id, status);
+      setItems(updated);
 
-    if (status === 'disetujui') {
-      applyApprovedRenewalToMonitoring(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
-      applyApprovedRenewalToRekap(item.noDokumen, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
-      applyApprovedRenewalToPengajuan(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+      if (status === 'disetujui') {
+        applyApprovedRenewalToMonitoring(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+        applyApprovedRenewalToRekap(item.noDokumen, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+        applyApprovedRenewalToPengajuan(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+      }
+
+      addAdminNotification({
+        title: status === 'disetujui' ? 'Perpanjangan Disetujui' : 'Perpanjangan Ditolak',
+        message: `Permintaan perpanjangan ${item.noDokumen} (${item.namaMitra}) telah ${status}.`,
+        from: 'Admin Monitoring',
+        href: item.notificationHref,
+        category: status === 'disetujui' ? 'approval' : 'reminder',
+        targetRole: item.requesterRole,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal memproses keputusan perpanjangan.';
+      alert(`✗ ${message}`);
     }
-
-    addAdminNotification({
-      title: status === 'disetujui' ? 'Perpanjangan Disetujui' : 'Perpanjangan Ditolak',
-      message: `Permintaan perpanjangan ${item.noDokumen} (${item.namaMitra}) telah ${status}.`,
-      from: 'Admin Monitoring',
-      href: item.notificationHref,
-      category: status === 'disetujui' ? 'approval' : 'reminder',
-      targetRole: item.requesterRole,
-    });
   };
 
 

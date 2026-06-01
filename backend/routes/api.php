@@ -30,6 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
 		->parameters(['ruang-lingkup' => 'ruang_lingkup']);
 
 	Route::apiResource('/pengajuan', PengajuanController::class);
+	Route::get('/dokumen-kerjasama/perpanjangan/requests', [DokumenKerjasamaController::class, 'renewalRequests']);
+	Route::post('/dokumen-kerjasama/{dokumen_kerjasama}/perpanjangan', [DokumenKerjasamaController::class, 'submitRenewalRequest'])
+		->whereNumber('dokumen_kerjasama');
+	Route::patch('/dokumen-kerjasama/perpanjangan/{dokumen_log}/status', [DokumenKerjasamaController::class, 'decideRenewalRequest'])
+		->whereNumber('dokumen_log');
 	Route::apiResource('/dokumen-kerjasama', DokumenKerjasamaController::class)
 		->parameters(['dokumen-kerjasama' => 'dokumen_kerjasama']);
 });

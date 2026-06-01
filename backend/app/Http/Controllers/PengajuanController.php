@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DokumenFile;
+use App\Models\DokumenLog;
 use App\Models\DokumenKerjasama;
+use App\Models\MasterRuangLingkup;
 use App\Models\MasterUnitProdi;
 use App\Models\Pengajuan;
 use Illuminate\Database\QueryException;
@@ -20,6 +22,7 @@ class PengajuanController extends Controller
     private static ?bool $pengajuanFileTableExists = null;
     private static ?bool $dokumenKerjasamaTableExists = null;
     private static ?bool $dokumenFileTableExists = null;
+    private static ?bool $dokumenLogTableExists = null;
 
     private function hasPengajuanColumn(string $column): bool
     {
@@ -68,6 +71,107 @@ class PengajuanController extends Controller
         self::$dokumenFileTableExists = Schema::hasTable('dokumen_file');
 
         return self::$dokumenFileTableExists;
+    }
+
+    private function hasDokumenLogTable(): bool
+    {
+        if (self::$dokumenLogTableExists !== null) {
+            return self::$dokumenLogTableExists;
+        }
+
+        self::$dokumenLogTableExists = Schema::hasTable('dokumen_log');
+
+        return self::$dokumenLogTableExists;
+    }
+
+    private function resolveLingkupLabel($ruangLingkupIds): ?string
+    {
+        if (! is_array($ruangLingkupIds) || empty($ruangLingkupIds)) {
+            return null;
+        }
+
+        $ids = array_values(array_unique(array_filter(array_map(static function ($id) {
+            if (is_numeric($id)) {
+                return (int) $id;
+            }
+
+            return null;
+        }, $ruangLingkupIds))));
+
+        if (empty($ids)) {
+            return null;
+        }
+
+        $labels = MasterRuangLingkup::query()
+            ->whereIn('id', $ids)
+            ->pluck('nama_ruang_lingkup')
+            ->filter()
+            ->values()
+            ->all();
+
+        return empty($labels) ? null : implode(', ', $labels);
+    }
+
+    private function writeInitialDokumenLogFromPengajuan(
+        Pengajuan $pengajuan,
+        DokumenKerjasama $dokumen,
+        ?int $userId,
+        ?string $buktiPath
+    ): void {
+        if (! $this->hasDokumenLogTable()) {
+            return;
+        }
+
+        $unitName = null;
+        if ($pengajuan->unit_prodi_id) {
+            $unitName = MasterUnitProdi::query()
+                ->where('id', $pengajuan->unit_prodi_id)
+                ->value('nama');
+        }
+
+        $mitraName = trim((string) ($pengajuan->nama_mitra ?? ''));
+        if ($mitraName === '' && $pengajuan->mitra_id) {
+            $mitraName = (string) (DB::table('master_mitra')->where('id', $pengajuan->mitra_id)->value('nama_mitra') ?? '');
+        }
+
+        $logPayload = [
+            'judul_log' => 'Data awal pengajuan disalin ke dokumen',
+            'isi_log' => 'Data awal dari form pengajuan otomatis dicatat saat pengajuan disetujui.',
+            'payload_json' => null,
+            'nomor' => (string) ($dokumen->nomor_dokumen ?? $dokumen->no_dokumen ?? ''),
+            'mitra' => $mitraName !== '' ? $mitraName : null,
+            'telepon' => $pengajuan->whatsapp_pengusul,
+            'tgl_mulai' => $pengajuan->tanggal_mulai,
+            'tgl_berakhir' => $pengajuan->tanggal_berakhir,
+            'unit' => $unitName,
+            'lingkup' => $this->resolveLingkupLabel($pengajuan->ruang_lingkup_ids),
+            'tingkat' => strtolower((string) ($pengajuan->kategori_pengajuan ?? '')) === 'eksternal'
+                ? 'lokal/wilayah'
+                : 'internal',
+            'periode' => null,
+            'judul' => $pengajuan->judul_pengajuan,
+            'manfaat' => $pengajuan->deskripsi_pengajuan,
+            'bukti' => $buktiPath,
+            'status' => 'aktif',
+            'pic' => $pengajuan->nama_pengusul,
+            'tgl_monitoring' => now()->toDateString(),
+            'dibuat_oleh_user_id' => $userId,
+        ];
+
+        $existing = DokumenLog::query()
+            ->where('dokumen_id', $dokumen->id)
+            ->where('tipe_log', 'pengajuan_awal')
+            ->first();
+
+        if ($existing) {
+            $existing->update($logPayload);
+            return;
+        }
+
+        DokumenLog::query()->create(array_merge($logPayload, [
+            'dokumen_id' => $dokumen->id,
+            'tipe_log' => 'pengajuan_awal',
+        ]));
     }
 
     private function resolveDirekturCode(?string $unitName): string
@@ -260,6 +364,17 @@ class PengajuanController extends Controller
 
                 DokumenFile::query()->insert($dokumenFilesPayload);
             }
+        }
+
+        try {
+            $this->writeInitialDokumenLogFromPengajuan(
+                $pengajuan,
+                $dokumen,
+                $request->user()?->id,
+                $primaryPath !== 'pending-file' ? $primaryPath : null
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
         }
 
         // Setelah ACC final, lampiran tidak lagi disimpan di pengajuan_file.

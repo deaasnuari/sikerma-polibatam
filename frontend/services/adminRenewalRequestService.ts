@@ -1,3 +1,5 @@
+import { apiRequest } from '@/lib/api';
+
 export type RenewalRequestStatus = 'menunggu' | 'disetujui' | 'ditolak';
 
 export interface RenewalRequestItem {
@@ -8,6 +10,7 @@ export interface RenewalRequestItem {
   tanggalMulaiBaru: string;
   tanggalBerakhirBaru: string;
   catatan: string;
+  buktiPerpanjangan?: string | null;
   status: RenewalRequestStatus;
   requestedAt: string;
   requesterRole: 'admin' | 'internal' | 'eksternal' | 'pimpinan';
@@ -16,7 +19,11 @@ export interface RenewalRequestItem {
   decidedBy?: string;
 }
 
-const STORAGE_KEY = 'admin-renewal-requests';
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
 
 function canUseStorage() {
   return typeof window !== 'undefined';
@@ -28,80 +35,67 @@ function emitRenewalUpdate() {
   }
 }
 
-function saveRenewalRequests(items: RenewalRequestItem[]) {
-  if (!canUseStorage()) {
-    return;
-  }
+function normalizeRenewalItem(item: RenewalRequestItem): RenewalRequestItem {
+  const requestedAt = item.requestedAt
+    ? new Date(item.requestedAt).toLocaleString('id-ID')
+    : '-';
+  const decidedAt = item.decidedAt
+    ? new Date(item.decidedAt).toLocaleString('id-ID')
+    : undefined;
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  emitRenewalUpdate();
+  return {
+    ...item,
+    requestedAt,
+    decidedAt,
+  };
 }
 
-export function getRenewalRequests(): RenewalRequestItem[] {
-  if (!canUseStorage()) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as RenewalRequestItem[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+export async function getRenewalRequests(): Promise<RenewalRequestItem[]> {
+  const response = await apiRequest<ApiResponse<RenewalRequestItem[]>>('/dokumen-kerjasama/perpanjangan/requests');
+  const items = Array.isArray(response.data) ? response.data : [];
+  return items.map(normalizeRenewalItem);
 }
 
-export function addRenewalRequest(payload: {
+export async function addRenewalRequest(payload: {
   kerjasamaId: number;
   namaMitra: string;
   noDokumen: string;
   tanggalMulaiBaru: string;
   tanggalBerakhirBaru: string;
   catatan?: string;
+  buktiPerpanjangan?: string | null;
   requesterRole?: 'admin' | 'internal' | 'eksternal' | 'pimpinan';
   notificationHref?: string;
-}): RenewalRequestItem[] {
-  const nextItem: RenewalRequestItem = {
-    id: Date.now(),
-    kerjasamaId: payload.kerjasamaId,
-    namaMitra: payload.namaMitra,
-    noDokumen: payload.noDokumen,
-    tanggalMulaiBaru: payload.tanggalMulaiBaru,
-    tanggalBerakhirBaru: payload.tanggalBerakhirBaru,
-    catatan: payload.catatan || '-',
-    status: 'menunggu',
-    requestedAt: new Date().toLocaleString('id-ID'),
-    requesterRole: payload.requesterRole ?? 'admin',
-    notificationHref: payload.notificationHref ?? '/admin/monitoring/perpanjangan',
-  };
+}): Promise<RenewalRequestItem[]> {
+  await apiRequest<ApiResponse<RenewalRequestItem>>(`/dokumen-kerjasama/${payload.kerjasamaId}/perpanjangan`, {
+    method: 'POST',
+    body: JSON.stringify({
+      tanggal_mulai_baru: payload.tanggalMulaiBaru,
+      tanggal_berakhir_baru: payload.tanggalBerakhirBaru,
+      catatan_perpanjangan: payload.catatan || '-',
+      bukti_perpanjangan: payload.buktiPerpanjangan || null,
+      requester_role: payload.requesterRole ?? 'admin',
+      notification_href: payload.notificationHref ?? '/admin/monitoring/perpanjangan',
+    }),
+  });
 
-  const updated = [nextItem, ...getRenewalRequests()];
-  saveRenewalRequests(updated);
-  return updated;
+  emitRenewalUpdate();
+  return getRenewalRequests();
 }
 
-export function updateRenewalRequestStatus(
+export async function updateRenewalRequestStatus(
   id: number,
   status: Exclude<RenewalRequestStatus, 'menunggu'>,
   decidedBy = 'Admin SIKERMA'
-): RenewalRequestItem[] {
-  const updated = getRenewalRequests().map((item) => {
-    if (item.id !== id) {
-      return item;
-    }
-
-    return {
-      ...item,
+): Promise<RenewalRequestItem[]> {
+  await apiRequest<ApiResponse<RenewalRequestItem>>(`/dokumen-kerjasama/perpanjangan/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({
       status,
-      decidedBy,
-      decidedAt: new Date().toLocaleString('id-ID'),
-    };
+      diputuskan_oleh: decidedBy,
+    }),
   });
 
-  saveRenewalRequests(updated);
-  return updated;
+  emitRenewalUpdate();
+  return getRenewalRequests();
 }
