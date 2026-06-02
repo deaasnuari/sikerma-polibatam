@@ -14,8 +14,9 @@ import {
 } from 'lucide-react';
 import DetailStoryModal from './DetailStoryModal';
 import { type PengajuanItem } from '@/services/adminPengajuanService';
+import { refreshAktivitasDataFromApi } from '@/services/adminStoryAktivitasService';
 import { getInternalPengajuanDisetujui } from '@/services/internalPengajuanService';
-import { getAktivitasByKerjasamaId } from '@/services/adminStoryAktivitasService';
+import { groupStoryAktivitasByMitra, type StoryAktivitasGroup } from '@/services/storyAktivitasGrouping';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export interface Aktivitas {
 
 export interface KerjasamaStory {
   id: string;
+  key: string;
   namaMitra: string;
   noDokumen: string;
   jenis: Jenis;
@@ -50,6 +52,7 @@ export interface KerjasamaStory {
   ruangLingkup: string[];
   jurusanTerlibat: string[];
   aktivitas: Aktivitas[];
+  totalPengajuan: number;
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -83,36 +86,34 @@ function toDisplayDate(value?: string): string {
   return d.toLocaleDateString('en-GB');
 }
 
-function mapPengajuanToStory(item: PengajuanItem): KerjasamaStory {
-  const jenis = (['MoA', 'MoU', 'IA'].includes(item.jenisDokumen) ? item.jenisDokumen : 'MoU') as Jenis;
-  const tahun = item.diajukanPada?.slice(0, 4) || String(new Date().getFullYear());
-  const activities = getAktivitasByKerjasamaId(item.id).map((a) => ({
-    id: String(a.id),
-    judul: a.judul,
-    tanggal: a.tanggal,
-    peserta: a.peserta,
-    deskripsi: a.deskripsi,
-    picPolibatam: a.picPolibatam,
-    picMitra: a.picMitra,
-    status: a.status as StatusAktivitas,
-  }));
-
+function mapStoryGroupToStory(group: StoryAktivitasGroup): KerjasamaStory {
   return {
-    id: String(item.id),
-    namaMitra: item.namaMitra,
-    noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
-    jenis,
-    status: computeStatus(item.tanggalBerakhir),
-    tanggalMulai: toDisplayDate(item.tanggalMulai),
-    tanggalBerakhir: toDisplayDate(item.tanggalBerakhir),
-    kategoriMitra: item.kategoriPengajuan || '-',
-    alamat: '-',
-    email: item.emailPengusul || '-',
-    telepon: item.whatsappPengusul || '-',
-    sisaWaktu: computeSisaWaktu(item.tanggalBerakhir),
-    ruangLingkup: [...item.ruangLingkup],
-    jurusanTerlibat: item.namaUnitProdi ? [item.namaUnitProdi] : [],
-    aktivitas: activities,
+    id: String(group.mitraId ?? group.pengajuan[0]?.id ?? group.key),
+    key: group.key,
+    namaMitra: group.namaMitra,
+    noDokumen: group.nomorDokumen,
+    jenis: group.jenis,
+    status: group.status,
+    tanggalMulai: group.pengajuan[0]?.tanggalMulai ? toDisplayDate(group.pengajuan[0].tanggalMulai) : '-',
+    tanggalBerakhir: group.berakhir,
+    kategoriMitra: group.pengajuan[0]?.kategoriPengajuan || '-',
+    alamat: group.pengajuan[0]?.mitraAlamat || '-',
+    email: group.pengajuan[0]?.mitraEmail || group.pengajuan[0]?.emailPengusul || '-',
+    telepon: group.pengajuan[0]?.mitraTelepon || group.pengajuan[0]?.whatsappPengusul || '-',
+    sisaWaktu: group.masaBerlaku,
+    ruangLingkup: [...group.ruangLingkup],
+    jurusanTerlibat: [...group.jurusanTerlibat],
+    aktivitas: group.aktivitas.map((a) => ({
+      id: String(a.id),
+      judul: a.judul,
+      tanggal: a.tanggal,
+      peserta: a.peserta,
+      deskripsi: a.deskripsi,
+      picPolibatam: a.picPolibatam,
+      picMitra: a.picMitra,
+      status: a.status as StatusAktivitas,
+    })),
+    totalPengajuan: group.totalPengajuan,
   };
 }
 
@@ -143,14 +144,28 @@ export default function InternalStoryAktivitasPage() {
   const [selectedStory, setSelectedStory] = useState<KerjasamaStory | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const sync = () => {
+      if (!isMounted) {
+        return;
+      }
+
       const disetujui = getInternalPengajuanDisetujui();
-      setKerjasamaData(disetujui.map(mapPengajuanToStory));
+      setKerjasamaData(groupStoryAktivitasByMitra(disetujui).map(mapStoryGroupToStory));
     };
-    sync();
+
+    void refreshAktivitasDataFromApi()
+      .catch(() => {
+        // Fallback to cached aktivitas when API unavailable.
+      })
+      .finally(sync);
+
     window.addEventListener('pengajuan-data-updated', sync);
     window.addEventListener('story-data-updated', sync);
+
     return () => {
+      isMounted = false;
       window.removeEventListener('pengajuan-data-updated', sync);
       window.removeEventListener('story-data-updated', sync);
     };
@@ -161,7 +176,8 @@ export default function InternalStoryAktivitasPage() {
   const kerjasamaAktif = kerjasamaData.filter((k) => k.status === 'Aktif').length;
   const now = new Date();
   const bulanIni = allAktivitas.filter((a) => {
-    const parts = a.tanggal.split('/');
+    const normalized = a.tanggal.includes('/') ? a.tanggal : new Date(a.tanggal).toLocaleDateString('en-GB');
+    const parts = normalized.split('/');
     const month = Number(parts[1]);
     const year = Number(parts[2]);
     return month === now.getMonth() + 1 && year === now.getFullYear();
