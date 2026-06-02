@@ -102,4 +102,9 @@ class Pengajuan extends Model
     {
         return $this->hasMany(PengajuanLog::class, 'pengajuan_id', 'id');
     }
+
+    public function aktivitas(): HasMany
+    {
+        return $this->hasMany(PengajuanAktivitas::class, 'pengajuan_id', 'id');
+    }
 }
