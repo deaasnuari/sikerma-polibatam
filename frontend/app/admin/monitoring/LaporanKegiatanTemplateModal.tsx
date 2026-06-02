@@ -82,6 +82,7 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
   const [saveMessage, setSaveMessage] = useState('');
   const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const initializedKeyRef = useRef<string | null>(null);
 
   function isInlinePreviewSupported(fileType?: string) {
     if (!fileType) {
@@ -146,10 +147,18 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
   }
 
   useEffect(() => {
-    if (!data) return;
+    if (!isOpen || !data) {
+      return;
+    }
+
+    const key = getStorageKey(data);
+
+    // Guard against parent re-renders that pass a new object identity for the same modal data.
+    if (initializedKeyRef.current === key) {
+      return;
+    }
 
     const defaultState = buildDefaultState(data);
-    const key = getStorageKey(data);
     const saved = localStorage.getItem(key);
 
     if (saved) {
@@ -162,7 +171,15 @@ export default function LaporanKegiatanTemplateModal({ isOpen, onClose, data }: 
     } else {
       applyState(defaultState);
     }
-  }, [data]);
+
+    initializedKeyRef.current = key;
+  }, [isOpen, data]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      initializedKeyRef.current = null;
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     return () => {
