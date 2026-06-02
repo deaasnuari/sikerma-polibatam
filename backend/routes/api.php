@@ -10,6 +10,7 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MasterUnitProdiController;
 use App\Http\Controllers\PengajuanController;
+use App\Http\Controllers\PengajuanAktivitasController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,6 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		->parameters(['ruang-lingkup' => 'ruang_lingkup']);
 
 	Route::apiResource('/pengajuan', PengajuanController::class);
+	Route::get('/pengajuan-aktivitas', [PengajuanAktivitasController::class, 'index']);
+	Route::post('/pengajuan-aktivitas', [PengajuanAktivitasController::class, 'store']);
+	Route::put('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'update']);
+	Route::delete('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'destroy']);
 	Route::get('/dokumen-kerjasama/perpanjangan/requests', [DokumenKerjasamaController::class, 'renewalRequests']);
 	Route::post('/dokumen-kerjasama/{dokumen_kerjasama}/perpanjangan', [DokumenKerjasamaController::class, 'submitRenewalRequest'])
 		->whereNumber('dokumen_kerjasama');
