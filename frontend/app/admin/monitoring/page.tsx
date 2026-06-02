@@ -50,6 +50,13 @@ export default function MonitoringdanstatusPage() {
   // State untuk toggle form sederhana/baru
   const [showSimpleForm, setShowSimpleForm] = useState(false);
 
+  // Pilihan saat klik tombol Perpanjang Kerjasama
+  const [renewalChoiceModal, setRenewalChoiceModal] = useState<{ open: boolean; kerjasamaId: number | null }>({
+    open: false,
+    kerjasamaId: null,
+  });
+
+
   const resolveRenewalNotificationTarget = (item: Kerjasama) => {
     const sourceItem = item.sourcePengajuanId
       ? getPengajuanData().find((pengajuan) => pengajuan.id === item.sourcePengajuanId)
@@ -118,7 +125,8 @@ export default function MonitoringdanstatusPage() {
       })
     : filteredByTab;
   const tabs = getMonitoringTabs(monitoringData);
-  const selectedRenewalItem = findKerjasamaById(monitoringData, renewalModal.kerjasamaId);
+  const selectedRenewalItem = findKerjasamaById(monitoringData, renewalChoiceModal.open ? renewalChoiceModal.kerjasamaId : renewalModal.kerjasamaId);
+
   const selectedNotificationItem = findKerjasamaById(monitoringData, notificationModal.kerjasamaId);
   const selectedNonactiveItem = findKerjasamaById(monitoringData, nonactiveModal.kerjasamaId);
 
@@ -413,12 +421,13 @@ export default function MonitoringdanstatusPage() {
                     <>
                       <button
                         type="button"
-                        onClick={() => setRenewalModal({ open: true, kerjasamaId: item.id })}
+                        onClick={() => setRenewalChoiceModal({ open: true, kerjasamaId: item.id })}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 px-3 py-1.5 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
                       >
                         <RefreshCw size={13} />
                         Perpanjang Kerjasama
                       </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -468,11 +477,57 @@ export default function MonitoringdanstatusPage() {
       />
 
 
+      {renewalChoiceModal.open && selectedRenewalItem && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-900/40 px-2 py-8">
+          <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
+            <h2 className="text-lg font-bold text-[#1E376C]">Perpanjangan Kerjasama</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Untuk <span className="font-semibold">{selectedRenewalItem.namaMitra}</span> ({selectedRenewalItem.noDokumen}) apakah anda ingin perpanjang kerjasama?
+            </p>
+
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRenewalChoiceModal({ open: false, kerjasamaId: null });
+                  setRenewalModal({ open: true, kerjasamaId: selectedRenewalItem.id });
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100"
+              >
+                <RefreshCw size={16} />
+                Mau Perpanjang
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRenewalChoiceModal({ open: false, kerjasamaId: null });
+                  setNonactiveModal({ open: true, kerjasamaId: selectedRenewalItem.id });
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <Archive size={16} />
+                Tidak Perpanjang
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRenewalChoiceModal({ open: false, kerjasamaId: null })}
+              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
+
       {renewalModal.open && selectedRenewalItem && (
         <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-900/40 px-2 pt-32 pb-4">
+
           <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl p-0 flex flex-col" style={{ maxHeight: 'calc(100vh - 9rem)' }}>
             <div className="overflow-auto p-4" style={{ maxHeight: 'calc(100vh - 11rem)' }}>
-            <h2 className="text-lg font-bold text-[#1E376C] mb-2">Perpanjangan Kerjasama</h2>
+            <h2 className="text-lg font-bold text-[#1E376C] mb-2">Form Perpanjangan Kerjasama</h2>
             {/* Form lengkap selalu tampil di atas */}
             <RenewalFullForm
               initialData={{
