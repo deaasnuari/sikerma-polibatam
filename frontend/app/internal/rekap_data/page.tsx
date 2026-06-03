@@ -1,16 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, Trash2 } from 'lucide-react';
+
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
+
 import {
   deleteRekapDokumen,
-  getRekapData,
   rekapJurusanOptions,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
+import { getInternalRekapData } from '@/services/internalRekapDataService';
+
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { generateNoDokumen } from '@/services/adminMonitoringService';
 
@@ -33,6 +36,7 @@ function mapRekapToItem(d: RekapDokumen): KerjasamaItem {
     'Akan Berakhir': 'Disetujui',
     Kadaluarsa: 'Ditolak',
   };
+
   return {
     noDokumen: d.noDokumen,
     namaMitra: d.namaMitra,
@@ -56,21 +60,29 @@ const statusBadgeMap: Record<ApprovalStatus, string> = {
   Ditolak: 'bg-red-500 text-white',
 };
 
-const jenisOptions = ['Semua Jenis', 'MoU', 'MoA', 'IA'];
-const statusOptions = ['Semua Status', 'Menunggu', 'Disetujui', 'Ditolak'];
+const jenisOptions: Array<'Semua Jenis' | Jenis> = ['Semua Jenis', 'MoU', 'MoA', 'IA'];
+const statusOptions: Array<'Semua Status' | ApprovalStatus> = [
+  'Semua Status',
+  'Menunggu',
+  'Disetujui',
+  'Ditolak',
+];
 
 const ITEMS_PER_PAGE = 10;
 
 export default function InternalRekapDataPage() {
   const { user } = useAuth();
+
   const [data, setData] = useState<KerjasamaItem[]>([]);
   const [search, setSearch] = useState('');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [currentPage, setCurrentPage] = useState(1);
+
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
+
   const [masterJurusanOptions, setMasterJurusanOptions] = useState<string[]>([]);
 
   const jurusanOptions = useMemo(() => {
@@ -83,10 +95,13 @@ export default function InternalRekapDataPage() {
 
     async function loadMasterJurusans() {
       try {
-        const jurusanRows = await getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true });
-        if (!isMounted) {
-          return;
-        }
+        const jurusanRows = await getMasterUnitProdi({
+          jenis_node: 'unit',
+          kategori_unit: 'jurusan',
+          aktif: true,
+        });
+
+        if (!isMounted) return;
 
         const names = Array.from(new Set(jurusanRows.map((item) => item.nama).filter(Boolean)));
         setMasterJurusanOptions(names);
@@ -105,38 +120,82 @@ export default function InternalRekapDataPage() {
   useEffect(() => {
     const sync = () => {
       const jurusanMaster = new Set(masterJurusanOptions);
-      // Filter data sesuai role user login
       const role = user?.role;
-      let filteredData = getRekapData();
+
+      let filteredData = getInternalRekapData();
+
       if (role === 'internal' || role === 'external' || role === 'pimpinan') {
-        filteredData = filteredData.filter((item) => {
+        filteredData = filteredData.filter((item: any) => {
           if ('rolePengaju' in item) {
             return item.rolePengaju === role;
           }
+
           // Fallback lama: internal = jurusan, external = tidak termasuk jurusan/unit
           if (role === 'internal') {
-            return item.kategoriUnit === 'Jurusan' || jurusanMaster.has(item.unit) || rekapJurusanOptions.includes(item.unit);
+            return (
+              item.kategoriUnit === 'Jurusan' ||
+              jurusanMaster.has(item.unit) ||
+              rekapJurusanOptions.includes(item.unit)
+            );
           }
+
           if (role === 'external') {
-            return item.kategoriUnit !== 'Jurusan' && !jurusanMaster.has(item.unit) && !rekapJurusanOptions.includes(item.unit);
+            return (
+              item.kategoriUnit !== 'Jurusan' &&
+              !jurusanMaster.has(item.unit) &&
+              !rekapJurusanOptions.includes(item.unit)
+            );
           }
+
           return true;
         });
       }
-      setData(filteredData.map(mapRekapToItem));
+
+      setData((filteredData as any[]).map((it) => {
+        // filteredData dari rekap internal biasanya bertipe PengajuanItem/rekap model,
+        // bukan RekapDokumen persis. Jadi mapping pakai shape yang sudah ada.
+        const d = it as any;
+        return mapRekapToItem(d as RekapDokumen);
+      }));
+
     };
+
     sync();
-    window.addEventListener('rekap-data-updated', sync);
-    return () => window.removeEventListener('rekap-data-updated', sync);
+    window.addEventListener('internal-rekap-data-updated', sync);
+
+    return () => window.removeEventListener('internal-rekap-data-updated', sync);
   }, [user, masterJurusanOptions]);
 
-function handleDelete(item: KerjasamaItem) {
+  function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
     deleteRekapDokumen(item.noDokumen);
   }
 
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      const keyword = search.toLowerCase().trim();
+
+      const matchesSearch =
+        keyword === '' ||
+        item.namaMitra.toLowerCase().includes(keyword) ||
+        item.noDokumen.toLowerCase().includes(keyword);
+
+      const matchesJurusan = filterJurusan === 'Semua Jurusan' || item.unit === filterJurusan;
+      const matchesJenis = filterJenis === 'Semua Jenis' || item.jenis === filterJenis;
+      const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
+
+      return matchesSearch && matchesJurusan && matchesJenis && matchesStatus;
+    });
+  }, [data, search, filterJurusan, filterJenis, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   function handleExport() {
-    const csvContent = [
+    const csvRows = [
       ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'],
       ...filteredData.map((item) => [
         item.noDokumen,
@@ -144,40 +203,26 @@ function handleDelete(item: KerjasamaItem) {
         item.jenis,
         item.unit,
         item.tanggalMulai,
-item.berlakuHingga,
+        item.berlakuHingga,
         item.status,
       ]),
-    ]
-      .map((row) => row.join(','))
-      .join('\n');
+    ];
+
+    const csvContent = csvRows.map((row) => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `rekap_kerjasama_${new Date().toISOString().split('T')[0]}.csv`;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
     URL.revokeObjectURL(url);
   }
-
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const keyword = search.toLowerCase().trim();
-      const matchesSearch =
-        keyword === '' ||
-        item.namaMitra.toLowerCase().includes(keyword) ||
-        item.noDokumen.toLowerCase().includes(keyword);
-      const matchesJurusan = filterJurusan === 'Semua Jurusan' || item.unit === filterJurusan;
-      const matchesJenis = filterJenis === 'Semua Jenis' || item.jenis === filterJenis;
-      const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
-      return matchesSearch && matchesJurusan && matchesJenis && matchesStatus;
-    });
-  }, [data, search, filterJurusan, filterJenis, filterStatus]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-  const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-5">
@@ -187,7 +232,8 @@ item.berlakuHingga,
           <h1 className="page-title">Daftar Kerjasama</h1>
           <p className="page-subtitle mt-1">Kelola dan monitor semua kerjasama</p>
         </div>
-<button
+
+        <button
           type="button"
           onClick={handleExport}
           className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm"
@@ -205,7 +251,10 @@ item.berlakuHingga,
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Cari berdasarkan nama mitra atau nomor..."
               className="input-field h-10 w-full pl-10 pr-3 text-sm text-gray-700 placeholder:text-gray-400"
             />
@@ -214,31 +263,46 @@ item.berlakuHingga,
           <div className="flex flex-wrap items-center gap-2 md:ml-auto">
             <select
               value={filterJurusan}
-              onChange={(e) => { setFilterJurusan(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setFilterJurusan(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input-field px-3 py-2 text-sm text-gray-700"
             >
               {jurusanOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </select>
 
             <select
               value={filterJenis}
-              onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setFilterJenis(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input-field px-3 py-2 text-sm text-gray-700"
             >
               {jenisOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </select>
 
             <select
               value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input-field px-3 py-2 text-sm text-gray-700"
             >
               {statusOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </select>
           </div>
@@ -268,10 +332,20 @@ item.berlakuHingga,
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
-) : (
+              ) : (
                 paginatedData.map((row, index) => (
-<tr key={`${row.noDokumen}-${index}`} className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60">
-                    <td className="px-4 py-3 text-xs text-gray-600">{generateNoDokumen({ urutan: (currentPage - 1) * ITEMS_PER_PAGE + index + 1, jenis: row.jenis, tanggal: row.tanggalMulai })}</td>
+                  <tr
+                    key={`${row.noDokumen}-${index}`}
+                    className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60"
+                  >
+                    <td className="px-4 py-3 text-xs text-gray-600">
+                      {generateNoDokumen({
+                        urutan:
+                          (currentPage - 1) * ITEMS_PER_PAGE + index + 1,
+                        jenis: row.jenis,
+                        tanggal: row.tanggalMulai,
+                      })}
+                    </td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[row.jenis]}`}>
@@ -290,9 +364,14 @@ item.berlakuHingga,
                         {row.status}
                       </span>
                     </td>
-<td className="px-4 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
-                        <button type="button" onClick={() => setDetailItem(row)} className="text-[#1E376C] transition-colors hover:text-[#2B4A93]" title="Lihat detail">
+                        <button
+                          type="button"
+                          onClick={() => setDetailItem(row)}
+                          className="text-[#1E376C] transition-colors hover:text-[#2B4A93]"
+                          title="Lihat detail"
+                        >
                           <Eye size={16} />
                         </button>
                       </div>
@@ -319,9 +398,11 @@ item.berlakuHingga,
               <ChevronLeft size={14} />
               Sebelumnya
             </button>
+
             <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg bg-[#1E376C] px-2 text-sm font-semibold text-white">
               {currentPage}
             </span>
+
             <button
               type="button"
               disabled={currentPage >= totalPages}
@@ -352,3 +433,4 @@ item.berlakuHingga,
     </div>
   );
 }
+

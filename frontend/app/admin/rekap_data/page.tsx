@@ -45,28 +45,31 @@ export default function RekapDataPage() {
   useEffect(() => {
     let mounted = true;
 
-    const cachedRows = getRekapData();
-
     const loadFromApi = async () => {
       try {
-        const rows = await fetchRekapDokumenFromApi();
+        // Jangan pakai cache/localStorage agar angka rekap tidak berubah-ubah saat sidebar diklik.
+        // fetch ini harus cepat, tapi tetap async; UI dipegang tetap sampai data datang.
+        const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
         if (mounted) {
           setRekapData(rows);
         }
       } catch (err) {
-        console.error("Failed to load rekap dokumen from API:", err);
+        console.error('Failed to load rekap dokumen from API:', err);
         if (mounted) {
-          setRekapData(cachedRows);
+          // fallback: biarkan state lama (nggak kosongin) supaya UI tidak “kedip”
+          // jika sebelumnya sudah terisi dari page mount.
         }
       }
     };
 
-    loadFromApi();
+    void loadFromApi();
 
     return () => {
       mounted = false;
     };
   }, []);
+
+
 
   useEffect(() => {
     let isMounted = true;

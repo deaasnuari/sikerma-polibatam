@@ -10,51 +10,85 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-const summaryCards = [
-  {
-    title: 'Total Dokumen Kerjasama',
-    value: '32',
-    icon: FileText,
-    accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  },
-  {
-    title: 'Kerjasama Aktif',
-    value: '24',
-    icon: CheckCircle2,
-    accent: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-  },
-  {
-    title: 'Dalam Progres',
-    value: '5',
-    icon: TrendingUp,
-    accent: 'bg-amber-50 text-amber-700 border-amber-100',
-  },
-  {
-    title: 'Pertumbuhan Baru',
-    value: '+15',
-    icon: BarChart3,
-    accent: 'bg-rose-50 text-rose-700 border-rose-100',
-  },
-];
-
-const kerjasamaItems = [
-  { name: 'PT Teknologi Industri', type: 'Magang', status: 'Aktif' },
-  { name: 'Universitas Malaysia', type: 'Penelitian', status: 'Diproses' },
-  { name: 'PT Inovasi Batam', type: 'Pelatihan', status: 'Aktif' },
-];
-
-const unitStats = [
-  { label: 'Teknik Informatika', value: '80%' },
-  { label: 'Teknik Elektro', value: '72%' },
-];
-
-const jenisKerjasama = [
-  { label: 'Magang', total: 10 },
-  { label: 'MoA', total: 8 },
-  { label: 'IA', total: 7 },
-];
+import { useEffect, useMemo, useState } from 'react';
+import { getInternalPengajuanDisetujui } from '@/services/internalPengajuanService';
 
 export default function InternalDashboardPage() {
+
+  const [pengajuanDisetujui, setPengajuanDisetujui] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Internal dashboard harus pakai data internal.
+    const sync = () => {
+      const next = getInternalPengajuanDisetujui();
+      setPengajuanDisetujui(next);
+    };
+
+    sync();
+    window.addEventListener('pengajuan-data-updated', sync);
+    return () => window.removeEventListener('pengajuan-data-updated', sync);
+  }, []);
+
+  const total = pengajuanDisetujui.length;
+  const totalAktif = pengajuanDisetujui.filter((i) => i.statusPengajuan === 'Disetujui').length;
+  const totalAkanBerakhir = 0;
+  const totalKadaluarsa = 0;
+
+
+  const summaryCards = useMemo(() => {
+    return [
+      {
+        title: 'Total Dokumen Kerjasama',
+        value: String(total),
+        icon: FileText,
+        accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+      },
+      {
+        title: 'Kerjasama Aktif',
+        value: String(totalAktif || 0),
+        icon: CheckCircle2,
+        accent: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+      },
+      {
+        title: 'Dalam Progres',
+        value: String(totalAkanBerakhir || 0),
+        icon: TrendingUp,
+        accent: 'bg-amber-50 text-amber-700 border-amber-100',
+      },
+      {
+        title: 'Pertumbuhan Baru',
+        value: '0',
+        icon: BarChart3,
+        accent: 'bg-rose-50 text-rose-700 border-rose-100',
+      },
+    ];
+  }, [total, totalAktif, totalAkanBerakhir]);
+
+  const kerjasamaItems = useMemo(() => {
+    const items = (pengajuanDisetujui || []).slice(0, 3) as any[];
+    return items.map((it) => ({
+      name: it.namaMitra,
+      type: it.jenisDokumen,
+      status: it.statusPengajuan,
+    }));
+  }, [pengajuanDisetujui]);
+
+  const unitStats = useMemo(() => {
+    return [{ label: 'Disetujui', value: `${Math.min(100, Math.round((totalAktif / Math.max(1, total)) * 100))}%` }];
+  }, [totalAktif, total]);
+
+  const jenisKerjasama = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of pengajuanDisetujui || []) {
+      const key = row.jenisDokumen || '—';
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([label, total]) => ({ label, total }))
+      .slice(0, 3);
+  }, [pengajuanDisetujui]);
+
+
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

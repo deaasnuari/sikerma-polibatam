@@ -12,70 +12,140 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { getExternalPengajuanData, syncExternalPengajuanWithAdminData, getExternalPengajuanUpdateEventName } from '@/services/externalPengajuanService';
+import { useEffect, useMemo, useState } from 'react';
 
-const summaryCards = [
-  {
-    title: 'Total Kerjasama',
-    value: '8',
-    icon: FileBadge2,
-    accent: 'border-slate-200 bg-white text-slate-900',
-    iconStyle: 'bg-orange-100 text-orange-600',
-  },
-  {
-    title: 'Aktif',
-    value: '5',
-    icon: CheckCircle2,
-    accent: 'border-slate-200 bg-white text-slate-900',
-    iconStyle: 'bg-emerald-100 text-emerald-600',
-  },
-  {
-    title: 'Dalam Proses',
-    value: '2',
-    icon: Clock3,
-    accent: 'border-slate-200 bg-white text-slate-900',
-    iconStyle: 'bg-amber-100 text-amber-600',
-  },
-  {
-    title: 'Unit Terlibat',
-    value: '6',
-    icon: Building2,
-    accent: 'border-slate-200 bg-white text-slate-900',
-    iconStyle: 'bg-blue-100 text-blue-600',
-  },
-];
+// Dashboard Mitra Eksternal: dibuat lebih ringkas & “indah”, tetap mudah karena
+// hanya memakai 1 komponen halaman dengan data utama dari localStorage user.
+type DashboardStatus = 'Menunggu' | 'Diproses' | 'Aktif' | 'Berakhir';
 
-const kerjasamaItems = [
-  {
-    title: 'Kerjasama Magang Mahasiswa',
-    badge: 'Aktif',
-    badgeClass: 'bg-emerald-500 text-white',
-    jenis: 'MoU',
-    unit: 'Teknik Informatika',
-    mulai: '20 Jan 2026',
-    berakhir: '20 Jan 2028',
-  },
-  {
-    title: 'Program Sertifikasi Industri',
-    badge: 'Aktif',
-    badgeClass: 'bg-emerald-500 text-white',
-    jenis: 'MoA',
-    unit: 'Teknik Mesin',
-    mulai: '10 Des 2025',
-    berakhir: '10 Des 2027',
-  },
-  {
-    title: 'Kerjasama Magang Mahasiswa',
-    badge: 'Menunggu',
-    badgeClass: 'bg-amber-400 text-white',
-    jenis: 'MoA',
-    unit: 'Jurusan Teknik',
-    mulai: '23 Feb 2026',
-    berakhir: '-',
-  },
-];
+
+type DashboardItem = {
+  title: string;
+  badge: DashboardStatus;
+  badgeClass: string;
+  jenis: string;
+  unit: string;
+  mulai: string;
+  berakhir: string;
+};
+
+const statusBadgeClass: Record<DashboardStatus, string> = {
+  Menunggu: 'bg-amber-400 text-white',
+  Diproses: 'bg-sky-400 text-white',
+  Aktif: 'bg-emerald-500 text-white',
+  Berakhir: 'bg-rose-400 text-white',
+};
+
+function toIdDate(value?: string): string {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function mapStatus(statusPengajuan: string): DashboardStatus {
+  if (statusPengajuan === 'Disetujui') return 'Aktif';
+  if (statusPengajuan === 'Ditolak') return 'Berakhir';
+  if (statusPengajuan === 'Diproses') return 'Diproses';
+  return 'Menunggu';
+}
+
+function mapJenis(jenisDokumen?: string): string {
+  if (!jenisDokumen) return '—';
+  return jenisDokumen;
+}
+
+function buildDashboardItems(items: any[]): DashboardItem[] {
+  return (items || []).slice(0, 3).map((it) => {
+    const status = mapStatus(it.statusPengajuan);
+    return {
+      title: it.judulPengajuan || it.namaMitra || 'Kerjasama',
+      badge: status,
+      badgeClass: statusBadgeClass[status],
+      jenis: mapJenis(it.jenisDokumen),
+      unit: it.namaUnitProdi || '—',
+      mulai: toIdDate(it.tanggalMulai),
+      berakhir: toIdDate(it.tanggalBerakhir),
+    };
+  });
+}
+
 
 export default function EksternalPage() {
   const { user } = useAuth();
+
+  const [raw, setRaw] = useState<any[]>([]);
+
+
+  useEffect(() => {
+    let mounted = true;
+
+    const sync = () => {
+      const synced = syncExternalPengajuanWithAdminData();
+      if (mounted) setRaw(synced as any[]);
+    };
+
+    // initial
+    try {
+      sync();
+    } catch {
+      // ignore
+    }
+
+    // realtime update
+    const eventName = getExternalPengajuanUpdateEventName();
+    const handler = () => sync();
+    window.addEventListener(eventName, handler);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener(eventName, handler);
+    };
+  }, []);
+
+  const total = raw.length;
+  const totalAktif = raw.filter((i) => i.statusPengajuan === 'Disetujui').length;
+  const totalDiproses = raw.filter((i) => i.statusPengajuan === 'Diproses').length;
+  const totalUnit = new Set(raw.map((i) => i.namaUnitProdi).filter(Boolean)).size;
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        title: 'Total Kerjasama',
+        value: String(total),
+        icon: FileBadge2,
+        accent: 'border-slate-200 bg-white text-slate-900',
+        iconStyle: 'bg-orange-100 text-orange-600',
+      },
+      {
+        title: 'Aktif',
+        value: String(totalAktif),
+        icon: CheckCircle2,
+        accent: 'border-slate-200 bg-white text-slate-900',
+        iconStyle: 'bg-emerald-100 text-emerald-600',
+      },
+      {
+        title: 'Dalam Proses',
+        value: String(totalDiproses),
+        icon: Clock3,
+        accent: 'border-slate-200 bg-white text-slate-900',
+        iconStyle: 'bg-amber-100 text-amber-600',
+      },
+      {
+        title: 'Unit Terlibat',
+        value: String(totalUnit),
+        icon: Building2,
+        accent: 'border-slate-200 bg-white text-slate-900',
+        iconStyle: 'bg-blue-100 text-blue-600',
+      },
+    ],
+    [total, totalAktif, totalDiproses, totalUnit],
+  );
+
+  const kerjasamaItems = useMemo(() => buildDashboardItems(raw), [raw]);
+
+  const isEmpty = total === 0;
 
   return (
     <div className="space-y-5">
@@ -103,6 +173,7 @@ export default function EksternalPage() {
           );
         })}
       </div>
+
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">

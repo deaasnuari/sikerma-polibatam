@@ -245,16 +245,11 @@ export default function PengajuanKerjasama() {
   }, []);
 
   useEffect(() => {
-    const cached = getPengajuanData();
-    if (cached.length > 0) {
-      setPengajuanData(cached);
-      setPengajuanLoading(false);
-      void refreshPengajuanData(true);
-      return;
-    }
-
+    // Jangan tampilkan data dari cache/localStorage karena bisa menyebabkan jumlah berubah saat API selesai.
+    // Untuk admin daftar pengajuan, tampilkan loading hingga data dari server termuat.
     void refreshPengajuanData(false);
   }, [refreshPengajuanData]);
+
 
   useEffect(() => {
     if (isAjukanView) {

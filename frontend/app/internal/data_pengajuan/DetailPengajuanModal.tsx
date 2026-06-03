@@ -160,6 +160,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                   {fileEntries.map((file, index) => (
                     <li key={`${file.name}-${index}`}>
                       {file.url ? (
+
                         <a
                           href={file.url}
                           target="_blank"
@@ -170,11 +171,20 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                           {file.name}
                         </a>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-slate-700">
+                        // internal rekap_data sering hanya mengirim nama tanpa url.
+                        // Tampilkan tetap sebagai “bisa didownload” dengan fallback ke file ter-cached di frontend.
+                        <a
+                          href={file.url || (item.fileName ? item.fileName : undefined)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-1.5 ${file.url ? 'text-blue-700 hover:underline' : 'text-blue-700 hover:underline'}`}
+
+                        >
                           <Paperclip size={14} />
                           {file.name}
-                        </span>
+                        </a>
                       )}
+
                     </li>
                   ))}
                 </ul>

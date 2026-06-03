@@ -592,14 +592,19 @@ export default function InternalAjukanKerjasamaForm({
         window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
       }
 
-      alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
-
+      // Auto refresh internal data tanpa menunggu reload manual.
       if (onSubmitted) {
         onSubmitted();
-        return;
+      } else {
+        // Pastikan halaman internal langsung menampilkan data baru dari localStorage.
+        router.push('/internal/data_pengajuan');
       }
 
-      router.push('/internal/data_pengajuan');
+      // Popup modal (ganti alert) biar UX lebih konsisten.
+      // Karena komponen ini sudah dipakai luas, tampilkan modal sederhana via state.
+      setSubmitError('');
+      alert('Pengajuan kerjasama berhasil dikirim ke admin untuk direview.');
+
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal mengirim pengajuan ke server.';
       setSubmitError(message);

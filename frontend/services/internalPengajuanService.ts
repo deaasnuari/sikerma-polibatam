@@ -38,36 +38,14 @@ export function submitInternalPengajuan(
 export function getInternalPengajuanDisetujui(): PengajuanItem[] {
   if (typeof window === 'undefined') return [];
 
-  // Baca dari admin storage — filter yang bukan dari admin (isFromAdmin false)
-  // dan yang kategorinya Internal ATAU tidak punya kategori (data lama)
-  const adminData = getPengajuanData();
-  const fromAdmin = adminData.filter(
-    (item) => !item.isFromAdmin && item.statusPengajuan === 'Disetujui' &&
-    (item.kategoriPengajuan === 'Internal' || !item.kategoriPengajuan)
-  );
-
-  // Baca dari internal storage untuk menangkap data yang mungkin tidak tersimpan di admin storage
+  // Internal HARUS bersumber dari storage internal sendiri.
+  // Jangan ambil dari admin storage agar internal/mitra tidak tercampur.
   const internalData = getInternalPengajuanData();
 
-  // Sinkronkan status internal storage dari admin storage berdasarkan id
-  const adminMap = new Map(adminData.map((item) => [item.id, item]));
-  const fromInternal = internalData
-    .map((item) => {
-      const adminItem = adminMap.get(item.id);
-      if (adminItem) return { ...item, statusPengajuan: adminItem.statusPengajuan as PengajuanStatus };
-      return item;
-    })
-    .filter((item) => item.statusPengajuan === 'Disetujui');
+  // Filter yang disetujui internal saja
+  const fromInternal = internalData.filter((item) => item.statusPengajuan === 'Disetujui');
 
-  // Gabungkan dan deduplikasi berdasarkan id
-  const combined = [...fromAdmin, ...fromInternal];
-  const seen = new Set<number>();
-  const unique: PengajuanItem[] = [];
-  for (const item of combined) {
-    if (!seen.has(item.id)) {
-      seen.add(item.id);
-      unique.push(item);
-    }
-  }
-  return unique;
+
+  return fromInternal;
 }
+

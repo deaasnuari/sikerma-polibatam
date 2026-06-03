@@ -52,13 +52,9 @@ interface DokumenTerkait {
   nama: string;
   ukuran: string;
   tanggal: string;
+  url?: string;
 }
 
-const dummyDokumen: DokumenTerkait[] = [
-  { nama: 'Draft MoU.pdf', ukuran: '2.5 MB', tanggal: '28 Feb 2026' },
-  { nama: 'Proposal Kerjasama.pdf', ukuran: '18 MB', tanggal: '25 Feb 2026' },
-  { nama: 'Company Profile.pdf', ukuran: '1.2 MB', tanggal: '24 Feb 2026' },
-];
 
 interface KontakMitra {
   nama: string;
@@ -90,7 +86,15 @@ const dummyHistori: HistoriItem[] = [
 
 export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('informasi');
+
+  // Modal internal rekap_data tidak punya tipe proper untuk dokumen pendukung,
+  // jadi kita baca dari field dinamis pada item.
+  const dokumenTerkait = (item as any).dokumenTerkait as
+    | { nama: string; url?: string; ukuran: string; tanggal: string }[]
+    | undefined;
+
   const statusInfo = statusLabelMap[item.status];
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 backdrop-blur-[2px]">
@@ -296,8 +300,13 @@ function TabInformasi({ item }: { item: KerjasamaItem }) {
   );
 }
 
-function TabDokumen({ dokumenTerkait }: { dokumenTerkait?: { nama: string; url: string; ukuran: string; tanggal: string }[] }) {
+function TabDokumen({
+  dokumenTerkait,
+}: {
+  dokumenTerkait?: { nama: string; url?: string; ukuran: string; tanggal: string }[];
+}) {
   if (!dokumenTerkait || dokumenTerkait.length === 0) {
+
     return (
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-gray-900">Dokumen Terkait</h3>
