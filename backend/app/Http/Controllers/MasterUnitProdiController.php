@@ -12,6 +12,14 @@ use Throwable;
 
 class MasterUnitProdiController extends Controller
 {
+    private const HIDDEN_JURUSAN_ALIASES = ['EL', 'TM', 'MB'];
+
+    private function isHiddenJurusanAlias(?string $name): bool
+    {
+        $normalized = strtoupper(trim((string) $name));
+        return $normalized !== '' && in_array($normalized, self::HIDDEN_JURUSAN_ALIASES, true);
+    }
+
     private function ensureAdmin(Request $request): ?Response
     {
         $user = $request->user();
@@ -284,7 +292,11 @@ class MasterUnitProdiController extends Controller
      */
     public function tree(): Response
     {
-        $rootUnits = MasterUnitProdi::where('parent_id', null)->with('children')->get();
+        $rootUnits = MasterUnitProdi::where('parent_id', null)
+            ->with('children')
+            ->get()
+            ->reject(fn (MasterUnitProdi $item): bool => $this->isHiddenJurusanAlias($item->nama))
+            ->values();
 
         return response([
             'success' => true,
