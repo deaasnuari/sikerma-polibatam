@@ -1,6 +1,6 @@
 import { apiRequest } from '@/lib/api';
 
-const MASTER_UNIT_PRODI_CACHE_KEY = 'sikerma.master-unit-prodi-cache-v1';
+const MASTER_UNIT_PRODI_CACHE_KEY = 'sikerma.master-unit-prodi-cache-v2';
 
 let masterUnitProdiCache: MasterUnitProdi[] | null = null;
 
