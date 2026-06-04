@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "npm run dev:auto-open",
-    "dev:auto-open": "powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*next*start-server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }\"; start http://localhost:3000; npx next dev",
-    "dev:clean": "powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*next*start-server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }\"; next dev",
-    "dev:plain": "next dev",
-    "dev:open": "start http://localhost:3000 && next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev:auto-open": "powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*next*start-server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }\"; start http://localhost:3000; node ./node_modules/next/dist/bin/next dev",
+    "dev:clean": "powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*next*start-server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }\"; node ./node_modules/next/dist/bin/next dev",
+    "dev:plain": "node ./node_modules/next/dist/bin/next dev",
+    "dev:open": "start http://localhost:3000 && node ./node_modules/next/dist/bin/next dev",
+    "build": "node ./node_modules/next/dist/bin/next build",
+    "start": "node ./node_modules/next/dist/bin/next start",
+    "lint": "node ./node_modules/next/dist/bin/next lint"
   },
   "dependencies": {
     "lucide-react": "^1.8.0",
