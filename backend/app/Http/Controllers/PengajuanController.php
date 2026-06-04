@@ -377,10 +377,8 @@ class PengajuanController extends Controller
             report($exception);
         }
 
-        // Setelah ACC final, lampiran tidak lagi disimpan di pengajuan_file.
-        if ($this->hasPengajuanFileTable()) {
-            $pengajuan->pengajuanFiles()->delete();
-        }
+        // Pertahankan lampiran di pengajuan_file agar detail pengajuan internal/admin
+        // tetap bisa mengakses dokumen setelah data dipindahkan ke dokumen_kerjasama.
     }
 
     private function normalizeAttachmentPath(array $row): string
