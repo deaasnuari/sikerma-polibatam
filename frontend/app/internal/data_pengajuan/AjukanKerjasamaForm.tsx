@@ -221,7 +221,14 @@ export default function InternalAjukanKerjasamaForm({
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
-  const allJurusanRows = masterUnitProdiTree.filter((item) => item.jenis_node === 'unit' && item.kategori_unit === 'jurusan' && item.aktif);
+  const hiddenJurusanAliases = new Set(['EL', 'TM', 'MB']);
+  const allJurusanRows = masterUnitProdiTree.filter(
+    (item) =>
+      item.jenis_node === 'unit' &&
+      item.kategori_unit === 'jurusan' &&
+      item.aktif &&
+      !hiddenJurusanAliases.has(item.nama.trim().toUpperCase()),
+  );
   const selectedJurusanNode = allJurusanRows.find((item) => item.id === selectedJurusanId) ?? null;
   const jurusanSelectValue = selectedJurusanNode?.id ?? '';
   const prodiOptionsForJurusan = (selectedJurusanNode?.children ?? []).filter((child) => child.jenis_node === 'prodi' && child.aktif);
