@@ -160,7 +160,6 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                   {fileEntries.map((file, index) => (
                     <li key={`${file.name}-${index}`}>
                       {file.url ? (
-
                         <a
                           href={file.url}
                           target="_blank"
@@ -171,18 +170,13 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                           {file.name}
                         </a>
                       ) : (
-                        // internal rekap_data sering hanya mengirim nama tanpa url.
-                        // Tampilkan tetap sebagai “bisa didownload” dengan fallback ke file ter-cached di frontend.
-                        <a
-                          href={file.url || (item.fileName ? item.fileName : undefined)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`inline-flex items-center gap-1.5 ${file.url ? 'text-blue-700 hover:underline' : 'text-blue-700 hover:underline'}`}
-
+                        <span
+                          className="inline-flex items-center gap-1.5 text-slate-600"
+                          title="URL dokumen belum tersedia"
                         >
                           <Paperclip size={14} />
                           {file.name}
-                        </a>
+                        </span>
                       )}
 
                     </li>
