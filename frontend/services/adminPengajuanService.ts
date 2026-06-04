@@ -239,6 +239,10 @@ function buildAttachmentUrl(pathFile: string): string {
     return pathFile;
   }
 
+  if (/^data:/i.test(pathFile)) {
+    return pathFile;
+  }
+
   const origin = getBackendOrigin();
   const normalized = pathFile.replace(/\\/g, '/').replace(/^\/+/, '');
 
@@ -250,7 +254,7 @@ function buildAttachmentUrl(pathFile: string): string {
     return `${origin}/storage/${normalized}`;
   }
 
-  return `${origin}/storage/uploads/${normalized}`;
+  return `${origin}/storage/${normalized}`;
 }
 
 function extractApiRows(response: ApiListResponse<ApiPengajuanRow>): ApiPengajuanRow[] {
@@ -327,7 +331,7 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
         .filter((file) => typeof file?.name === 'string' && file.name.trim().length > 0)
         .map((file) => ({
           name: String(file.name),
-          url: typeof file.url === 'string' ? file.url : '',
+          url: typeof file.url === 'string' && file.url.trim() !== '' ? buildAttachmentUrl(file.url) : '',
           type: typeof file.type === 'string' ? file.type : undefined,
           size: typeof file.size === 'number' ? file.size : undefined,
         }))
@@ -462,8 +466,7 @@ export async function updatePengajuanItemApi(
       name: file.name,
       type: file.type,
       size: file.size,
-      // Avoid sending huge data URLs to backend as JSON payload.
-      url: file.url && !file.url.startsWith('data:') ? file.url : '',
+      url: file.url || '',
     }));
   }
 
@@ -539,8 +542,7 @@ export async function submitPengajuanApi(
       name: file.name,
       type: file.type,
       size: file.size,
-      // Avoid sending huge data URLs to backend as JSON payload.
-      url: file.url && !file.url.startsWith('data:') ? file.url : '',
+      url: file.url || '',
     })),
   };
 
