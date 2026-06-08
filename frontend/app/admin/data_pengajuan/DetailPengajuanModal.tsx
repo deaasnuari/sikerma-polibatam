@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip } from 'lucide-react';
+import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip, Download } from 'lucide-react';
 import type { PengajuanItem, PengajuanStatus } from '@/services/adminPengajuanService';
 import { pengajuanDokumenBadge } from '@/services/adminPengajuanService';
 
@@ -107,7 +107,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           {/* Lampiran file */}
           {fileEntries.length > 0 && (
             <div className="mt-4">
-              <div className="mb-1 text-xs font-semibold text-slate-700">Lampiran:</div>
+              <div className="mb-1 text-xs font-semibold text-slate-700">Lampiran (klik untuk dibuka / di-save):</div>
               <ul className="list-disc pl-5 text-xs text-slate-700">
                 {fileEntries.map((file, idx) => (
                   <li key={idx}>
@@ -116,10 +116,12 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                         href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        download={file.name}
                         className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
                       >
                         <Paperclip size={12} />
                         {file.name}
+                        <Download size={13} />
                       </a>
                     ) : (
                       <span className="flex items-center gap-1 text-slate-700">

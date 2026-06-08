@@ -164,6 +164,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                           href={file.url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download={file.name}
                           className="inline-flex items-center gap-1.5 text-blue-700 hover:underline"
                         >
                           <Paperclip size={14} />
