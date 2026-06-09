@@ -1,7 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Filter, Search, X } from 'lucide-react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  MessageSquareText,
+  Paperclip,
+  Search,
+  Tag,
+  User,
+  X,
+  XCircle,
+} from 'lucide-react';
 import type { PengajuanItem } from '../../../services/adminPengajuanService';
 import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import {
@@ -13,12 +31,19 @@ import {
 interface KerjasamaItem {
   id: number;
   noDokumen: string;
+  judulPengajuan: string;
+  namaPengusul: string;
+  diajukanPada: string;
   namaMitra: string;
   jenis: 'MoU' | 'MoA' | 'IA';
   unit: string;
   tanggalMulai: string;
   berlakuHingga: string;
   tahun: string;
+  emailPengusul: string;
+  whatsappPengusul: string;
+  ruangLingkup: string[];
+  fileAttachments: { name: string; url: string }[];
   status: 'Menunggu' | 'Diproses' | 'Aktif' | 'Berakhir';
   reviewState: 'Belum Direview' | 'Sudah Direview';
   reviewComment?: string;
@@ -30,7 +55,7 @@ function toDisplayDate(value?: string): string {
   if (!value) return '-';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
@@ -45,12 +70,26 @@ function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
   return {
     id: item.id,
     noDokumen: `${jenis}/${String(item.id).padStart(3, '0')}/${tahun}`,
+    judulPengajuan: item.judulPengajuan || '-',
+    namaPengusul: item.namaPengusul || '-',
+    diajukanPada: toDisplayDate(item.diajukanPada),
     namaMitra: item.namaMitra,
     jenis,
     unit: item.namaUnitProdi,
     tanggalMulai: toDisplayDate(item.tanggalMulai),
     berlakuHingga: toDisplayDate(item.tanggalBerakhir),
     tahun,
+    emailPengusul: item.emailPengusul || '-',
+    whatsappPengusul: item.whatsappPengusul || '-',
+    ruangLingkup: item.ruangLingkup?.length ? item.ruangLingkup : [],
+    fileAttachments:
+      item.fileAttachments?.length
+        ? item.fileAttachments.map((file) => ({ name: file.name, url: file.url || '' }))
+        : (item.fileName || '')
+            .split(',')
+            .map((name) => name.trim())
+            .filter(Boolean)
+            .map((name) => ({ name, url: '' })),
     status: statusMap[item.statusPengajuan] ?? 'Menunggu',
     reviewState: item.reviewedAt || item.reviewComment ? 'Sudah Direview' : 'Belum Direview',
     reviewComment: item.reviewComment,
@@ -69,6 +108,42 @@ const statusStyle: Record<KerjasamaItem['status'], string> = {
 const reviewStateStyle: Record<KerjasamaItem['reviewState'], string> = {
   'Belum Direview': 'bg-slate-100 text-slate-700',
   'Sudah Direview': 'bg-indigo-100 text-indigo-700',
+};
+
+const statusDetailConfig: Record<KerjasamaItem['status'], { className: string; icon: ReactNode; label: string }> = {
+  Menunggu: {
+    className: 'bg-amber-100 text-amber-700',
+    icon: <Clock3 size={14} />,
+    label: 'Menunggu',
+  },
+  Diproses: {
+    className: 'bg-sky-100 text-sky-700',
+    icon: <Clock3 size={14} />,
+    label: 'Diproses',
+  },
+  Aktif: {
+    className: 'bg-emerald-100 text-emerald-700',
+    icon: <CheckCircle2 size={14} />,
+    label: 'Aktif',
+  },
+  Berakhir: {
+    className: 'bg-rose-100 text-rose-700',
+    icon: <XCircle size={14} />,
+    label: 'Berakhir',
+  },
+};
+
+const jenisStyle: Record<KerjasamaItem['jenis'], string> = {
+  MoU: 'bg-violet-100 text-violet-700',
+  MoA: 'bg-[#1E376C] text-white',
+  IA: 'bg-orange-100 text-orange-700',
+};
+
+const reviewCopy: Record<KerjasamaItem['status'], string> = {
+  Menunggu: 'Pengajuan sudah masuk dan sedang menunggu review dari admin.',
+  Diproses: 'Admin sedang memeriksa detail pengajuan kerja sama ini.',
+  Aktif: 'Pengajuan sudah disetujui admin dan siap ditindaklanjuti.',
+  Berakhir: 'Pengajuan belum disetujui admin. Silakan cek catatan review.',
 };
 
 export default function DaftarKerjasamaEksternalPage() {
@@ -384,9 +459,10 @@ export default function DaftarKerjasamaEksternalPage() {
                       <button
                         type="button"
                         onClick={() => setDetailItem(item)}
-                        className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900"
                       >
-                        Detail
+                        <Eye size={16} />
+                        <span className="underline underline-offset-2">Lihat Detail</span>
                       </button>
                     </td>
                   </tr>
@@ -411,78 +487,161 @@ export default function DaftarKerjasamaEksternalPage() {
 
       {/* Detail Modal */}
       {detailItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setDetailItem(null);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Detail Kerjasama</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{detailItem.noDokumen}</p>
+                <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
+                <h2 className="text-xl font-bold text-slate-900">{detailItem.judulPengajuan}</h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {detailItem.diajukanPada} - {detailItem.namaPengusul}
+                </p>
               </div>
-              <button type="button" onClick={() => setDetailItem(null)} className="text-slate-400 hover:text-slate-600">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs text-slate-500 mb-0.5">Status</p>
-                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${statusStyle[detailItem.status]}`}>
-                  {detailItem.status}
-                </span>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs text-slate-500">Review Admin</p>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[detailItem.reviewState]}`}>
-                    {detailItem.reviewState}
-                  </span>
-                </div>
-                {detailItem.reviewComment ? (
-                  <p className="mt-2 text-sm text-slate-800">{detailItem.reviewComment}</p>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-500">Belum ada catatan review dari admin.</p>
-                )}
-                {(detailItem.reviewedAt || detailItem.reviewedBy) && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    {detailItem.reviewedBy ? `Oleh ${detailItem.reviewedBy}` : 'Direview admin'}
-                    {detailItem.reviewedAt ? ` pada ${toDisplayDate(detailItem.reviewedAt)}` : ''}
-                  </p>
-                )}
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs text-slate-500 mb-0.5">Nama Mitra</p>
-                <p className="text-sm font-semibold text-slate-900">{detailItem.namaMitra}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500 mb-0.5">Jenis Dokumen</p>
-                  <span className="inline-block rounded-md bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">{detailItem.jenis}</span>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500 mb-0.5">Unit Pelaksana</p>
-                  <p className="text-sm font-medium text-slate-800">{detailItem.unit}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500 mb-0.5">Tanggal Mulai</p>
-                  <p className="text-sm font-medium text-slate-800">{detailItem.tanggalMulai}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500 mb-0.5">Berlaku Hingga</p>
-                  <p className="text-sm font-medium text-slate-800">{detailItem.berlakuHingga}</p>
-                </div>
-              </div>
-            </div>
-            <div className="border-t border-slate-200 px-5 py-4">
               <button
                 type="button"
                 onClick={() => setDetailItem(null)}
-                className="w-full rounded-lg bg-[#071B3C] py-2.5 text-sm font-semibold text-white hover:bg-[#0d2b5b]"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
-                Tutup
+                <X size={18} />
               </button>
+            </div>
+            <div className="space-y-5 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusDetailConfig[detailItem.status].className}`}
+                >
+                  {statusDetailConfig[detailItem.status].icon}
+                  {statusDetailConfig[detailItem.status].label}
+                </span>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${jenisStyle[detailItem.jenis]}`}>
+                  {detailItem.jenis}
+                </span>
+              </div>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Informasi Umum</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoRow icon={<Building2 size={15} />} label="Mitra" value={detailItem.namaMitra} />
+                  <InfoRow icon={<User size={15} />} label="Pengusul" value={detailItem.namaPengusul} />
+                  <InfoRow icon={<Tag size={15} />} label="Jurusan / Unit" value={detailItem.unit} />
+                  <InfoRow icon={<FileText size={15} />} label="Jenis Dokumen" value={detailItem.jenis} />
+                  <InfoRow icon={<CalendarDays size={15} />} label="Tanggal Mulai" value={detailItem.tanggalMulai} />
+                  <InfoRow icon={<CalendarDays size={15} />} label="Tanggal Berakhir" value={detailItem.berlakuHingga} />
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Ruang Lingkup</h3>
+                <div className="flex flex-wrap gap-2">
+                  {detailItem.ruangLingkup.length > 0 ? (
+                    detailItem.ruangLingkup.map((scope) => (
+                      <span key={`${detailItem.id}-${scope}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {scope}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">-</span>
+                  )}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Kontak</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoRow icon={<User size={15} />} label="Email Pengusul" value={detailItem.emailPengusul} />
+                  <InfoRow icon={<User size={15} />} label="Whatsapp" value={detailItem.whatsappPengusul} />
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Dokumen Pendukung</h3>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  {detailItem.fileAttachments.length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {detailItem.fileAttachments.map((file, index) => (
+                        <li key={`${file.name}-${index}`}>
+                          {file.url ? (
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-blue-700 hover:underline"
+                            >
+                              <Paperclip size={14} />
+                              {file.name}
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-blue-700">
+                              <Paperclip size={14} />
+                              {file.name}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-slate-500">Belum ada dokumen pendukung.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-[#173B82]">
+                    <MessageSquareText size={15} />
+                    Hasil Review Admin
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[detailItem.reviewState]}`}
+                  >
+                    {detailItem.reviewState}
+                  </span>
+                </div>
+
+                {detailItem.reviewComment ? (
+                  <p className="text-sm text-slate-700">{detailItem.reviewComment}</p>
+                ) : (
+                  <p className="text-sm text-slate-700">{reviewCopy[detailItem.status]}</p>
+                )}
+
+                {(detailItem.reviewedAt || detailItem.reviewedBy) && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Diperbarui oleh {detailItem.reviewedBy || 'Admin'}
+                    {detailItem.reviewedAt ? ` pada ${toDisplayDate(detailItem.reviewedAt)}` : ''}
+                  </p>
+                )}
+              </section>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+      <span className="mt-0.5 text-slate-400">{icon}</span>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-0.5 text-sm font-medium text-slate-800">{value || '-'}</p>
+      </div>
     </div>
   );
 }
