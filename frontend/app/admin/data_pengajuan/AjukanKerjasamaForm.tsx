@@ -218,7 +218,7 @@ export default function AdminAjukanKerjasamaForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittedInfo, setSubmittedInfo] = useState<{ judul: string; mitra: string; jenis: string } | null>(null);
-
+const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false);
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const hiddenJurusanAliases = new Set(['EL', 'TM', 'MB']);
@@ -555,74 +555,80 @@ export default function AdminAjukanKerjasamaForm({
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (isSubmitting) {
-      return;
-    }
+  if (isSubmitting) {
+    return;
+  }
 
-    setSubmitError(null);
-    setIsSubmitting(true);
+  // TAMBAHAN BARU: Cek apakah ada dokumen yang diupload
+  if (dokumen.length > 0 && !showDocumentReminderModal) {
+    setShowDocumentReminderModal(true);
+    return;
+  }
 
-    try {
-      if (onSubmitOverride) {
-        const submitResult = await Promise.resolve(onSubmitOverride({
-          formData,
-          asal,
-          selectedRuangLingkup,
-          dokumen: dokumen.map((item) => item.file),
-          dokumenAttachments: dokumen,
-          selectedProdiId,
-        }));
+  setSubmitError(null);
+  setIsSubmitting(true);
 
-        if (submitResult === false) {
-          return;
-        }
+  try {
+    if (onSubmitOverride) {
+      const submitResult = await Promise.resolve(onSubmitOverride({
+        formData,
+        asal,
+        selectedRuangLingkup,
+        dokumen: dokumen.map((item) => item.file),
+        dokumenAttachments: dokumen,
+        selectedProdiId,
+      }));
 
-        if (onSubmitted) {
-          onSubmitted();
-          return;
-        }
-
+      if (submitResult === false) {
         return;
       }
 
-      const submitPayload: Parameters<typeof submitPengajuanApi>[0] = {
-        judulPengajuan: formData.judulKerjasama,
-        namaPengusul: formData.namaKontak || 'Internal Polibatam',
-        namaMitra: formData.namaMitra,
-        jenisDokumen: formData.jenisKerjasama,
-        namaUnitProdi: formData.unitPelaksana,
-        unitProdiId: selectedProdiId,
-        kategoriPengajuan: 'Internal',
-        tanggalMulai: formData.tanggalMulai,
-        tanggalBerakhir: formData.tanggalBerakhir,
-        emailPengusul: formData.emailKontak,
-        whatsappPengusul: formData.teleponKontak,
-        ruangLingkup: selectedRuangLingkup,
-        ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
-        fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
-        fileAttachments: buildFileAttachments(),
-      };
-
-      await submitPengajuanApi(submitPayload, true, 'admin');
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
+      if (onSubmitted) {
+        onSubmitted();
+        return;
       }
 
-      setSubmittedInfo({
-        judul: formData.judulKerjasama || '—',
-        mitra: formData.namaMitra || '—',
-        jenis: formData.jenisKerjasama || '—',
-      });
-      setShowSuccessModal(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal mengirim pengajuan ke server.';
-      setSubmitError(message);
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
-  };
+
+    const submitPayload: Parameters<typeof submitPengajuanApi>[0] = {
+      judulPengajuan: formData.judulKerjasama,
+      namaPengusul: formData.namaKontak || 'Internal Polibatam',
+      namaMitra: formData.namaMitra,
+      jenisDokumen: formData.jenisKerjasama,
+      namaUnitProdi: formData.unitPelaksana,
+      unitProdiId: selectedProdiId,
+      kategoriPengajuan: 'Internal',
+      tanggalMulai: formData.tanggalMulai,
+      tanggalBerakhir: formData.tanggalBerakhir,
+      emailPengusul: formData.emailKontak,
+      whatsappPengusul: formData.teleponKontak,
+      ruangLingkup: selectedRuangLingkup,
+      ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
+      fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
+      fileAttachments: buildFileAttachments(),
+    };
+
+    await submitPengajuanApi(submitPayload, true, 'admin');
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
+    }
+
+    setSubmittedInfo({
+      judul: formData.judulKerjasama || '—',
+      mitra: formData.namaMitra || '—',
+      jenis: formData.jenisKerjasama || '—',
+    });
+    setShowSuccessModal(true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gagal mengirim pengajuan ke server.';
+    setSubmitError(message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <>
@@ -741,7 +747,7 @@ export default function AdminAjukanKerjasamaForm({
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Negara Mitra</label>
-              <select value={formData.negara} onChange={(e) => handleChange('negara', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm">
+              <select value={formData.negara} onChange={(e) => handleChange('negara', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
                 <option value="Indonesia">Indonesia (Dalam Negeri)</option>
                 <option value="Malaysia">Malaysia</option>
                 <option value="Singapura">Singapura</option>
@@ -753,6 +759,11 @@ export default function AdminAjukanKerjasamaForm({
                 <option value="Belanda">Belanda</option>
                 <option value="Inggris">Inggris</option>
                 <option value="Tiongkok">Tiongkok</option>
+                <option value="Taiwan">Taiwan</option>
+                <option value="Prancis">Prancis</option>
+                <option value="Filipina">Filipina</option>
+                <option value="Vietnam">Vietnam</option>
+                <option value="Palestina">Palestina</option>
                 <option value="Lainnya">Lainnya</option>
               </select>
               <p className="mt-1 text-xs text-slate-500">
@@ -1283,6 +1294,77 @@ export default function AdminAjukanKerjasamaForm({
           </div>
         </div>
       )}
+      {/* Document Reminder Modal */}
+      {showDocumentReminderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex flex-col items-center gap-3 rounded-t-2xl bg-gradient-to-br from-amber-500 to-orange-600 px-6 py-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
+                <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-white">Peringatan Dokumen!</h2>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 px-6 py-6">
+              <div className="rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-4">
+                <p className="text-center text-sm font-semibold text-amber-900">
+                  Pastikan dokumen yang diupload sudah terisi lengkap!
+                </p>
+                <p className="mt-2 text-center text-xs text-amber-700">
+                  Jangan upload dokumen kosong atau template yang belum diisi.
+                </p>
+              </div>
+
+              <div className="space-y-2 rounded-lg bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold text-slate-700">Dokumen yang akan dikirim:</p>
+                {dokumen.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 text-xs text-slate-600">
+                    <Paperclip size={12} className="text-slate-400" />
+                    <span className="truncate">{file.file.name}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-center text-xs text-slate-500">
+                Silakan cek kembali dokumen Anda sebelum melanjutkan pengajuan.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 border-t border-slate-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowDocumentReminderModal(false)}
+                className="flex-1 rounded-xl border-2 border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cek Lagi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDocumentReminderModal(false);
+                  // Trigger submit lagi dengan flag bahwa modal sudah ditampilkan
+                  const form = document.querySelector('form');
+                  if (form) {
+                    // Set flag bahwa modal sudah ditampilkan
+                    setTimeout(() => {
+                      handleSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+                    }, 100);
+                  }
+                }}
+                className="flex-1 rounded-xl bg-[#173B82] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
+              >
+                Lanjutkan Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
