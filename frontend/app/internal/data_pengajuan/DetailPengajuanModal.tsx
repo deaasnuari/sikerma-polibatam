@@ -47,6 +47,15 @@ const templatePreviewUrlByJenis: Record<string, string> = {
   IA: '/templates/DRAFT%20IA%20POLIBATAM.docx',
 };
 
+function normalizeWhatsAppNumber(value?: string | null): string {
+  return (value || '').replace(/[^\d]/g, '');
+}
+
+function buildWhatsAppUrl(value?: string | null): string | null {
+  const normalized = normalizeWhatsAppNumber(value);
+  return normalized ? `https://wa.me/${normalized}` : null;
+}
+
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
   const sc = statusConfig[item.statusPengajuan];
   const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
@@ -134,7 +143,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           )}
 
           {/* Kontak / info tambahan */}
-          {(item.emailPengusul || item.whatsappPengusul) && (
+          {(item.emailPengusul || item.whatsappPengusul || item.mitraTelepon) && (
             <section>
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
                 Kontak
@@ -144,7 +153,10 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                   <InfoRow icon={<User size={15} />} label="Email Pengusul" value={item.emailPengusul} />
                 )}
                 {item.whatsappPengusul && (
-                  <InfoRow icon={<User size={15} />} label="WhatsApp" value={item.whatsappPengusul} />
+                  <InfoRow icon={<User size={15} />} label="No WhatsApp Person PIC" value={<WhatsAppLink number={item.whatsappPengusul} />} />
+                )}
+                {item.mitraTelepon && (
+                  <InfoRow icon={<Building2 size={15} />} label="Nomor WhatsApp Aktif Mitra" value={<WhatsAppLink number={item.mitraTelepon} />} />
                 )}
               </div>
             </section>
@@ -226,15 +238,35 @@ function InfoRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
 }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
       <span className="mt-0.5 text-slate-400">{icon}</span>
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="mt-0.5 text-sm font-medium text-slate-800">{value || '-'}</p>
+        <div className="mt-0.5 text-sm font-medium text-slate-800">{value || '-'}</div>
       </div>
     </div>
+  );
+}
+
+function WhatsAppLink({ number }: { number: string }) {
+  const url = buildWhatsAppUrl(number);
+
+  if (!url) {
+    return <span>{number || '-'}</span>;
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-green-700 underline hover:text-green-800"
+    >
+      {number}
+      <ExternalLink size={13} />
+    </a>
   );
 }

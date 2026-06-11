@@ -60,6 +60,10 @@ type AttachmentCacheEntry = {
   fileAttachments?: PengajuanFileAttachment[];
 };
 
+function pickOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
 function getAttachmentCache(): Record<string, AttachmentCacheEntry> {
   if (typeof window === 'undefined') {
     return {};
@@ -363,10 +367,10 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     mitraId: row.mitra_id ?? undefined,
     namaMitra: mitraNama,
     mitraKategori: typeof row.mitra === 'object' && row.mitra !== null && 'kategori_mitra' in row.mitra ? row.mitra.kategori_mitra || undefined : undefined,
-    mitraNegara: typeof row.mitra === 'object' && row.mitra !== null && 'negara' in row.mitra ? row.mitra.negara || undefined : undefined,
-    mitraAlamat: typeof row.mitra === 'object' && row.mitra !== null && 'alamat' in row.mitra ? row.mitra.alamat || undefined : undefined,
-    mitraEmail: typeof row.mitra === 'object' && row.mitra !== null && 'email_mitra' in row.mitra ? row.mitra.email_mitra || undefined : undefined,
-    mitraTelepon: typeof row.mitra === 'object' && row.mitra !== null && 'telepon_mitra' in row.mitra ? row.mitra.telepon_mitra || undefined : undefined,
+    mitraNegara: typeof row.mitra === 'object' && row.mitra !== null && 'negara' in row.mitra ? row.mitra.negara || pickOptionalString((row as Record<string, unknown>).negara) : pickOptionalString((row as Record<string, unknown>).negara),
+    mitraAlamat: typeof row.mitra === 'object' && row.mitra !== null && 'alamat' in row.mitra ? row.mitra.alamat || pickOptionalString((row as Record<string, unknown>).alamat_mitra) : pickOptionalString((row as Record<string, unknown>).alamat_mitra),
+    mitraEmail: typeof row.mitra === 'object' && row.mitra !== null && 'email_mitra' in row.mitra ? row.mitra.email_mitra || pickOptionalString((row as Record<string, unknown>).email_mitra) : pickOptionalString((row as Record<string, unknown>).email_mitra),
+    mitraTelepon: typeof row.mitra === 'object' && row.mitra !== null && 'telepon_mitra' in row.mitra ? row.mitra.telepon_mitra || pickOptionalString((row as Record<string, unknown>).telepon_mitra) : pickOptionalString((row as Record<string, unknown>).telepon_mitra),
     jenisDokumen: mapJenisDokumenFromApi(row.jenis_dokumen),
     unitProdiId: row.unit_prodi_id ?? undefined,
     namaUnitProdi: row.unit_prodi?.nama || row.jurusan || '-',
@@ -455,6 +459,7 @@ export async function updatePengajuanItemApi(
   if (updates.unitProdiId !== undefined) payload.unit_prodi_id = updates.unitProdiId;
   if (updates.mitraId !== undefined) payload.mitra_id = updates.mitraId;
   if (typeof updates.namaMitra === 'string') payload.nama_mitra = updates.namaMitra;
+  if (typeof updates.mitraTelepon === 'string') payload.telepon_mitra = updates.mitraTelepon;
   if (typeof updates.jenisDokumen === 'string') payload.jenis_dokumen = mapJenisDokumenToApi(updates.jenisDokumen);
   if (typeof updates.tanggalMulai === 'string') payload.tanggal_mulai = updates.tanggalMulai;
   if (typeof updates.tanggalBerakhir === 'string') payload.tanggal_berakhir = updates.tanggalBerakhir;
@@ -531,6 +536,7 @@ export async function submitPengajuanApi(
     jenis_dokumen: mapJenisDokumenToApi(data.jenisDokumen),
     mitra_id: data.mitraId ?? null,
     nama_mitra: data.namaMitra,
+    telepon_mitra: data.mitraTelepon || null,
     unit_prodi_id: data.unitProdiId ?? null,
     kategori_pengajuan: (data.kategoriPengajuan || (source === 'eksternal' ? 'Eksternal' : 'Internal')).toLowerCase(),
     tanggal_mulai: data.tanggalMulai || null,

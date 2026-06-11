@@ -725,6 +725,7 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
         tanggalBerakhir: formData.tanggalBerakhir,
         emailPengusul: formData.emailKontak,
         whatsappPengusul: formData.teleponKontak,
+        mitraTelepon: formData.teleponMitra,
         ruangLingkup: selectedRuangLingkup,
         ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
         fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',

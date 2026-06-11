@@ -95,6 +95,15 @@ type TemplateDokumenConfig = {
   downloadUrl: string;
 };
 
+function normalizeWhatsAppNumber(value?: string | null): string {
+  return (value || '').replace(/[^\d]/g, '');
+}
+
+function buildWhatsAppUrl(value?: string | null): string | null {
+  const normalized = normalizeWhatsAppNumber(value);
+  return normalized ? `https://wa.me/${normalized}` : null;
+}
+
 const editTemplateDokumenMap: Record<string, TemplateDokumenConfig> = {
   MoU: {
     title: 'Memorandum of Understanding (MoU)',
@@ -918,6 +927,7 @@ export default function PengajuanKerjasama() {
       ruangLingkupIds: (payload.selectedRuangLingkup || []).map((name) => ruangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
       emailPengusul: payload.formData.emailKontak || editingItem.emailPengusul,
       whatsappPengusul: payload.formData.teleponKontak || editingItem.whatsappPengusul,
+      mitraTelepon: payload.formData.teleponMitra || editingItem.mitraTelepon,
       deskripsiPengajuan: payload.formData.deskripsi.trim() || undefined,
       jabatanPengusul: payload.formData.jabatanKontak.trim() || undefined,
       ...(payload.dokumen.length > 0
@@ -1586,6 +1596,40 @@ export default function PengajuanKerjasama() {
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
                 <p className="text-sm font-semibold text-gray-900">{detailItem.judulPengajuan}</p>
                 <p className="text-xs text-gray-600 mt-1">Diajukan oleh: {detailItem.namaPengusul}</p>
+                <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                  <div>
+                    <p className="text-gray-500">Nomor WhatsApp Aktif Mitra</p>
+                    {buildWhatsAppUrl(detailItem.mitraTelepon) ? (
+                      <a
+                        href={buildWhatsAppUrl(detailItem.mitraTelepon) || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 font-semibold text-green-700 underline hover:text-green-800"
+                      >
+                        {detailItem.mitraTelepon}
+                        <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <p className="text-gray-900 font-medium">-</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-gray-500">No WhatsApp Person PIC</p>
+                    {buildWhatsAppUrl(detailItem.whatsappPengusul) ? (
+                      <a
+                        href={buildWhatsAppUrl(detailItem.whatsappPengusul) || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 font-semibold text-green-700 underline hover:text-green-800"
+                      >
+                        {detailItem.whatsappPengusul}
+                        <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <p className="text-gray-900 font-medium">-</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
