@@ -32,6 +32,7 @@ import {
 } from '@/services/adminPengajuanService';
 import AjukanKerjasamaForm from './AjukanKerjasamaForm';
 import DetailPengajuanModal from './DetailPengajuanModal';
+import { getCachedMasterNegara, getMasterNegara, type MasterNegara } from '@/services/masterNegaraService';
 
 type EditFormState = {
   id: number;
@@ -98,11 +99,35 @@ export default function InternalDataPengajuanPage() {
   const [filterKategori, setFilterKategori] = useState<'Semua' | 'Jurusan' | 'Unit'>('Semua');
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan/unit');
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
+  const [masterNegaraRows, setMasterNegaraRows] = useState<MasterNegara[]>(() => getCachedMasterNegara());
   const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
   const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMasterNegara = async () => {
+      try {
+        const rows = await getMasterNegara({ aktif: true });
+        if (isMounted) {
+          setMasterNegaraRows(rows);
+        }
+      } catch {
+        if (isMounted) {
+          setMasterNegaraRows([]);
+        }
+      }
+    };
+
+    void loadMasterNegara();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -249,6 +274,7 @@ export default function InternalDataPengajuanPage() {
         <AjukanKerjasamaForm
           onCancel={() => router.replace('/internal/data_pengajuan')}
           onSubmitted={() => router.replace('/internal/data_pengajuan')}
+          initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
         />
       </div>
     );

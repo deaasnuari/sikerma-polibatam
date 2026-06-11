@@ -23,6 +23,14 @@ import {
   type MasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
 import {
+  createMasterNegara,
+  deleteMasterNegara,
+  getCachedMasterNegara,
+  getMasterNegara,
+  updateMasterNegara,
+  type MasterNegara,
+} from '@/services/masterNegaraService';
+import {
   deletePengajuanItemApi,
   fetchPengajuanDataFromApi,
   getFilteredPengajuanData,
@@ -189,13 +197,19 @@ export default function PengajuanKerjasama() {
   const [reviewComment, setReviewComment] = useState('');
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
+  const [negaraModalOpen, setNegaraModalOpen] = useState(false);
   const [ruangLingkupModalOpen, setRuangLingkupModalOpen] = useState(false);
   const [ruangLingkupRows, setRuangLingkupRows] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
+  const [masterNegaraRows, setMasterNegaraRows] = useState<MasterNegara[]>(() => getCachedMasterNegara());
   const [ruangLingkupNama, setRuangLingkupNama] = useState('');
   const [editingRuangLingkupId, setEditingRuangLingkupId] = useState<number | null>(null);
   const [editingRuangLingkupNama, setEditingRuangLingkupNama] = useState('');
   const [ruangLingkupSaving, setRuangLingkupSaving] = useState(false);
   const [ruangLingkupMessage, setRuangLingkupMessage] = useState<string | null>(null);
+  const [negaraInput, setNegaraInput] = useState('');
+  const [negaraMessage, setNegaraMessage] = useState<string | null>(null);
+  const [editingNegaraId, setEditingNegaraId] = useState<number | null>(null);
+  const [editingNegaraNama, setEditingNegaraNama] = useState('');
   const [masterJenis, setMasterJenis] = useState<'jurusan' | 'unit_kerja'>('jurusan');
   const [masterKode, setMasterKode] = useState('');
   const [masterNama, setMasterNama] = useState('');
@@ -257,6 +271,64 @@ export default function PengajuanKerjasama() {
     }
   }, [isAjukanView]);
 
+  const handleAddNegaraOption = async () => {
+    const trimmed = negaraInput.trim();
+    if (!trimmed) {
+      setNegaraMessage('Nama negara wajib diisi.');
+      return;
+    }
+
+    try {
+      await createMasterNegara({ nama_negara: trimmed, aktif: true });
+      setNegaraInput('');
+      await refreshMasterNegara();
+      setNegaraMessage('Negara berhasil ditambahkan.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menambah negara.';
+      setNegaraMessage(message);
+    }
+  };
+
+  const handleUpdateNegaraOption = async () => {
+    const trimmed = editingNegaraNama.trim();
+
+    if (!trimmed) {
+      setNegaraMessage('Nama negara wajib diisi.');
+      return;
+    }
+
+    if (editingNegaraId === null) {
+      return;
+    }
+
+    try {
+      await updateMasterNegara(editingNegaraId, { nama_negara: trimmed, aktif: true });
+      await refreshMasterNegara();
+      setEditingNegaraId(null);
+      setEditingNegaraNama('');
+      setNegaraMessage('Negara berhasil diperbarui.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal memperbarui negara.';
+      setNegaraMessage(message);
+    }
+  };
+
+  const handleDeleteNegaraOption = async (item: MasterNegara) => {
+    const confirmed = window.confirm(`Yakin ingin menghapus negara "${item.nama_negara}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteMasterNegara(item.id);
+      await refreshMasterNegara();
+      setNegaraMessage('Negara berhasil dihapus.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus negara.';
+      setNegaraMessage(message);
+    }
+  };
+
   const refreshMasterReferenceData = useCallback(async () => {
     const [jurusanRows, unitRows, prodiRows] = await Promise.all([
       getMasterUnitProdi({ jenis_node: 'unit', kategori_unit: 'jurusan', aktif: true }),
@@ -274,6 +346,12 @@ export default function PengajuanKerjasama() {
   const refreshMasterRuangLingkup = useCallback(async () => {
     const rows = await getMasterRuangLingkup();
     setRuangLingkupRows(rows);
+    return rows;
+  }, []);
+
+  const refreshMasterNegara = useCallback(async () => {
+    const rows = await getMasterNegara({ aktif: true });
+    setMasterNegaraRows(rows);
     return rows;
   }, []);
 
@@ -315,6 +393,26 @@ export default function PengajuanKerjasama() {
       isMounted = false;
     };
   }, [refreshMasterReferenceData]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNegaraAtMount() {
+      try {
+        await refreshMasterNegara();
+      } catch {
+        if (isMounted) {
+          setNegaraMessage('Gagal memuat data negara. Pastikan backend aktif.');
+        }
+      }
+    }
+
+    void loadNegaraAtMount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshMasterNegara]);
 
   useEffect(() => {
     let isMounted = true;
@@ -605,24 +703,39 @@ export default function PengajuanKerjasama() {
 
   function handleEditFileUpload(files: FileList | null) {
     const selected = Array.from(files || []);
-    if (selected.length === 0) {
-      return;
-    }
+    if (selected.length === 0) return;
 
-    for (const file of selected) {
-      const validationError = validateSelectedFile(file, {
-        accept: '.pdf,.doc,.docx',
-        maxSizeBytes: MAX_EDIT_FILE_SIZE,
-      });
+    setEditUploadedFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.name));
+      const existingTotalSize = prev.reduce((sum, f) => sum + f.size, 0);
+      let cumulativeSize = existingTotalSize;
+      const toAdd: File[] = [];
 
-      if (validationError) {
-        setEditFileError(`${file.name}: ${validationError}`);
-        return;
+      for (const file of selected) {
+        const validationError = validateSelectedFile(file, {
+          accept: '.pdf,.doc,.docx',
+          maxSizeBytes: MAX_EDIT_FILE_SIZE,
+        });
+        if (validationError) {
+          setEditFileError(`${file.name}: ${validationError}`);
+          return prev;
+        }
+        if (existingNames.has(file.name)) {
+          setEditFileError(`${file.name}: File dengan nama ini sudah diupload.`);
+          return prev;
+        }
+        if (cumulativeSize + file.size > MAX_EDIT_FILE_SIZE) {
+          setEditFileError(`Total ukuran semua file tidak boleh melebihi 10 MB.`);
+          return prev;
+        }
+        cumulativeSize += file.size;
+        existingNames.add(file.name);
+        toAdd.push(file);
       }
-    }
 
-    setEditUploadedFiles((prev) => [...prev, ...selected]);
-    setEditFileError(null);
+      setEditFileError(null);
+      return [...prev, ...toAdd];
+    });
   }
 
   function handleRemoveEditFile(indexToRemove: number) {
@@ -1051,6 +1164,14 @@ export default function PengajuanKerjasama() {
           </button>
           <button
             type="button"
+            onClick={() => setNegaraModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+          >
+            <Plus size={16} />
+            Tambah Negara
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setRuangLingkupModalOpen(true);
               setRuangLingkupMessage(null);
@@ -1388,6 +1509,7 @@ export default function PengajuanKerjasama() {
                     }}
                     initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                     initialMasterRuangLingkupRows={ruangLingkupRows}
+                    initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
                   />
                 </div>
             </div>
@@ -1411,6 +1533,7 @@ export default function PengajuanKerjasama() {
                 submitButtonLabel="Simpan Perubahan"
                 initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                 initialMasterRuangLingkupRows={ruangLingkupRows}
+                initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
                 initialData={{
                   nomorPengajuan: editingItem.nomorPengajuan,
                   asal: pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan',
@@ -1860,6 +1983,128 @@ export default function PengajuanKerjasama() {
                         >
                           Hapus Unit
                         </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {negaraModalOpen && (
+        <div className="fixed inset-0 z-[76] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" onClick={() => setNegaraModalOpen(false)}>
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#EEF3FF] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1E376C]">
+                  Master Data
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Tambah Negara</h3>
+                <p className="text-sm text-slate-500">Tambahkan opsi negara yang akan muncul di form pengajuan internal dan eksternal.</p>
+              </div>
+              <button type="button" onClick={() => setNegaraModalOpen(false)} className="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+                  <label className="flex-1 text-sm font-medium text-slate-700">
+                    Nama Negara
+                    <input
+                      value={negaraInput}
+                      onChange={(e) => setNegaraInput(e.target.value)}
+                      placeholder="Contoh: Brunei Darussalam"
+                      className="mt-1 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleAddNegaraOption();
+                    }}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E376C] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2A4A8F]"
+                  >
+                    <Plus size={15} />
+                    Tambah Negara
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Negara yang ditambahkan langsung tersedia pada semua form pengajuan.</p>
+              </div>
+
+              {negaraMessage && (
+                <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2 text-sm text-slate-700">{negaraMessage}</div>
+              )}
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">Daftar Negara</p>
+                    <p className="text-xs text-slate-500">Total negara aktif: {masterNegaraRows.length}</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">Sinkron otomatis</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {masterNegaraRows.length === 0 ? (
+                    <div className="w-full rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">Belum ada negara yang ditambahkan.</div>
+                  ) : (
+                    masterNegaraRows.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
+                        {editingNegaraId === item.id ? (
+                          <input
+                            value={editingNegaraNama}
+                            onChange={(e) => setEditingNegaraNama(e.target.value)}
+                            className="h-9 w-40 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-slate-800">{item.nama_negara}</span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingNegaraId === item.id) {
+                                void handleUpdateNegaraOption();
+                                return;
+                              }
+
+                              setEditingNegaraId(item.id);
+                              setEditingNegaraNama(item.nama_negara);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                          >
+                            <Pencil size={12} />
+                            {editingNegaraId === item.id ? 'Simpan' : 'Edit'}
+                          </button>
+                          {editingNegaraId === item.id ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingNegaraId(null);
+                                setEditingNegaraNama('');
+                              }}
+                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
+                            >
+                              Batal
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleDeleteNegaraOption(item);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                              aria-label={`Hapus ${item.nama_negara}`}
+                            >
+                              <Trash2 size={12} />
+                              Hapus
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { CalendarDays, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
@@ -15,6 +15,7 @@ import {
   getMasterRuangLingkup,
   type MasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
+import { getMasterNegara } from '@/services/masterNegaraService';
 import { submitInternalPengajuan } from '@/services/internalPengajuanService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
@@ -60,6 +61,25 @@ const unitOptions = pengajuanUnitOptions;
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
 
+const defaultNegaraOptions = [
+  'Indonesia',
+  'Malaysia',
+  'Singapura',
+  'Amerika Serikat',
+  'Jepang',
+  'Korea Selatan',
+  'Australia',
+  'Jerman',
+  'Belanda',
+  'Inggris',
+  'Tiongkok',
+  'Taiwan',
+  'Prancis',
+  'Filipina',
+  'Vietnam',
+  'Palestina',
+];
+
 const initialForm = {
   namaMitra: '',
   jenisMitra: '',
@@ -82,6 +102,20 @@ const initialForm = {
 
 const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const JENIS_KERJASAMA_OPTIONS = ['MoU', 'MoA', 'IA'] as const;
+
+function parseJenisKerjasamaSelection(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item): item is (typeof JENIS_KERJASAMA_OPTIONS)[number] =>
+      JENIS_KERJASAMA_OPTIONS.includes(item as (typeof JENIS_KERJASAMA_OPTIONS)[number])
+    );
+}
+
+function serializeJenisKerjasamaSelection(values: string[]): string {
+  return JENIS_KERJASAMA_OPTIONS.filter((item) => values.includes(item)).join(', ');
+}
 
 type InternalPengajuanDraft = {
   asal: 'Jurusan' | 'Unit';
@@ -89,6 +123,7 @@ type InternalPengajuanDraft = {
   selectedRuangLingkup?: string[];
   customJurusanOpts?: string[];
   customUnitOpts?: string[];
+  customNegaraOpts?: string[];
 };
 
 function formatFileSize(bytes: number) {
@@ -110,6 +145,7 @@ type InternalAjukanKerjasamaFormProps = {
   nomorPengajuanSource?: 'admin' | 'internal' | 'eksternal';
   initialMasterUnitProdiTree?: MasterUnitProdi[];
   initialMasterRuangLingkupRows?: MasterRuangLingkup[];
+  initialCustomNegaraOptions?: string[];
   disableDraftPersistence?: boolean;
   lockJenisKerjasama?: boolean;
   submitButtonLabel?: string;
@@ -194,6 +230,7 @@ export default function InternalAjukanKerjasamaForm({
   nomorPengajuanSource = 'internal',
   initialMasterUnitProdiTree,
   initialMasterRuangLingkupRows,
+  initialCustomNegaraOptions = [],
   disableDraftPersistence = false,
   lockJenisKerjasama = false,
   submitButtonLabel = 'Ajukan Kerjasama',
@@ -202,6 +239,7 @@ export default function InternalAjukanKerjasamaForm({
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
+  const [dokumenError, setDokumenError] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
@@ -209,18 +247,24 @@ export default function InternalAjukanKerjasamaForm({
   const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>(initialMasterRuangLingkupRows ?? []);
   const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(initialMasterUnitProdiTree ?? []);
   const [selectedJurusanId, setSelectedJurusanId] = useState<number | null>(null);
+  const selectedJenisKerjasama = useMemo(
+    () => parseJenisKerjasamaSelection(formData.jenisKerjasama),
+    [formData.jenisKerjasama]
+  );
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null);
   const [rlOpen, setRlOpen] = useState(false);
   const [rlSearch, setRlSearch] = useState('');
   const [juOpen, setJuOpen] = useState(false);
   const [customJurusanOpts, setCustomJurusanOpts] = useState<string[]>([]);
   const [customUnitOpts, setCustomUnitOpts] = useState<string[]>([]);
+  const [customNegaraOpts, setCustomNegaraOpts] = useState<string[]>(initialCustomNegaraOptions);
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
+  const allNegaraOptions = Array.from(new Set([...defaultNegaraOptions, ...customNegaraOpts]));
   const hiddenJurusanAliases = new Set(['EL', 'TM', 'MB']);
   const allJurusanRows = masterUnitProdiTree.filter(
     (item) =>
@@ -237,6 +281,33 @@ export default function InternalAjukanKerjasamaForm({
   const masterRuangLingkupOpts = masterRuangLingkupRows.map((item) => item.nama_ruang_lingkup);
   const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
   const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
+
+  useEffect(() => {
+    setCustomNegaraOpts(initialCustomNegaraOptions);
+  }, [initialCustomNegaraOptions]);
+
+  useEffect(() => {
+    const syncNegaraOptions = async () => {
+      try {
+        const rows = await getMasterNegara({ aktif: true });
+        setCustomNegaraOpts(rows.map((item) => item.nama_negara));
+      } catch {
+        setCustomNegaraOpts(initialCustomNegaraOptions);
+      }
+    };
+
+    void syncNegaraOptions();
+
+    const handleMasterNegaraUpdated = () => {
+      void syncNegaraOptions();
+    };
+
+    window.addEventListener('master-negara-updated', handleMasterNegaraUpdated);
+
+    return () => {
+      window.removeEventListener('master-negara-updated', handleMasterNegaraUpdated);
+    };
+  }, [initialCustomNegaraOptions]);
 
   useEffect(() => {
     if (Array.isArray(initialMasterRuangLingkupRows)) {
@@ -362,6 +433,7 @@ export default function InternalAjukanKerjasamaForm({
       if (parsed.selectedRuangLingkup) setSelectedRuangLingkup(parsed.selectedRuangLingkup);
       if (parsed.customJurusanOpts) setCustomJurusanOpts(parsed.customJurusanOpts);
       if (parsed.customUnitOpts) setCustomUnitOpts(parsed.customUnitOpts);
+      if (parsed.customNegaraOpts) setCustomNegaraOpts(parsed.customNegaraOpts);
     } catch {
       // Abaikan draft rusak agar form tetap bisa dipakai normal.
     }
@@ -412,6 +484,7 @@ export default function InternalAjukanKerjasamaForm({
       selectedRuangLingkup,
       customJurusanOpts,
       customUnitOpts,
+      customNegaraOpts,
     };
 
     let idleId: number | null = null;
@@ -432,7 +505,7 @@ export default function InternalAjukanKerjasamaForm({
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [asal, formData, selectedRuangLingkup, customJurusanOpts, customUnitOpts, disableDraftPersistence, initialData]);
+  }, [asal, formData, selectedRuangLingkup, customJurusanOpts, customUnitOpts, customNegaraOpts, disableDraftPersistence, initialData]);
 
   useEffect(() => {
     if (!enableAppearanceEdit || typeof window === 'undefined') {
@@ -486,14 +559,23 @@ export default function InternalAjukanKerjasamaForm({
       return;
     }
 
-    setFormData((prev) => ({ ...prev, jenisKerjasama: value }));
-    setDokumen([]);
+    setFormData((prev) => {
+      const current = parseJenisKerjasamaSelection(prev.jenisKerjasama);
+      const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+
+      return {
+        ...prev,
+        jenisKerjasama: serializeJenisKerjasamaSelection(next),
+      };
+    });
   };
 
-  const handleDownloadTemplate = () => {
-    if (!formData.jenisKerjasama || !defaultTemplateDokumenMap[formData.jenisKerjasama]) return;
+  const handleDownloadTemplate = (jenisKerjasama: string) => {
+    if (!jenisKerjasama || !defaultTemplateDokumenMap[jenisKerjasama]) return;
 
-    const doc = defaultTemplateDokumenMap[formData.jenisKerjasama];
+    const doc = defaultTemplateDokumenMap[jenisKerjasama];
     const link = document.createElement('a');
     link.href = doc.downloadUrl;
     link.download = doc.fileName;
@@ -506,25 +588,52 @@ export default function InternalAjukanKerjasamaForm({
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    for (const file of files) {
-      const validationError = validateSelectedFile(file, {
-        accept: '.pdf,.doc,.docx',
-        maxSizeBytes: MAX_FILE_SIZE,
-      });
+    setDokumen((prev) => {
+      const existingNames = new Set(prev.map((d) => d.file.name));
+      const existingTotalSize = prev.reduce((sum, d) => sum + d.file.size, 0);
+      let cumulativeSize = existingTotalSize;
+      const toAdd: { file: File; dataUrl?: string }[] = [];
 
-      if (validationError) {
-        alert(`${file.name}: ${validationError}`);
-        event.target.value = '';
-        return;
+      for (const file of files) {
+        const validationError = validateSelectedFile(file, {
+          accept: '.pdf,.doc,.docx',
+          maxSizeBytes: MAX_FILE_SIZE,
+        });
+        if (validationError) {
+          setDokumenError(`${file.name}: ${validationError}`);
+          event.target.value = '';
+          return prev;
+        }
+        if (existingNames.has(file.name)) {
+          setDokumenError(`${file.name}: File dengan nama ini sudah diupload.`);
+          event.target.value = '';
+          return prev;
+        }
+        if (cumulativeSize + file.size > MAX_FILE_SIZE) {
+          setDokumenError(`Total ukuran semua file tidak boleh melebihi 10 MB.`);
+          event.target.value = '';
+          return prev;
+        }
+        cumulativeSize += file.size;
+        existingNames.add(file.name);
+        toAdd.push({ file });
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        setDokumen((prev) => [...prev, { file, dataUrl }]);
-      };
-      reader.readAsDataURL(file);
-    }
+      event.target.value = '';
+      setDokumenError(null);
+
+      toAdd.forEach((item) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          setDokumen((cur) => cur.map((d) => d.file === item.file ? { ...d, dataUrl } : d));
+        };
+        reader.readAsDataURL(item.file);
+      });
+
+      return [...prev, ...toAdd];
+    });
+
     event.target.value = '';
   };
 
@@ -552,22 +661,32 @@ export default function InternalAjukanKerjasamaForm({
       return;
     }
 
+    if (selectedJenisKerjasama.length === 0) {
+      setSubmitError('Pilih minimal 1 jenis kerjasama.');
+      return;
+    }
+
     setSubmitError(null);
     setIsSubmitting(true);
 
     try {
       if (onSubmitOverride) {
-        const submitResult = await Promise.resolve(onSubmitOverride({
-          formData,
-          asal,
-          selectedRuangLingkup,
-          dokumen: dokumen.map((item) => item.file),
-          dokumenAttachments: dokumen,
-          selectedProdiId,
-        }));
+        for (const jenisKerjasama of selectedJenisKerjasama) {
+          const submitResult = await Promise.resolve(onSubmitOverride({
+            formData: {
+              ...formData,
+              jenisKerjasama,
+            },
+            asal,
+            selectedRuangLingkup,
+            dokumen: dokumen.map((item) => item.file),
+            dokumenAttachments: dokumen,
+            selectedProdiId,
+          }));
 
-        if (submitResult === false) {
-          return;
+          if (submitResult === false) {
+            return;
+          }
         }
 
         if (onSubmitted) {
@@ -578,23 +697,25 @@ export default function InternalAjukanKerjasamaForm({
         return;
       }
 
-      await submitInternalPengajuan({
-        judulPengajuan: formData.judulKerjasama,
-        namaPengusul: formData.namaKontak || 'Internal Polibatam',
-        namaMitra: formData.namaMitra,
-        jenisDokumen: formData.jenisKerjasama,
-        namaUnitProdi: formData.unitPelaksana,
-        unitProdiId: selectedProdiId,
-        kategoriPengajuan: 'Internal',
-        tanggalMulai: formData.tanggalMulai,
-        tanggalBerakhir: formData.tanggalBerakhir,
-        emailPengusul: formData.emailKontak,
-        whatsappPengusul: formData.teleponKontak,
-        ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
-        ruangLingkup: selectedRuangLingkup,
-        fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
-        fileAttachments: buildFileAttachments(),
-      });
+      for (const jenisKerjasama of selectedJenisKerjasama) {
+        await submitInternalPengajuan({
+          judulPengajuan: formData.judulKerjasama,
+          namaPengusul: formData.namaKontak || 'Internal Polibatam',
+          namaMitra: formData.namaMitra,
+          jenisDokumen: jenisKerjasama,
+          namaUnitProdi: formData.unitPelaksana,
+          unitProdiId: selectedProdiId,
+          kategoriPengajuan: 'Internal',
+          tanggalMulai: formData.tanggalMulai,
+          tanggalBerakhir: formData.tanggalBerakhir,
+          emailPengusul: formData.emailKontak,
+          whatsappPengusul: formData.teleponKontak,
+          ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
+          ruangLingkup: selectedRuangLingkup,
+          fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
+          fileAttachments: buildFileAttachments(),
+        });
+      }
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(INTERNAL_PENGAJUAN_DRAFT_KEY);
       }
@@ -737,18 +858,9 @@ export default function InternalAjukanKerjasamaForm({
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Negara Mitra</label>
               <select value={formData.negara} onChange={(e) => handleChange('negara', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm">
-                <option value="Indonesia">Indonesia (Dalam Negeri)</option>
-                <option value="Malaysia">Malaysia</option>
-                <option value="Singapura">Singapura</option>
-                <option value="Amerika Serikat">Amerika Serikat</option>
-                <option value="Jepang">Jepang</option>
-                <option value="Korea Selatan">Korea Selatan</option>
-                <option value="Australia">Australia</option>
-                <option value="Jerman">Jerman</option>
-                <option value="Belanda">Belanda</option>
-                <option value="Inggris">Inggris</option>
-                <option value="Tiongkok">Tiongkok</option>
-                <option value="Lainnya">Lainnya</option>
+                {allNegaraOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
               </select>
               <p className="mt-1 text-xs text-slate-500">
                 {formData.negara && formData.negara !== 'Indonesia' ? '🌐 Luar Negeri' : '🇮🇩 Dalam Negeri'}
@@ -764,18 +876,30 @@ export default function InternalAjukanKerjasamaForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJenisKerjasama}</label>
-              <select
-                value={formData.jenisKerjasama}
-                onChange={(e) => handleJenisDokumenChange(e.target.value)}
-                className={`input-field h-10 w-full rounded-lg px-3 text-sm ${lockJenisKerjasama ? 'cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
-                disabled={lockJenisKerjasama}
-                required
-              >
-                <option value="">Pilih jenis kerjasama</option>
-                <option>MoU</option>
-                <option>MoA</option>
-                <option>IA</option>
-              </select>
+              <div className={`rounded-xl border border-slate-200 bg-white p-3 ${lockJenisKerjasama ? 'bg-slate-100' : ''}`}>
+                <div className="flex flex-wrap gap-2">
+                  {JENIS_KERJASAMA_OPTIONS.map((item) => {
+                    const checked = selectedJenisKerjasama.includes(item);
+
+                    return (
+                      <label
+                        key={item}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${checked ? 'border-[#173B82] bg-blue-50 text-[#173B82]' : 'border-slate-200 text-slate-700'} ${lockJenisKerjasama ? 'cursor-not-allowed opacity-80' : 'cursor-pointer hover:border-[#173B82]'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => handleJenisDokumenChange(item)}
+                          disabled={lockJenisKerjasama}
+                          className="h-4 w-4 accent-[#173B82]"
+                        />
+                        <span>{item}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Bisa pilih lebih dari satu jenis kerjasama.</p>
+              </div>
               {lockJenisKerjasama && (
                 <p className="mt-1 text-[11px] text-slate-500">Jenis dokumen tidak bisa diubah saat edit. Jika dokumen direvisi, silakan upload ulang file dokumen.</p>
               )}
@@ -1081,7 +1205,7 @@ export default function InternalAjukanKerjasamaForm({
 
           <div className="mb-4 grid gap-3 md:grid-cols-3">
             {Object.entries(defaultTemplateDokumenMap).map(([key, template]) => {
-              const active = formData.jenisKerjasama === key;
+              const active = selectedJenisKerjasama.includes(key);
 
               return (
                 <button
@@ -1106,40 +1230,52 @@ export default function InternalAjukanKerjasamaForm({
             })}
           </div>
 
-          {!formData.jenisKerjasama && (
+          {selectedJenisKerjasama.length === 0 && (
             <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-              Belum ada template dipilih. Pilih salah satu dari MoU, MoA, atau IA di atas.
+              Belum ada template dipilih. Pilih minimal satu dari MoU, MoA, atau IA di atas.
             </div>
           )}
 
-          {formData.jenisKerjasama && defaultTemplateDokumenMap[formData.jenisKerjasama] && (
-            <div className="mb-4 rounded-xl border border-[#D7E0F0] bg-[#F8FAFF] p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-lg font-bold text-[#173B82]">{defaultTemplateDokumenMap[formData.jenisKerjasama].title}</p>
-                  <p className="text-sm text-slate-600">{defaultTemplateDokumenMap[formData.jenisKerjasama].subtitle}</p>
-                  <p className="mt-2 text-xs text-slate-500">File template: {defaultTemplateDokumenMap[formData.jenisKerjasama].fileName}</p>
-                </div>
+          {selectedJenisKerjasama.length > 0 && (
+            <div className="mb-4 space-y-4">
+              {selectedJenisKerjasama.map((jenisKerjasama) => {
+                const template = defaultTemplateDokumenMap[jenisKerjasama];
+                if (!template) {
+                  return null;
+                }
 
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
-                >
-                  <Download size={16} />
-                  Download Template (Opsional)
-                </button>
-              </div>
+                return (
+                  <div key={jenisKerjasama} className="rounded-xl border border-[#D7E0F0] bg-[#F8FAFF] p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="mb-2 inline-flex rounded-full bg-[#173B82] px-2.5 py-1 text-xs font-bold text-white">{jenisKerjasama}</div>
+                        <p className="text-lg font-bold text-[#173B82]">{template.title}</p>
+                        <p className="text-sm text-slate-600">{template.subtitle}</p>
+                        <p className="mt-2 text-xs text-slate-500">File template: {template.fileName}</p>
+                      </div>
 
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {defaultTemplateDokumenMap[formData.jenisKerjasama].struktur.map((item) => (
-                  <div key={item} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                    {item}
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadTemplate(jenisKerjasama)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0f2c61]"
+                      >
+                        <Download size={16} />
+                        Download Template {jenisKerjasama}
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {template.struktur.map((item) => (
+                        <div key={item} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="mt-3 text-xs text-slate-600">Catatan: {template.note}</p>
                   </div>
-                ))}
-              </div>
-
-              <p className="mt-3 text-xs text-slate-600">Catatan: {defaultTemplateDokumenMap[formData.jenisKerjasama].note}</p>
+                );
+              })}
             </div>
           )}
 
@@ -1160,10 +1296,22 @@ export default function InternalAjukanKerjasamaForm({
                   <Upload size={20} />
                 </div>
                 <p className="text-sm font-semibold text-slate-800">Klik untuk upload dokumen pendukung</p>
-                <p className="mt-1 text-xs text-slate-500">Format yang didukung: PDF, DOC, DOCX</p>
-                <p className="mt-1 text-xs text-slate-500">Ukuran maksimal per file: 10 MB</p>
+                <p className="mt-1 text-xs text-slate-400">atau drag &amp; drop file ke sini</p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                  {['PDF', 'DOC', 'DOCX'].map((fmt) => (
+                    <span key={fmt} className="rounded-md bg-[#173B82]/8 px-2 py-0.5 text-[11px] font-semibold text-[#173B82]">{fmt}</span>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-slate-400">Ukuran maksimal per file: <span className="font-semibold text-slate-500">10 MB</span></p>
               </div>
             </label>
+
+            {dokumenError && (
+              <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-700">
+                <span className="mt-0.5 shrink-0">⚠</span>
+                <span>{dokumenError}</span>
+              </div>
+            )}
 
             {dokumen.length > 0 && (
               <div className="space-y-2">

@@ -6,6 +6,7 @@ import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKer
 import { submitExternalPengajuan } from '@/services/externalPengajuanService';
 import { getCachedMasterUnitProdiTree, getMasterUnitProdiTree, type MasterUnitProdi } from '@/services/masterUnitProdiService';
 import { getCachedMasterRuangLingkup, getMasterRuangLingkup, type MasterRuangLingkup } from '@/services/masterRuangLingkupService';
+import { getCachedMasterNegara, getMasterNegara, type MasterNegara } from '@/services/masterNegaraService';
 
 type UploadedDokumenLike = File | { file: File; dataUrl?: string };
 
@@ -30,6 +31,7 @@ export default function PengajuanBaruEksternalPage() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree());
   const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
+  const [masterNegaraRows, setMasterNegaraRows] = useState<MasterNegara[]>(() => getCachedMasterNegara());
 
   const masterUnitProdiTreeForForm = useMemo(() => masterUnitProdiTree, [masterUnitProdiTree]);
 
@@ -38,9 +40,10 @@ export default function PengajuanBaruEksternalPage() {
 
     async function loadMasterData() {
       try {
-        const [unitProdiRows, ruangLingkupRows] = await Promise.all([
+        const [unitProdiRows, ruangLingkupRows, negaraRows] = await Promise.all([
           getMasterUnitProdiTree(),
           getMasterRuangLingkup({ aktif: true }),
+          getMasterNegara({ aktif: true }),
         ]);
 
         if (!mounted) {
@@ -49,10 +52,12 @@ export default function PengajuanBaruEksternalPage() {
 
         setMasterUnitProdiTree(unitProdiRows);
         setMasterRuangLingkupRows(ruangLingkupRows);
+        setMasterNegaraRows(negaraRows);
       } catch {
         if (mounted) {
           setMasterUnitProdiTree([]);
           setMasterRuangLingkupRows([]);
+          setMasterNegaraRows([]);
         }
       }
     }
@@ -76,6 +81,7 @@ export default function PengajuanBaruEksternalPage() {
         nomorPengajuanSource="eksternal"
         initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
         initialMasterRuangLingkupRows={masterRuangLingkupRows}
+        initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
         onCancel={() => router.push('/eksternal/daftar_kerjasama')}
         onSubmitOverride={async ({ formData, selectedRuangLingkup, dokumen, selectedProdiId }) => {
           const normalizedDokumen = normalizeUploadedDokumen(dokumen as UploadedDokumenLike[]);
