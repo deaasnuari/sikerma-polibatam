@@ -1,8 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload, Bell } from 'lucide-react';
+import { addAdminNotification } from '@/services/adminService';
 import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
@@ -39,6 +40,9 @@ import {
   getPengajuanYearOptions,
   pengajuanDokumenBadge,
   savePengajuanReviewApi,
+  savePengajuanRevisionApi,
+  accFinalBerkasApi,
+  uploadAccFileApi,
   updatePengajuanItemApi,
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
@@ -63,14 +67,39 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
     className: 'badge badge-warning',
     iconEl: <Clock size={13} />,
   },
+  'Menunggu Review': {
+    label: 'Menunggu Review',
+    className: 'badge badge-warning',
+    iconEl: <Clock size={13} />,
+  },
   Diproses: {
     label: 'Diproses',
     className: 'badge badge-info',
     iconEl: <Clock size={13} />,
   },
+  Revisi: {
+    label: 'Revisi',
+    className: 'bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-3 py-1 text-xs font-semibold',
+    iconEl: <Clock size={13} />,
+  },
   Disetujui: {
     label: 'Disetujui',
     className: 'badge badge-success',
+    iconEl: <CheckCircle size={13} />,
+  },
+  'Disetujui Internal': {
+    label: 'Disetujui Internal',
+    className: 'bg-indigo-100 text-indigo-800 border border-indigo-300 rounded-full px-3 py-1 text-xs font-semibold',
+    iconEl: <CheckCircle size={13} />,
+  },
+  'Disetujui Mitra': {
+    label: 'Disetujui Mitra',
+    className: 'bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-full px-3 py-1 text-xs font-semibold',
+    iconEl: <CheckCircle size={13} />,
+  },
+  'Final Approved': {
+    label: 'Final Approved',
+    className: 'bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full px-3 py-1 text-xs font-semibold',
     iconEl: <CheckCircle size={13} />,
   },
   Ditolak: {
@@ -96,7 +125,12 @@ type TemplateDokumenConfig = {
 };
 
 function normalizeWhatsAppNumber(value?: string | null): string {
-  return (value || '').replace(/[^\d]/g, '');
+  let number = (value || '').replace(/[^\d]/g, '');
+  // Convert 08 to 62 format (Indonesian phone number format)
+  if (number.startsWith('08')) {
+    number = '62' + number.substring(1);
+  }
+  return number;
 }
 
 function buildWhatsAppUrl(value?: string | null): string | null {
@@ -200,10 +234,12 @@ export default function PengajuanKerjasama() {
   const [search, setSearch] = useState('');
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
   const [pengajuanLoading, setPengajuanLoading] = useState(true);
-  const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
+const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
   const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
   const [reviewDecision, setReviewDecision] = useState<PengajuanStatus>('Disetujui');
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewFinalFile, setReviewFinalFile] = useState<File | null>(null);
+  const [reviewFinalFilePreview, setReviewFinalFilePreview] = useState<{ name: string; url: string } | null>(null);
   const [ajukanModalOpen, setAjukanModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
   const [negaraModalOpen, setNegaraModalOpen] = useState(false);
@@ -249,6 +285,10 @@ export default function PengajuanKerjasama() {
 
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
   const [editingItem, setEditingItem] = useState<PengajuanItem | null>(null);
+  const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false);
+
+// Track previous pending count for new submission notifications
+  const previousPendingRef = useRef<number>(0);
 
   const refreshPengajuanData = useCallback(async (silent = false) => {
     if (!silent) {
@@ -257,6 +297,31 @@ export default function PengajuanKerjasama() {
 
     try {
       const rows = await fetchPengajuanDataFromApi({ perPage: 500 });
+      
+      // Check for new pending submissions and notify admin
+      const currentPending = rows.filter(item => 
+        item.statusPengajuan === 'Menunggu' || item.statusPengajuan === 'Menunggu Review'
+      ).length;
+      
+      // If this is not the first load and there's an increase, notify admin
+      if (previousPendingRef.current > 0 && currentPending > previousPendingRef.current) {
+        const newSubmissions = currentPending - previousPendingRef.current;
+        addAdminNotification({
+          title: 'Pengajuan Baru Masuk',
+          message: `Ada ${newSubmissions} pengajuan baru yang menunggu review. Silakan periksa sekarang!`,
+          from: 'Sistem',
+          href: '/admin/data_pengajuan?status=Menunggu',
+          category: 'info',
+        });
+      }
+      
+      // Update the ref for next comparison
+      if (previousPendingRef.current === 0 && rows.length > 0) {
+        previousPendingRef.current = currentPending;
+      } else if (rows.length > 0) {
+        previousPendingRef.current = currentPending;
+      }
+      
       setPengajuanData(rows);
     } catch {
       setInfoModalMessage('Gagal memuat data pengajuan dari server.');
@@ -267,10 +332,17 @@ export default function PengajuanKerjasama() {
     }
   }, []);
 
+// Auto-refresh every 30 seconds to check for new submissions (polling for notifications)
   useEffect(() => {
-    // Jangan tampilkan data dari cache/localStorage karena bisa menyebabkan jumlah berubah saat API selesai.
-    // Untuk admin daftar pengajuan, tampilkan loading hingga data dari server termuat.
     void refreshPengajuanData(false);
+    
+    const POLL_INTERVAL_MS = 30000; // 30 seconds
+    
+    const intervalId = setInterval(() => {
+      void refreshPengajuanData(true); // silent refresh
+    }, POLL_INTERVAL_MS);
+    
+    return () => clearInterval(intervalId);
   }, [refreshPengajuanData]);
 
 
@@ -630,7 +702,7 @@ export default function PengajuanKerjasama() {
           .split(',')
           .map((name) => name.trim())
           .filter(Boolean)
-          .map((name) => ({ name, url: '' }))
+          .map((name) => ({ name, url: '', isAcc: false }))
     : [];
   const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
 
@@ -643,18 +715,60 @@ export default function PengajuanKerjasama() {
   const editSelectedTemplate = editForm ? (editTemplateDokumenMap[editForm.jenisDokumen] || null) : null;
 
 
-  function openReview(item: PengajuanItem) {
+function openReview(item: PengajuanItem) {
     setReviewItem(item);
     setReviewDecision(item.statusPengajuan === 'Ditolak' ? 'Ditolak' : 'Disetujui');
     setReviewComment('');
+    setReviewFinalFile(null);
+    setReviewFinalFilePreview(null);
   }
 
-  async function saveReview() {
+  function handleReviewFinalFileUpload(files: FileList | null) {
+    const selected = Array.from(files || []);
+    if (selected.length === 0) return;
+
+    const file = selected[0];
+    const validationError = validateSelectedFile(file, {
+      accept: '.pdf,.doc,.docx',
+      maxSizeBytes: MAX_EDIT_FILE_SIZE,
+    });
+    if (validationError) {
+      setInfoModalMessage(`${file.name}: ${validationError}`);
+      return;
+    }
+
+    setReviewFinalFile(file);
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReviewFinalFilePreview({
+        name: file.name,
+        url: reader.result as string,
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemoveReviewFinalFile() {
+    setReviewFinalFile(null);
+    setReviewFinalFilePreview(null);
+  }
+
+async function saveReview() {
     if (!reviewItem) return;
 
     try {
-      const updated = await savePengajuanReviewApi(reviewItem.id, reviewDecision, reviewComment);
-      setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      if (reviewDecision === 'Revisi') {
+        if (!reviewComment.trim()) {
+          setInfoModalMessage('Catatan Revisi wajib diisi.');
+          return;
+        }
+        const updated = await savePengajuanRevisionApi(reviewItem.id, reviewComment, reviewComment);
+        setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      } else {
+        const updated = await savePengajuanReviewApi(reviewItem.id, reviewDecision, reviewComment);
+        setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      }
     } catch {
       setInfoModalMessage('Gagal menyimpan review ke server.');
       return;
@@ -665,8 +779,127 @@ export default function PengajuanKerjasama() {
     setInfoModalMessage('Review pengajuan berhasil disimpan.');
   }
 
-  function openEdit(item: PengajuanItem) {
+  async function executeReview() {
+    if (!reviewItem) return;
+    setUploadConfirmOpen(false);
 
+    const judulShort = reviewItem.judulPengajuan.length > 50
+      ? reviewItem.judulPengajuan.slice(0, 50) + '...'
+      : reviewItem.judulPengajuan;
+
+    if (reviewDecision === 'Revisi') {
+      try {
+        const updated = await savePengajuanRevisionApi(reviewItem.id, reviewComment, reviewComment);
+        setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+        addAdminNotification({
+          title: 'Pengajuan Diminta Revisi',
+          message: `Pengajuan "${judulShort}" diminta revisi. Catatan: ${reviewComment}`,
+          from: 'Admin',
+          href: '/internal/data_pengajuan',
+          category: 'comment',
+          targetRole: 'internal',
+        });
+        addAdminNotification({
+          title: 'Pengajuan Diminta Revisi',
+          message: `Pengajuan "${judulShort}" diminta revisi oleh admin.`,
+          from: 'Admin',
+          href: '/eksternal/daftar_kerjasama',
+          category: 'comment',
+          targetRole: 'external',
+        });
+        setInfoModalMessage('Revisi pengajuan berhasil disimpan dan notifikasi dikirim.');
+        void refreshPengajuanData(true);
+      } catch {
+        setInfoModalMessage('Gagal menyimpan revisi ke server.');
+        return;
+      }
+    } else {
+      try {
+        if (reviewFinalFile && reviewFinalFilePreview) {
+          await uploadAccFileApi(reviewItem.id, {
+            name: reviewFinalFile.name,
+            url: reviewFinalFilePreview.url,
+            type: reviewFinalFile.type,
+            size: reviewFinalFile.size,
+          });
+        }
+        const reviewUpdated = await savePengajuanReviewApi(reviewItem.id, reviewDecision, reviewComment);
+        if (reviewFinalFile && reviewFinalFilePreview) {
+          const accAttachment = {
+            name: reviewFinalFile.name,
+            url: reviewFinalFilePreview.url,
+            type: reviewFinalFile.type,
+            size: reviewFinalFile.size,
+            isAcc: true,
+          };
+          const existingAttachments = reviewUpdated.fileAttachments || reviewItem.fileAttachments || [];
+          reviewUpdated.fileAttachments = [...existingAttachments, accAttachment];
+        }
+        setPengajuanData((prev) => prev.map((item) => {
+          if (item.id !== reviewUpdated.id) return item;
+          const merged = { ...item, ...reviewUpdated };
+          // Guard: if the API response lost the unitProdi/mitra relation (not loaded),
+          // namaUnitProdi and namaMitra would map to '-'. Preserve the existing values.
+          if (!reviewUpdated.namaUnitProdi || reviewUpdated.namaUnitProdi === '-') {
+            merged.namaUnitProdi = item.namaUnitProdi;
+          }
+          if (!reviewUpdated.unitProdiId) {
+            merged.unitProdiId = item.unitProdiId;
+          }
+          if (!reviewUpdated.namaMitra || reviewUpdated.namaMitra === '-') {
+            merged.namaMitra = item.namaMitra;
+          }
+          return merged;
+        }));
+
+        if (reviewFinalFile) {
+          addAdminNotification({
+            title: 'Dokumen Final Diupload',
+            message: `Dokumen final untuk "${judulShort}" telah diupload dan di-ACC oleh admin.`,
+            from: 'Admin',
+            href: '/internal/data_pengajuan',
+            category: 'approval',
+            targetRole: 'internal',
+          });
+          addAdminNotification({
+            title: 'Dokumen Final Siap Diunduh',
+            message: `Dokumen final "${judulShort}" telah di-ACC dan siap diunduh.`,
+            from: 'Admin',
+            href: '/eksternal/daftar_kerjasama',
+            category: 'approval',
+            targetRole: 'external',
+          });
+        } else {
+          addAdminNotification({
+            title: 'Status Pengajuan Diperbarui',
+            message: `Pengajuan "${judulShort}" telah disetujui oleh admin.`,
+            from: 'Admin',
+            href: '/internal/data_pengajuan',
+            category: 'approval',
+            targetRole: 'internal',
+          });
+          addAdminNotification({
+            title: 'Pengajuan Disetujui',
+            message: `Pengajuan "${judulShort}" telah disetujui.`,
+            from: 'Admin',
+            href: '/eksternal/daftar_kerjasama',
+            category: 'approval',
+            targetRole: 'external',
+          });
+        }
+        setInfoModalMessage('Review pengajuan berhasil disimpan dan notifikasi dikirim.');
+      } catch {
+        setInfoModalMessage('Gagal menyimpan review ke server.');
+        return;
+      }
+    }
+    setReviewItem(null);
+    setReviewComment('');
+    setReviewFinalFile(null);
+    setReviewFinalFilePreview(null);
+  }
+
+  function openEdit(item: PengajuanItem) {
     setEditingItem(item);
   }
 
@@ -751,7 +984,7 @@ export default function PengajuanKerjasama() {
     setEditUploadedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   }
 
-  function addEditJurusanUnitOption() {
+function addEditJurusanUnitOption() {
     const trimmed = editJurusanInput.trim();
     if (!trimmed) return;
 
@@ -839,6 +1072,7 @@ export default function PengajuanKerjasama() {
     try {
       const updated = await updatePengajuanItemApi(editForm.id, editPayload);
       setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      void refreshPengajuanData(true);
     } catch {
       setInfoModalMessage('Gagal memperbarui data pengajuan di server.');
       return;
@@ -856,7 +1090,6 @@ export default function PengajuanKerjasama() {
     const deletedId = deleteTarget.id;
     try {
       await deletePengajuanItemApi(deletedId);
-      setPengajuanData((prev) => prev.filter((item) => item.id !== deletedId));
     } catch {
       setInfoModalMessage('Gagal menghapus pengajuan di server.');
       return;
@@ -872,7 +1105,7 @@ export default function PengajuanKerjasama() {
       setReviewItem(null);
     }
 
-    setInfoModalMessage('Data pengajuan berhasil dihapus.');
+    await refreshPengajuanData(false);
   }
 
   async function handleSubmitEditFromAjukan(payload: {
@@ -946,6 +1179,7 @@ export default function PengajuanKerjasama() {
     try {
       const updated = await updatePengajuanItemApi(editingItem.id, editPayload);
       setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      void refreshPengajuanData(true);
       setInfoModalMessage('Data pengajuan berhasil diperbarui.');
       return true;
     } catch {
@@ -1372,7 +1606,7 @@ export default function PengajuanKerjasama() {
               </div>
 
               {/* Info row */}
-              <div className="flex flex-wrap items-start gap-6 mt-4">
+              <div className="flex flex-wrap items-start gap-4 mt-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Mitra Tujuan</p>
                   <p className="text-sm font-semibold text-gray-900">{item.namaMitra}</p>
@@ -1399,40 +1633,42 @@ export default function PengajuanKerjasama() {
                     <p className="text-sm text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
                   </div>
                 )}
-                <div className="ml-auto flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDetailItem(item)}
-                    className="btn-secondary flex items-center gap-1.5 text-sm px-3 py-1.5"
-                  >
-                    <Eye size={14} />
-                    Detail
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openReview(item)}
-                    className="flex items-center gap-1.5 text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
-                  >
-                    <MessageSquare size={14} />
-                    Review
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openEdit(item)}
-                    className="flex items-center gap-1.5 text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
-                  >
-                    <Pencil size={14} />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(item)}
-                    className="flex items-center gap-1.5 text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
-                  >
-                    <Trash2 size={14} />
-                    Hapus
-                  </button>
-                </div>
+              </div>
+
+              {/* Action buttons row - pisahkan agar responsive */}
+              <div className="flex flex-wrap items-center gap-2 mt-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDetailItem(item)}
+                  className="btn-secondary inline-flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
+                >
+                  <Eye size={14} />
+                  <span className="hidden xs:inline sm:inline">Detail</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openReview(item)}
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
+                >
+                  <MessageSquare size={14} />
+                  <span className="hidden xs:inline sm:inline">Review</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEdit(item)}
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
+                >
+                  <Pencil size={14} />
+                  <span className="hidden xs:inline sm:inline">Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(item)}
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
+                >
+                  <Trash2 size={14} />
+                  <span className="hidden xs:inline sm:inline">Hapus</span>
+                </button>
               </div>
 
               {/* Ruang Lingkup */}
@@ -1566,7 +1802,10 @@ export default function PengajuanKerjasama() {
                   selectedRuangLingkup: editingItem.ruangLingkup,
                 }}
                 onCancel={() => setEditingItem(null)}
-                onSubmitted={() => setEditingItem(null)}
+                onSubmitted={() => {
+                    setEditingItem(null);
+                    void refreshPengajuanData(true);
+                  }}
                 onSubmitOverride={handleSubmitEditFromAjukan}
               />
             </div>
@@ -1576,8 +1815,8 @@ export default function PengajuanKerjasama() {
 
       {detailItem && (
         <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
-          <div className="w-full max-w-[640px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3]">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
+          <div className="w-full max-w-[640px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3] flex flex-col max-h-[90vh]">
+            <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Detail Pengajuan</h3>
                 <p className="text-xs text-gray-600">ID: {detailItem.id}</p>
@@ -1587,7 +1826,7 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
                 <p className="text-xs text-gray-500">Status:</p>
                 <p className="text-sm font-semibold text-gray-900 mt-0.5">{statusConfig[detailItem.statusPengajuan]?.label || 'Menunggu'}</p>
@@ -1678,33 +1917,61 @@ export default function PengajuanKerjasama() {
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
                 <p className="text-sm font-semibold text-gray-900 mb-2">Dokumen Pendukung</p>
 
-                {detailFileEntries.length === 0 && (
-                  <p className="text-xs text-gray-500">Belum ada dokumen yang diunggah.</p>
-                )}
-
-                {detailFileEntries.length > 0 && (
-                  <div className="space-y-2">
-                    {detailFileEntries.map((doc, index) => {
-                      const sourceUrl = doc.url || detailFallbackTemplateUrl || `http://localhost:8000/storage/uploads/${doc.name}`;
-
-                      return (
-                        <div key={`${doc.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                          <div className="min-w-0 flex items-center gap-2">
-                            <Paperclip size={14} className="shrink-0 text-slate-500" />
-                            <a 
-                              href={sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800"
-                            >
-                              {doc.name}
-                            </a>
-                          </div>
+                {(() => {
+                  const originalFiles = detailFileEntries.filter((f) => !f.isAcc);
+                  const accFiles = detailFileEntries.filter((f) => f.isAcc);
+                  return (
+                    <>
+                      {originalFiles.length === 0 ? (
+                        <p className="text-xs text-gray-500 mb-2">Belum ada dokumen awal yang diunggah.</p>
+                      ) : (
+                        <div className="space-y-2 mb-3">
+                          {originalFiles.map((doc, index) => {
+                            const sourceUrl = doc.url || detailFallbackTemplateUrl || `http://localhost:8000/storage/uploads/${doc.name}`;
+                            return (
+                              <div key={`orig-${doc.name}-${index}`} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                <Paperclip size={14} className="shrink-0 text-slate-500" />
+                                <a
+                                  href={sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800"
+                                >
+                                  {doc.name}
+                                </a>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+
+                      {accFiles.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-1.5 mb-2 mt-1">
+                            <CheckCircle size={13} className="text-emerald-600" />
+                            <p className="text-xs font-semibold text-emerald-700">Dokumen Final (ACC)</p>
+                          </div>
+                          <div className="space-y-2">
+                            {accFiles.map((doc, index) => (
+                              <div key={`acc-${doc.name}-${index}`} className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                                <Paperclip size={14} className="shrink-0 text-emerald-600" />
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={doc.name}
+                                  className="truncate text-xs font-medium text-emerald-700 underline hover:text-emerald-800"
+                                >
+                                  {doc.name}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <button
@@ -1719,10 +1986,10 @@ export default function PengajuanKerjasama() {
         </div>
       )}
 
-      {reviewItem && (
+{reviewItem && (
         <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] p-4 flex items-center justify-center">
-          <div className="w-full max-w-[680px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3]">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
+          <div className="w-full max-w-[680px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3] flex flex-col max-h-[90vh]">
+            <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Review Pengajuan</h3>
                 <p className="text-sm text-gray-700 mt-0.5">{reviewItem.judulPengajuan}</p>
@@ -1732,7 +1999,7 @@ export default function PengajuanKerjasama() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4] grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                 <div>
                   <p className="text-gray-500">Pengusul:</p>
@@ -1754,42 +2021,129 @@ export default function PengajuanKerjasama() {
                 </div>
               </div>
 
-              <div>
+<div>
                 <p className="text-xs font-semibold text-gray-700 mb-2">Keputusan *</p>
                 <div className="grid grid-cols-2 gap-3">
+                  {/* Revisi button - LEFT side */}
+                  <button
+                    type="button"
+                    onClick={() => setReviewDecision('Revisi')}
+                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Revisi' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-600 border-orange-300 hover:bg-orange-50'}`}
+                  >
+                    <ThumbsDown size={14} />
+                    REVISI
+                  </button>
+                  {/* ACC Final Berkas button - RIGHT side */}
                   <button
                     type="button"
                     onClick={() => setReviewDecision('Disetujui')}
-                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Disetujui' ? 'bg-[#1E376C] text-white border-[#1E376C]' : 'bg-white text-[#1E376C] border-[#C7D2EA]'}`}
+                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Disetujui' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-[#1E376C] border-[#C7D2EA] hover:bg-green-50'}`}
                   >
-                    <ThumbsUp size={14} />
-                    ACC / SETUJUI
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReviewDecision('Ditolak')}
-                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Ditolak' ? 'bg-[#1E376C] text-white border-[#1E376C]' : 'bg-white text-[#1E376C] border-[#C7D2EA]'}`}
-                  >
-                    <ThumbsDown size={14} />
-                    TIDAK ACC / TOLAK
+                    <CheckCircle size={14} />
+                    ACC FINAL BERKAS
                   </button>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-700">Komentar / Catatan</label>
-                <textarea
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  rows={3}
-                  placeholder="Berikan catatan atau arahan untuk langkah selanjutnya..."
-                  className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
-                />
-              </div>
+              {reviewDecision === 'Revisi' && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-700">Catatan Revisi</label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={3}
+                    placeholder="Berikan catatan revisi untuk pengusul..."
+                    className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                  />
+                </div>
+              )}
+
+              {reviewDecision === 'Disetujui' && (
+                <div className="rounded-lg border border-[#D9DCE4] bg-white p-4">
+                  <p className="text-sm font-semibold text-gray-900 mb-3">Upload Final Berkas</p>
+                  <p className="text-xs text-gray-600 mb-3">Unggah dokumen final yang telah disetujui untuk disimpan sebagai arsip.</p>
+
+<label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-sm font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
+                    <Upload size={16} />
+                    Klik untuk Pilih File
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        handleReviewFinalFileUpload(e.target.files);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {reviewFinalFilePreview && (
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-xs font-semibold text-green-700 mb-1">File Dipilih:</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex items-center gap-2">
+                          <Paperclip size={14} className="shrink-0 text-green-600" />
+                          <span className="truncate text-xs font-medium text-green-700">{reviewFinalFilePreview.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveReviewFinalFile}
+                          className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+{/* Display existing final files if any */}
+                  {reviewItem.finalFileName && (
+                    <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <p className="text-xs font-semibold text-slate-700 mb-1">File Final Terunggah:</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex items-center gap-2">
+                          <Paperclip size={14} className="shrink-0 text-slate-500" />
+                          <span className="truncate text-xs font-medium text-blue-600">{reviewItem.finalFileName}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (reviewItem.finalFilePath) {
+                              window.open(reviewItem.finalFilePath, '_blank');
+                            } else {
+                              window.open(`http://localhost:8000/storage/final/${reviewItem.finalFileName}`, '_blank');
+                            }
+                          }}
+                          className="rounded p-1 text-slate-400 hover:bg-slate-100"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="bg-white rounded-lg border border-[#D9DCE4] px-3 py-2 text-[11px] text-gray-600">
                 Notifikasi Otomatis: status akan diperbarui dan pengusul mendapat info hasil review.
               </div>
+
+              {/* WhatsApp PIC Section */}
+              {reviewItem.whatsappPengusul && (
+                <div className="mt-2 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-xs font-semibold text-green-800 mb-2">Hubungi PIC via WhatsApp</p>
+                  <a
+                    href={buildWhatsAppUrl(reviewItem.whatsappPengusul) || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700"
+                  >
+                    <MessageSquare size={14} />
+                    Hubungi via WhatsApp
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2">
                 <button
@@ -1801,7 +2155,21 @@ export default function PengajuanKerjasama() {
                 </button>
                 <button
                   type="button"
-                  onClick={saveReview}
+                  onClick={() => {
+                    if (reviewDecision === 'Revisi') {
+                      if (!reviewComment.trim()) {
+                        setInfoModalMessage('Catatan Revisi wajib diisi.');
+                        return;
+                      }
+                      setUploadConfirmOpen(true);
+                    } else {
+                      if (reviewDecision === 'Disetujui' && !reviewFinalFile) {
+                        setInfoModalMessage('Upload file dokumen final wajib dilakukan sebelum ACC.');
+                        return;
+                      }
+                      setUploadConfirmOpen(true);
+                    }
+                  }}
                   className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-xs font-semibold hover:bg-[#2A4A8F]"
                 >
                   Simpan dan kirim notifikasi
@@ -2581,6 +2949,53 @@ export default function PengajuanKerjasama() {
                 className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {uploadConfirmOpen && reviewItem && (
+        <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">
+                {reviewDecision === 'Revisi' ? 'Konfirmasi Kirim Revisi' : 'Konfirmasi Upload Dokumen Final'}
+              </h3>
+            </div>
+            <div className="px-5 py-4 space-y-2">
+              {reviewDecision === 'Revisi' ? (
+                <p className="text-sm text-slate-700">
+                  Yakin ingin mengirim catatan revisi ke pengusul? Status pengajuan akan berubah menjadi <span className="font-semibold text-orange-600">Revisi</span> dan notifikasi akan dikirim ke Internal & Mitra.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-700">
+                    Yakin ingin meng-ACC dan mengupload dokumen final ini? Status pengajuan akan berubah menjadi <span className="font-semibold text-emerald-600">Disetujui</span> dan notifikasi akan dikirim ke Internal & Mitra.
+                  </p>
+                  {reviewFinalFilePreview && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-emerald-700">File:</span>
+                      <span className="truncate text-emerald-600">{reviewFinalFilePreview.name}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="px-5 py-4 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setUploadConfirmOpen(false)}
+                className="h-9 px-4 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-300"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => { void executeReview(); }}
+                className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+              >
+                Ya, Konfirmasi
               </button>
             </div>
           </div>

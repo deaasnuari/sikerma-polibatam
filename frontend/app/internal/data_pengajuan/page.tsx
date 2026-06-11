@@ -57,13 +57,21 @@ const ruangLingkupOptions = [
   'Lainnya',
 ];
 
-const statusConfig: Record<PengajuanStatus, { className: string; icon: React.ReactNode }> = {
+const statusConfig: Partial<Record<PengajuanStatus, { className: string; icon: React.ReactNode }>> = {
   Menunggu: {
+    className: 'bg-amber-100 text-amber-700',
+    icon: <Clock3 size={13} />,
+  },
+  'Menunggu Review': {
     className: 'bg-amber-100 text-amber-700',
     icon: <Clock3 size={13} />,
   },
   Diproses: {
     className: 'bg-sky-100 text-sky-700',
+    icon: <Clock3 size={13} />,
+  },
+  Revisi: {
+    className: 'bg-orange-100 text-orange-700',
     icon: <Clock3 size={13} />,
   },
   Disetujui: {
@@ -444,22 +452,22 @@ export default function InternalDataPengajuanPage() {
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-5 text-sm">
-                    <button type="button" onClick={() => setDetailItem(item)} className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900">
-                      <Eye size={16} />
-                      <span className="underline underline-offset-2">Lihat Detail</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => setDetailItem(item)} className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-slate-700 border border-slate-300 bg-slate-50 rounded-lg px-2.5 sm:px-3 py-1.5 hover:bg-slate-100 font-medium">
+                      <Eye size={14} />
+                      <span className="hidden sm:inline">Lihat Detail</span>
                     </button>
-                    <button type="button" onClick={() => setReviewItem(item)} className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
-                      <MessageSquareText size={16} />
-                      <span>Review</span>
+                    <button type="button" onClick={() => setReviewItem(item)} className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-emerald-700 border border-emerald-300 bg-emerald-50 rounded-lg px-2.5 sm:px-3 py-1.5 hover:bg-emerald-100 font-medium">
+                      <MessageSquareText size={14} />
+                      <span className="hidden sm:inline">Review</span>
                     </button>
-                    <button type="button" onClick={() => openEdit(item)} className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700">
-                      <Pencil size={16} />
-                      <span>Edit</span>
+                    <button type="button" onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 hover:bg-amber-100 font-medium">
+                      <Pencil size={14} />
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
-                    <button type="button" onClick={() => setDeleteTarget(item)} className="inline-flex items-center gap-2 text-red-500 hover:text-red-700">
-                      <Trash2 size={16} />
-                      <span>Hapus</span>
+                    <button type="button" onClick={() => setDeleteTarget(item)} className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-600 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 hover:bg-red-100 font-medium">
+                      <Trash2 size={14} />
+                      <span className="hidden sm:inline">Hapus</span>
                     </button>
                   </div>
                 </div>

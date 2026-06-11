@@ -33,6 +33,9 @@ class DokumenKerjasamaController extends Controller
             'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul',
             'unitProdi:id,nama,jenis_node,kategori_unit',
             'mitra:id,nama_mitra,negara',
+            'dokumenFiles' => function ($q) {
+                $q->where('peran_berkas', 'dokumen_final');
+            },
         ]);
 
         if ($request->filled('status_siklus')) {

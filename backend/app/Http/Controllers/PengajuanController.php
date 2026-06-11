@@ -311,7 +311,19 @@ class PengajuanController extends Controller
             ? $pengajuan->pengajuanFiles()->get()
             : collect();
 
-        $primaryPath = trim((string) ($pengajuanFiles->first()?->path_file ?? ''));
+        // Hanya masuk Rekap Data jika sudah ada Dokumen Final (di-ACC).
+        // Data lama di database tidak dihapus; guard ini hanya berlaku untuk record baru.
+        $hasDokumenFinal = $pengajuanFiles->where('peran_berkas', 'dokumen_final')->isNotEmpty()
+            || !empty(trim((string) ($pengajuan->final_file_name ?? '')));
+
+        if (!$hasDokumenFinal) {
+            return;
+        }
+
+        $primaryPath = trim((string) ($pengajuanFiles->where('peran_berkas', 'dokumen_final')->first()?->path_file ?? ''));
+        if ($primaryPath === '') {
+            $primaryPath = trim((string) ($pengajuanFiles->first()?->path_file ?? ''));
+        }
         if ($primaryPath === '') {
             $primaryPath = trim((string) ($pengajuan->file_name ?? ''));
         }
@@ -351,7 +363,7 @@ class PengajuanController extends Controller
             if ($pengajuanFiles->isNotEmpty()) {
                 $dokumenFilesPayload = $pengajuanFiles->map(fn ($file) => [
                     'dokumen_id' => $dokumen->id,
-                    'peran_berkas' => 'final-acc',
+                    'peran_berkas' => $file->peran_berkas ?? 'lampiran',
                     'nama_file' => (string) $file->nama_file,
                     'path_file' => (string) $file->path_file,
                     'mime_type' => $file->mime_type,
@@ -482,10 +494,14 @@ class PengajuanController extends Controller
         }
 
         $labelMap = [
-            'menunggu'  => 'Menunggu',
-            'diproses'  => 'Diproses',
+            'menunggu' => 'Menunggu Review',
+            'diproses' => 'Diproses',
             'disetujui' => 'Disetujui',
-            'ditolak'   => 'Ditolak',
+            'ditolak' => 'Ditolak',
+            'revisi' => 'Revisi',
+            'disetujui_internal' => 'Disetujui Internal',
+            'disetujui_mitra' => 'Disetujui Mitra',
+            'final_approved' => 'Final Approved',
         ];
 
         $judul = 'Status diperbarui: '
@@ -542,6 +558,7 @@ class PengajuanController extends Controller
             $path = $this->persistDataUrlAttachment($attachment) ?? $this->normalizeAttachmentPath($attachment);
 
             $payload[] = [
+                'peran_berkas' => isset($attachment['peran_berkas']) && is_string($attachment['peran_berkas']) ? $attachment['peran_berkas'] : 'pengajuan_awal',
                 'nama_file' => $name,
                 'path_file' => $path,
                 'mime_type' => isset($attachment['type']) && is_string($attachment['type']) ? $attachment['type'] : null,
@@ -551,6 +568,49 @@ class PengajuanController extends Controller
         }
 
         $pengajuan->pengajuanFiles()->delete();
+
+        if (! empty($payload)) {
+            $pengajuan->pengajuanFiles()->createMany($payload);
+        }
+    }
+
+    private function syncAccFiles(Pengajuan $pengajuan, Request $request): void
+    {
+        if (! $this->hasPengajuanFileTable()) {
+            return;
+        }
+
+        if (! $request->has('acc_file_attachments')) {
+            return;
+        }
+
+        $attachments = $request->input('acc_file_attachments');
+        if (! is_array($attachments)) {
+            return;
+        }
+
+        $payload = [];
+        foreach ($attachments as $attachment) {
+            if (! is_array($attachment)) {
+                continue;
+            }
+
+            $name = trim((string) ($attachment['name'] ?? $attachment['nama_file'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $path = $this->persistDataUrlAttachment($attachment) ?? $this->normalizeAttachmentPath($attachment);
+
+            $payload[] = [
+                'peran_berkas' => 'dokumen_final',
+                'nama_file' => $name,
+                'path_file' => $path,
+                'mime_type' => isset($attachment['type']) && is_string($attachment['type']) ? $attachment['type'] : null,
+                'ukuran_file_bytes' => isset($attachment['size']) && is_numeric($attachment['size']) ? (int) $attachment['size'] : null,
+                'diunggah_oleh_user_id' => $request->user()?->id,
+            ];
+        }
 
         if (! empty($payload)) {
             $pengajuan->pengajuanFiles()->createMany($payload);
@@ -943,9 +1003,13 @@ class PengajuanController extends Controller
             'kategori_pengajuan' => ['nullable', 'in:internal,eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
-            'status_pengajuan' => ['nullable', 'in:menunggu,diproses,disetujui,ditolak'],
+            'status_pengajuan' => ['nullable', 'in:menunggu,diproses,disetujui,ditolak,revisi,disetujui_internal,disetujui_mitra,final_approved'],
             'catatan' => ['nullable', 'string'],
+            'catatan_revisi' => ['nullable', 'string'],
             'keputusan' => ['nullable', 'string'],
+            'final_file_name' => ['nullable', 'string', 'max:500'],
+            'final_file_path' => ['nullable', 'string', 'max:1000'],
+            'acc_actor' => ['nullable', 'in:internal,mitra'],
             'diajukan_pada' => ['nullable', 'date'],
             'email_terverifikasi_pada' => ['nullable', 'date'],
         ]);
@@ -995,7 +1059,54 @@ class PengajuanController extends Controller
                     // Do not fail main pengajuan update when optional attachment sync is incompatible.
                 }
 
-                if (strtolower(trim($statusBaru)) === 'disetujui') {
+                try {
+                    $this->syncAccFiles($pengajuan, $request);
+                } catch (\Throwable $ignored) {
+                    // Do not fail main update when acc file sync fails.
+                }
+
+                $statusBaruNormalized = strtolower(trim($statusBaru));
+
+                if ($statusBaruNormalized === 'revisi' && $request->filled('catatan_revisi')) {
+                    $pengajuan->catatan_revisi = (string) $request->input('catatan_revisi');
+                    $pengajuan->save();
+                }
+
+                if ($statusBaruNormalized === 'disetujui_internal') {
+                    $pengajuan->acc_internal_at = now();
+                    $pengajuan->save();
+                }
+
+                if ($statusBaruNormalized === 'disetujui_mitra') {
+                    $pengajuan->acc_mitra_at = now();
+                    $pengajuan->save();
+                }
+
+                if ($request->filled('acc_actor')) {
+                    $actor = (string) $request->input('acc_actor');
+                    if ($actor === 'internal') {
+                        $pengajuan->acc_internal_at = now();
+                    } elseif ($actor === 'mitra') {
+                        $pengajuan->acc_mitra_at = now();
+                    }
+                }
+
+                if ($request->filled('final_file_name')) {
+                    $pengajuan->final_file_name = (string) $request->input('final_file_name');
+                }
+
+                if ($request->filled('final_file_path')) {
+                    $pengajuan->final_file_path = (string) $request->input('final_file_path');
+                }
+
+                if (!empty($pengajuan->acc_internal_at) && !empty($pengajuan->acc_mitra_at)) {
+                    $pengajuan->status_pengajuan = 'final_approved';
+                    $pengajuan->final_approved_at = now();
+                }
+
+                $pengajuan->save();
+
+                if (in_array(strtolower(trim((string) $pengajuan->status_pengajuan)), ['disetujui', 'final_approved'], true)) {
                     $this->moveApprovedPengajuanToDokumen($pengajuan->fresh(), $request);
                 }
             });
@@ -1013,10 +1124,28 @@ class PengajuanController extends Controller
             ], 422);
         }
 
+        $freshPengajuan = $pengajuan->fresh();
+
+        // Load relations so the response mirrors what index() returns.
+        // Without this, unit_prodi / mitra objects are absent and the frontend
+        // would map namaUnitProdi / namaMitra to '-', overwriting existing state.
+        if ($freshPengajuan && $this->shouldLoadPengajuanRelations()) {
+            $freshPengajuan->load([
+                'unitProdi:id,nama,jenis_node,kategori_unit',
+                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'dokumenFiles',
+            ]);
+        }
+
+        $message = 'Pengajuan updated successfully';
+        if (!empty($freshPengajuan?->acc_internal_at) && !empty($freshPengajuan?->acc_mitra_at)) {
+            $message = 'Berkas final telah disetujui oleh kedua belah pihak.';
+        }
+
         return response([
             'success' => true,
-            'data' => $pengajuan,
-            'message' => 'Pengajuan updated successfully',
+            'data' => $freshPengajuan,
+            'message' => $message,
         ]);
     }
 

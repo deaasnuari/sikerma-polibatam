@@ -27,6 +27,15 @@ type ApiDokumenRow = {
   file?: string | null;
   alasan_arsip?: string | null;
   pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string } | null;
+  // Sudah difilter oleh controller ke peran_berkas = 'dokumen_final' saja
+  dokumen_files?: Array<{
+    id: number;
+    nama_file: string;
+    path_file: string;
+    peran_berkas?: string | null;
+    mime_type?: string | null;
+    ukuran_file_bytes?: number | null;
+  }> | null;
 };
 
 function mapJenis(value?: string | null): 'MoA' | 'MoU' | 'IA' {
@@ -90,8 +99,29 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       }
     }
 
+    // Gunakan dokumen_files (sudah difilter ke peran_berkas='dokumen_final' oleh controller).
+    // Fallback ke kolom 'file' hanya untuk record lama yang belum punya dokumen_files.
     let dokumenTerkait: any[] = [];
-    if (row.file) {
+    const finalFiles = row.dokumen_files ?? [];
+    if (finalFiles.length > 0) {
+      dokumenTerkait = finalFiles.map((f) => {
+        const rawPath = f.path_file || '';
+        const fileUrl = rawPath.startsWith('http')
+          ? rawPath
+          : `http://localhost:8000/storage/${rawPath.replace(/^\/+/, '')}`;
+        const sizeLabel = f.ukuran_file_bytes
+          ? `${Math.round(f.ukuran_file_bytes / 1024)} KB`
+          : 'Dokumen Final';
+        return {
+          nama: f.nama_file,
+          url: fileUrl,
+          tipe: f.mime_type || (f.nama_file.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream'),
+          ukuran: sizeLabel,
+          tanggal: toDisplayDate(tanggalMulaiRaw),
+        };
+      });
+    } else if (row.file) {
+      // Legacy: record lama yang hanya punya kolom 'file'
       dokumenTerkait.push({
         nama: row.file.split('/').pop() || row.file,
         url: row.file.startsWith('http') ? row.file : `http://localhost:8000/storage/uploads/${row.file}`,

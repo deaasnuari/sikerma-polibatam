@@ -1,16 +1,26 @@
-import { addAdminNotification } from '@/services/adminService';
+import { addAdminNotification, getUnreadNotificationCount } from '@/services/adminService';
 import { removeMonitoringByPengajuanId, upsertMonitoringFromPengajuan } from '@/services/adminMonitoringService';
 import { removeRekapByPengajuanId, upsertRekapFromPengajuan } from '@/services/adminRekapDataService';
 import { hideStoryByPengajuanId, initAktivitasOnApproval } from '@/services/adminStoryAktivitasService';
 import { apiRequest } from '@/lib/api';
 
-export type PengajuanStatus = 'Menunggu' | 'Diproses' | 'Disetujui' | 'Ditolak';
+export type PengajuanStatus =
+  | 'Menunggu'
+  | 'Menunggu Review'
+  | 'Diproses'
+  | 'Revisi'
+  | 'Disetujui Internal'
+  | 'Disetujui Mitra'
+  | 'Final Approved'
+  | 'Disetujui'
+  | 'Ditolak';
 
 export type PengajuanFileAttachment = {
   name: string;
   url: string;
   type?: string;
   size?: number;
+  isAcc?: boolean;
 };
 
 // Tipe utama untuk satu data pengajuan kerjasama (Struktur Baru).
@@ -48,6 +58,12 @@ export interface PengajuanItem {
   reviewedBy?: string;
   catatan?: string | null;
   keputusan?: string | null;
+  catatanRevisi?: string | null;
+  accInternalAt?: string | null;
+  accMitraAt?: string | null;
+  finalApprovedAt?: string | null;
+  finalFileName?: string | null;
+  finalFilePath?: string | null;
   isFromAdmin?: boolean;
 }
 
@@ -94,6 +110,7 @@ function saveAttachmentCacheEntry(id: number, entry: AttachmentCacheEntry): void
       url: item.url || '',
       type: item.type,
       size: item.size,
+      isAcc: item.isAcc,
     }));
 
   const nextEntry: AttachmentCacheEntry = {
@@ -187,7 +204,15 @@ type ApiPengajuanRow = {
   ruang_lingkup_ids?: number[] | null;
   tanggal_mulai?: string | null;
   tanggal_berakhir?: string | null;
-  status_pengajuan: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
+  status_pengajuan:
+    | 'menunggu'
+    | 'diproses'
+    | 'disetujui'
+    | 'ditolak'
+    | 'revisi'
+    | 'disetujui_internal'
+    | 'disetujui_mitra'
+    | 'final_approved';
   diajukan_pada?: string | null;
   unit_prodi?: { id: number; nama: string } | null;
   mitra?: { id: number; nama_mitra: string; kategori_mitra?: string | null; negara?: string | null; alamat?: string | null; email_mitra?: string | null; telepon_mitra?: string | null; } | string | null;
@@ -204,12 +229,19 @@ type ApiPengajuanRow = {
   status?: 'menunggu' | 'diproses' | 'disetujui' | 'ditolak';
   catatan?: string | null;
   keputusan?: string | null;
+  catatan_revisi?: string | null;
+  acc_internal_at?: string | null;
+  acc_mitra_at?: string | null;
+  final_approved_at?: string | null;
+  final_file_name?: string | null;
+  final_file_path?: string | null;
   file_name?: string | null;
   file_attachments?: {
     name?: string;
     url?: string;
     type?: string;
     size?: number;
+    isAcc?: boolean;
   }[] | null;
   dokumen_files?: {
     id: number;
@@ -284,17 +316,27 @@ function mapJenisDokumenToApi(value: string): 'MOU' | 'MOA' | 'IA' {
 }
 
 function mapStatusFromApi(value: ApiPengajuanRow['status_pengajuan']): PengajuanStatus {
-  const valStr = value as string;
+  const valStr = (value as string) || 'menunggu';
   if (valStr === 'diproses') return 'Diproses';
+  if (valStr === 'revisi') return 'Revisi';
+  if (valStr === 'disetujui_internal') return 'Disetujui Internal';
+  if (valStr === 'disetujui_mitra') return 'Disetujui Mitra';
+  if (valStr === 'final_approved') return 'Final Approved';
   if (valStr === 'disetujui') return 'Disetujui';
   if (valStr === 'selesai') return 'Disetujui';
   if (valStr === 'verifikasi') return 'Diproses';
   if (valStr === 'ditolak') return 'Ditolak';
-  return 'Menunggu';
+  return 'Menunggu Review';
 }
 
-function mapStatusToApi(value: PengajuanStatus): 'menunggu' | 'diproses' | 'disetujui' | 'ditolak' {
+function mapStatusToApi(
+  value: PengajuanStatus
+): 'menunggu' | 'diproses' | 'disetujui' | 'ditolak' | 'revisi' | 'disetujui_internal' | 'disetujui_mitra' | 'final_approved' {
   if (value === 'Diproses') return 'diproses';
+  if (value === 'Revisi') return 'revisi';
+  if (value === 'Disetujui Internal') return 'disetujui_internal';
+  if (value === 'Disetujui Mitra') return 'disetujui_mitra';
+  if (value === 'Final Approved') return 'final_approved';
   if (value === 'Disetujui') return 'disetujui';
   if (value === 'Ditolak') return 'ditolak';
   return 'menunggu';
@@ -306,7 +348,7 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
   const statusApi = row.status_pengajuan || row.status || 'menunggu';
 
   const mitraNama =
-    (typeof row.mitra === 'string' ? row.mitra : row.mitra?.nama_mitra) ||
+    (typeof row.mitra === 'object' && row.mitra !== null ? row.mitra.nama_mitra : null) ||
     row.mitra_nama ||
     row.nama_mitra ||
     '-';
@@ -338,6 +380,7 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
           url: typeof file.url === 'string' && file.url.trim() !== '' ? buildAttachmentUrl(file.url) : '',
           type: typeof file.type === 'string' ? file.type : undefined,
           size: typeof file.size === 'number' ? file.size : undefined,
+          isAcc: file.isAcc === true,
         }))
     : [];
 
@@ -346,6 +389,7 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     ? attachmentRows.map((file) => ({
         name: file.nama_file,
         url: buildAttachmentUrl(file.path_file),
+        isAcc: file.peran_berkas === 'dokumen_final',
       }))
     : (fallbackAttachments.length > 0 ? fallbackAttachments : cachedAttachment?.fileAttachments);
 
@@ -387,8 +431,15 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     statusPengajuan: mapStatusFromApi(statusApi),
     fileName: resolvedFileName,
     fileAttachments: resolvedAttachments,
+    reviewComment: row.catatan || row.catatan_revisi || undefined,
     catatan: row.catatan || undefined,
     keputusan: row.keputusan || undefined,
+    catatanRevisi: row.catatan_revisi || undefined,
+    accInternalAt: row.acc_internal_at || undefined,
+    accMitraAt: row.acc_mitra_at || undefined,
+    finalApprovedAt: row.final_approved_at || undefined,
+    finalFileName: row.final_file_name || undefined,
+    finalFilePath: row.final_file_path || undefined,
   };
 }
 
@@ -445,6 +496,61 @@ export async function savePengajuanReviewApi(id: number, status: PengajuanStatus
   return mapped;
 }
 
+export async function savePengajuanRevisionApi(
+  id: number,
+  catatanRevisi: string,
+  comment?: string
+): Promise<PengajuanItem> {
+  const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>(`/pengajuan/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      status_pengajuan: mapStatusToApi('Revisi'),
+      status: mapStatusToApi('Revisi'),
+      catatan: comment?.trim() || null,
+      catatan_revisi: catatanRevisi.trim() || null,
+      keputusan: 'Revisi',
+      review_comment: comment?.trim() || null,
+    }),
+  });
+
+  const mapped = mapApiPengajuanToItem(response.data);
+  mapped.catatanRevisi = catatanRevisi.trim() || undefined;
+  mapped.reviewComment = comment?.trim() || undefined;
+  mapped.reviewedAt = new Date().toISOString().slice(0, 10);
+  mapped.reviewedBy = 'Admin SIKERMA';
+  return mapped;
+}
+
+export async function uploadAccFileApi(
+  id: number,
+  file: { name: string; url: string; type?: string; size?: number }
+): Promise<PengajuanItem> {
+  const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>(`/pengajuan/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      acc_file_attachments: [{ name: file.name, url: file.url, type: file.type, size: file.size }],
+    }),
+  });
+  return mapApiPengajuanToItem(response.data);
+}
+
+export async function accFinalBerkasApi(id: number): Promise<PengajuanItem> {
+  const response = await apiRequest<ApiSingleResponse<ApiPengajuanRow>>(`/pengajuan/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      status_pengajuan: mapStatusToApi('Disetujui'),
+      status: mapStatusToApi('Disetujui'),
+      keputusan: 'Disetujui',
+      acc_actor: 'internal',
+    }),
+  });
+
+  const mapped = mapApiPengajuanToItem(response.data);
+  mapped.reviewedAt = new Date().toISOString().slice(0, 10);
+  mapped.reviewedBy = 'Admin SIKERMA';
+  return mapped;
+}
+
 export async function updatePengajuanItemApi(
   id: number,
   updates: Partial<Omit<PengajuanItem, 'id' | 'diajukanPada'>>
@@ -472,6 +578,7 @@ export async function updatePengajuanItemApi(
       type: file.type,
       size: file.size,
       url: file.url || '',
+      isAcc: file.isAcc,
     }));
   }
 
@@ -829,7 +936,7 @@ export function updatePengajuanStatus(
 export function getPengajuanStats(items: PengajuanItem[]) {
   return {
     totalPengajuan: items.length,
-    menunggu: items.filter((item) => item.statusPengajuan === 'Menunggu').length,
+    menunggu: items.filter((item) => item.statusPengajuan === 'Menunggu' || item.statusPengajuan === 'Menunggu Review').length,
     diproses: items.filter((item) => item.statusPengajuan === 'Diproses').length,
     disetujui: items.filter((item) => item.statusPengajuan === 'Disetujui').length,
   };
@@ -880,6 +987,7 @@ export function updatePengajuanItem(
       tanggalMulai: updatedItem.tanggalMulai,
       tanggalBerakhir: updatedItem.tanggalBerakhir,
       whatsappPengusul: updatedItem.whatsappPengusul,
+      finalFileName: updatedItem.finalFileName,
     });
 
     upsertMonitoringFromPengajuan({

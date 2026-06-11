@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye } from 'lucide-react';
+import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
 import {
   addRekapDokumen,
@@ -494,85 +494,182 @@ export default function RekapDataPage() {
         </div>
       </section>
 
-      {detailItem && (
-        <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-900/35 backdrop-blur-[2px]">
-          <div className="flex min-h-full items-center justify-center px-4 py-8">
-          <div className="w-full max-w-2xl rounded-[24px] bg-white shadow-2xl flex flex-col">
-            {/* Header - sticky, tidak ikut scroll */}
-            <div className="flex-shrink-0 flex items-start justify-between gap-4 border-b border-gray-100 px-6 pt-6 pb-4">
+      {detailItem && (() => {
+        const statusBadge: Record<string, { bg: string; text: string; icon: JSX.Element }> = {
+          'Aktif': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: <CheckCircle2 size={13} /> },
+          'Akan Berakhir': { bg: 'bg-amber-100', text: 'text-amber-700', icon: <Clock size={13} /> },
+          'Kadaluarsa': { bg: 'bg-rose-100', text: 'text-rose-700', icon: <XCircle size={13} /> },
+        };
+        const jenisBadge: Record<string, string> = {
+          MoU: 'bg-violet-600 text-white',
+          MoA: 'bg-sky-600 text-white',
+          IA: 'bg-teal-600 text-white',
+        };
+        const sb = statusBadge[detailItem.status] || statusBadge['Aktif'];
+        return (
+        <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center px-4 py-6">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+
+            {/* Header */}
+            <div className="flex-shrink-0 flex items-start justify-between gap-4 border-b border-gray-100 bg-gradient-to-r from-[#1E376C] to-[#2B4A93] px-6 pt-5 pb-5 rounded-t-2xl">
               <div>
-                <h2 className="text-xl font-bold text-[#1E376C]">Detail Dokumen</h2>
-                <p className="text-sm text-gray-500 mt-1">Informasi lengkap dokumen rekap kerjasama</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${jenisBadge[detailItem.jenis] || 'bg-white/20 text-white'}`}>
+                    {detailItem.jenis}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${sb.bg} ${sb.text}`}>
+                    {sb.icon}
+                    {detailItem.status}
+                  </span>
+                </div>
+                <h2 className="text-lg font-bold text-white leading-tight">{detailItem.namaMitra}</h2>
+                <p className="text-xs text-blue-200 mt-0.5">{detailItem.noDokumen}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setDetailItem(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/70 hover:bg-white/20 hover:text-white transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 px-6 pb-6">
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
-              <InfoItem label="No. Dokumen" value={detailItem.noDokumen} />
-              <InfoItem label="Jenis Dokumen" value={detailItem.jenis} />
-              <InfoItem label="Nama Mitra" value={detailItem.namaMitra} />
-              <InfoItem label="Kategori Asal" value={detailItem.kategoriUnit || 'Jurusan / Unit'} />
-              <InfoItem label="Jurusan / Unit" value={detailItem.unit} />
-              <InfoItem label="Tanggal Mulai" value={detailItem.tanggalMulai} />
-              <InfoItem label="Berlaku Hingga" value={detailItem.berlakuHingga} />
-              <InfoItem label="Tahun" value={detailItem.tahun} />
-              <InfoItem label="Status" value={detailItem.status} />
-              <InfoItem label="WhatsApp" value={detailItem.whatsappNumber || '-'} isWhatsapp />
-            </div>
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
-            <div className="mt-4 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-medium text-gray-500">Dokumen Upload</p>
-              {detailItem.dokumenTerkait?.length ? (
-                <div className="mt-2 space-y-2">
-                  {detailItem.dokumenTerkait.map((doc) => (
-                    <div key={`${doc.nama}-${doc.tanggal}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-800">{doc.nama}</p>
-                        <p className="text-xs text-gray-500">{doc.ukuran} • {doc.tanggal}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => { void downloadDokumen(doc.url, doc.nama); }}
-                        className="rounded-md bg-[#1E376C] px-3 py-1 text-xs font-semibold text-white hover:bg-[#2B4A93]"
-                      >
-                        Unduh
-                      </button>
-                    </div>
-                  ))}
+              {/* Info utama */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                  <Hash size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
+                  <div>
+                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">No. Dokumen</p>
+                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.noDokumen}</p>
+                  </div>
                 </div>
-              ) : (
-                <p className="mt-1 text-sm font-semibold text-gray-800">Belum ada dokumen upload</p>
-              )}
-            </div>
-
-            {detailItem.sourcePengajuanId && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDetailItem(null);
-                    router.push(`/admin/story_aktivitas/${detailItem.sourcePengajuanId}`);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93] transition-colors"
-                >
-                  <Activity size={15} />
-                  Lihat Story Aktivitas
-                </button>
+                <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                  <FileText size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
+                  <div>
+                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Jenis Dokumen</p>
+                    <span className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadge[detailItem.jenis] || 'bg-gray-200 text-gray-700'}`}>
+                      {detailItem.jenis}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                  <Building2 size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
+                  <div>
+                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Nama Mitra</p>
+                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.namaMitra}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                  <User size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
+                  <div>
+                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Jurusan / Unit</p>
+                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.unit}</p>
+                    {detailItem.kategoriUnit && (
+                      <p className="text-[11px] text-gray-500">{detailItem.kategoriUnit}</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Periode */}
+              <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <CalendarDays size={14} className="text-[#1E376C]" />
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Periode Kerjasama</p>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-[11px] text-gray-500">Tanggal Mulai</p>
+                    <p className="font-semibold text-gray-800">{detailItem.tanggalMulai || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500">Berlaku Hingga</p>
+                    <p className="font-semibold text-gray-800">{detailItem.berlakuHingga || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500">Tahun</p>
+                    <p className="font-semibold text-gray-800">{detailItem.tahun || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kontak */}
+              {detailItem.whatsappNumber && detailItem.whatsappNumber !== '-' && (
+                <div className="flex items-start gap-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+                  <Phone size={15} className="mt-0.5 shrink-0 text-green-600" />
+                  <div>
+                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">WhatsApp</p>
+                    <a
+                      href={`https://wa.me/${detailItem.whatsappNumber.replace(/[^\d]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold text-green-700 underline hover:text-green-800"
+                    >
+                      {detailItem.whatsappNumber}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Dokumen */}
+              <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Paperclip size={14} className="text-[#1E376C]" />
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Dokumen Kerjasama</p>
+                </div>
+                {detailItem.dokumenTerkait?.length ? (
+                  <div className="space-y-2">
+                    {detailItem.dokumenTerkait.map((doc) => (
+                      <div key={`${doc.nama}-${doc.tanggal}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1E376C]/10">
+                            <FileText size={14} className="text-[#1E376C]" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-gray-800">{doc.nama}</p>
+                            <p className="text-[11px] text-gray-400">{doc.ukuran} · {doc.tanggal}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { void downloadDokumen(doc.url, doc.nama); }}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1E376C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                        >
+                          <Download size={12} />
+                          Unduh
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Belum ada dokumen yang diunggah.</p>
+                )}
+              </div>
+
+              {/* Lihat Story */}
+              {detailItem.sourcePengajuanId && (
+                <div className="border-t border-gray-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailItem(null);
+                      router.push(`/admin/story_aktivitas/${detailItem.sourcePengajuanId}`);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                  >
+                    <Activity size={15} />
+                    Lihat Story Aktivitas
+                  </button>
+                </div>
+              )}
             </div>{/* end scrollable body */}
           </div>
-          </div>{/* end min-h-full flex */}
         </div>
-      )}
+        );
+      })()}
 
       <TambahDokumenModal
         isOpen={isTambahModalOpen}
@@ -580,7 +677,17 @@ export default function RekapDataPage() {
         title="+ Tambah Dokumen Baru"
         submitLabel="Tambah Dokumen"
         onSubmit={(data: DokumenData) => {
-          addRekapDokumen(data);
+          const updated = addRekapDokumen(data);
+          setIsTambahModalOpen(false);
+          // Optimistic update: tampilkan data baru langsung di tabel tanpa tunggu API
+          if (updated.length > 0) {
+            setRekapData((prev) => {
+              const newItem = updated[0];
+              // Hindari duplikasi jika sudah ada
+              if (prev.some((r) => r.noDokumen === newItem.noDokumen)) return prev;
+              return [newItem, ...prev];
+            });
+          }
           setFeedbackModal({
             title: 'Dokumen Berhasil Ditambahkan',
             message: `Dokumen "${data.namaMitra}" berhasil ditambahkan ke rekap data.`,
@@ -599,7 +706,13 @@ export default function RekapDataPage() {
             return;
           }
 
-          updateRekapDokumen(editingItem.noDokumen, data);
+          const updated = updateRekapDokumen(editingItem.noDokumen, data);
+          // Sync tabel langsung tanpa tunggu API refresh
+          setRekapData(updated.length > 0 ? updated : (prev) => prev.map((r) =>
+            r.noDokumen === editingItem.noDokumen
+              ? { ...r, namaMitra: data.namaMitra, jenis: (data.jenisDokumen as 'MoU' | 'MoA' | 'IA'), unit: data.unitKerja }
+              : r
+          ));
           setEditingItem(null);
           setFeedbackModal({
             title: 'Perubahan Berhasil Disimpan',
@@ -657,26 +770,6 @@ export default function RekapDataPage() {
   );
 }
 
-function InfoItem({ label, value, isWhatsapp }: { label: string; value: string; isWhatsapp?: boolean }) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      {isWhatsapp && value !== '-' ? (
-        <a 
-          href={`https://wa.me/${value.replace(/[^0-9]/g, '')}`} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-          {value}
-        </a>
-      ) : (
-        <p className="mt-1 text-sm font-semibold text-gray-800">{value}</p>
-      )}
-    </div>
-  );
-}
 
 function StatCard({
   title,

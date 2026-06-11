@@ -67,6 +67,7 @@ type StoredPengajuanItem = {
   tanggalMulai?: string;
   tanggalBerakhir?: string;
   whatsappPengusul?: string;
+  finalFileName?: string | null;
 };
 
 // Daftar jurusan dan unit mengikuti opsi detail pada form Data Pengajuan.
@@ -232,6 +233,7 @@ type PengajuanSyncPayload = {
   tanggalMulai?: string;
   tanggalBerakhir?: string;
   whatsappPengusul?: string;
+  finalFileName?: string | null;
 };
 
 function resolveRekapStatusFromTanggalBerakhir(tanggalBerakhir?: string): RekapStatus {
@@ -293,6 +295,11 @@ function mergeMissingPengajuanIntoRekap(current: RekapDokumen[]): RekapDokumen[]
     let merged = [...current];
 
     for (const item of sortedPengajuan) {
+      // Hanya masukkan pengajuan yang sudah memiliki Dokumen Final ke rekap
+      if (!item.finalFileName) {
+        continue;
+      }
+
       const exists = merged.some((rekap) => rekap.sourcePengajuanId === item.id);
 
       if (exists) {
@@ -483,7 +490,12 @@ export function deleteRekapDokumen(noDokumen: string): RekapDokumen[] {
 }
 
 // Sinkronisasi satu data pengajuan menjadi baris rekap data.
+// Hanya pengajuan yang sudah memiliki Dokumen Final yang masuk ke rekap.
 export function upsertRekapFromPengajuan(payload: PengajuanSyncPayload): RekapDokumen[] {
+  if (!payload.finalFileName) {
+    return getRekapData();
+  }
+
   const jenis = normalizeJenisDokumen(payload.jenisDokumen);
 
   const tahun = (payload.tanggalMulai || new Date().toISOString().slice(0, 10)).slice(0, 4);

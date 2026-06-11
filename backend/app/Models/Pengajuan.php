@@ -57,6 +57,12 @@ class Pengajuan extends Model
         'telepon_mitra',
         'catatan',
         'keputusan',
+        'catatan_revisi',
+        'acc_internal_at',
+        'acc_mitra_at',
+        'final_approved_at',
+        'final_file_name',
+        'final_file_path',
     ];
 
     protected $casts = [
@@ -74,6 +80,9 @@ class Pengajuan extends Model
         'tanggal_berakhir' => 'date',
         'diajukan_pada' => 'datetime',
         'email_terverifikasi_pada' => 'datetime',
+        'acc_internal_at' => 'datetime',
+        'acc_mitra_at' => 'datetime',
+        'final_approved_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

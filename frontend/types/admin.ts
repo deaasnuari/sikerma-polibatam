@@ -7,7 +7,7 @@ export interface AdminNotification {
   createdAt: string;
   href?: string;
   category?: 'approval' | 'comment' | 'reminder' | 'info';
-  targetRole?: 'admin' | 'internal' | 'eksternal' | 'pimpinan';
+  targetRole?: 'admin' | 'internal' | 'eksternal' | 'external' | 'pimpinan';
 }
 
 export interface DashboardStat {

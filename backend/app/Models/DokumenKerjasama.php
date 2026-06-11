@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\DokumenFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,6 +56,11 @@ class DokumenKerjasama extends Model
     public function mitra(): BelongsTo
     {
         return $this->belongsTo(MasterMitra::class, 'mitra_id');
+    }
+
+    public function dokumenFiles(): HasMany
+    {
+        return $this->hasMany(DokumenFile::class, 'dokumen_id');
     }
 
     public function dokumenLogs(): HasMany
