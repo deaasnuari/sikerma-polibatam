@@ -769,8 +769,8 @@ async function saveReview() {
         const updated = await savePengajuanReviewApi(reviewItem.id, reviewDecision, reviewComment);
         setPengajuanData((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
       }
-    } catch {
-      setInfoModalMessage('Gagal menyimpan review ke server.');
+    } catch (err) {
+      setInfoModalMessage('Gagal menyimpan review ke server: ' + (err instanceof Error ? err.message : 'Terjadi kesalahan.'));
       return;
     }
 
@@ -809,8 +809,8 @@ async function saveReview() {
         });
         setInfoModalMessage('Revisi pengajuan berhasil disimpan dan notifikasi dikirim.');
         void refreshPengajuanData(true);
-      } catch {
-        setInfoModalMessage('Gagal menyimpan revisi ke server.');
+      } catch (err) {
+        setInfoModalMessage('Gagal menyimpan revisi ke server: ' + (err instanceof Error ? err.message : 'Terjadi kesalahan.'));
         return;
       }
     } else {
@@ -888,8 +888,8 @@ async function saveReview() {
           });
         }
         setInfoModalMessage('Review pengajuan berhasil disimpan dan notifikasi dikirim.');
-      } catch {
-        setInfoModalMessage('Gagal menyimpan review ke server.');
+      } catch (err) {
+        setInfoModalMessage('Gagal menyimpan review ke server: ' + (err instanceof Error ? err.message : 'Terjadi kesalahan.'));
         return;
       }
     }
@@ -1605,74 +1605,74 @@ function addEditJurusanUnitOption() {
                 </span>
               </div>
 
-              {/* Info row */}
-              <div className="flex flex-wrap items-start gap-4 mt-4">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Mitra Tujuan</p>
-                  <p className="text-sm font-semibold text-gray-900">{item.namaMitra}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Jenis Dokumen</p>
-                  <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
-                    {item.jenisDokumen}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Jurusan</p>
-                  <p className="text-sm text-gray-700">{item.namaUnitProdi}</p>
-                </div>
-                {item.keputusan && (
+              {/* Info row + Action buttons */}
+              <div className="flex flex-wrap items-start justify-between gap-3 mt-4">
+                <div className="flex flex-wrap items-start gap-4">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Keputusan</p>
-                    <p className="text-sm font-semibold text-gray-900">{item.keputusan}</p>
+                    <p className="text-xs text-gray-400 mb-1">Mitra Tujuan</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.namaMitra}</p>
                   </div>
-                )}
-                {item.catatan && (
-                  <div className="max-w-[200px]">
-                    <p className="text-xs text-gray-400 mb-1">Catatan Review</p>
-                    <p className="text-sm text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Jenis Dokumen</p>
+                    <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                      {item.jenisDokumen}
+                    </span>
                   </div>
-                )}
-              </div>
-
-              {/* Action buttons row - pisahkan agar responsive */}
-              <div className="flex flex-wrap items-center gap-2 mt-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setDetailItem(item)}
-                  className="btn-secondary inline-flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
-                >
-                  <Eye size={14} />
-                  <span className="hidden xs:inline sm:inline">Detail</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openReview(item)}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
-                >
-                  <MessageSquare size={14} />
-                  <span className="hidden xs:inline sm:inline">Review</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openEdit(item)}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
-                >
-                  <Pencil size={14} />
-                  <span className="hidden xs:inline sm:inline">Edit</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(item)}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
-                >
-                  <Trash2 size={14} />
-                  <span className="hidden xs:inline sm:inline">Hapus</span>
-                </button>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Jurusan</p>
+                    <p className="text-sm text-gray-700">{item.namaUnitProdi}</p>
+                  </div>
+                  {item.keputusan && (
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Keputusan</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.keputusan}</p>
+                    </div>
+                  )}
+                  {item.catatan && (
+                    <div className="max-w-[200px]">
+                      <p className="text-xs text-gray-400 mb-1">Catatan Review</p>
+                      <p className="text-sm text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setDetailItem(item)}
+                    className="btn-secondary inline-flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
+                  >
+                    <Eye size={14} />
+                    <span className="hidden xs:inline sm:inline">Detail</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openReview(item)}
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
+                  >
+                    <MessageSquare size={14} />
+                    <span className="hidden xs:inline sm:inline">Review</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
+                  >
+                    <Pencil size={14} />
+                    <span className="hidden xs:inline sm:inline">Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(item)}
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
+                  >
+                    <Trash2 size={14} />
+                    <span className="hidden xs:inline sm:inline">Hapus</span>
+                  </button>
+                </div>
               </div>
 
               {/* Ruang Lingkup */}
-              <div className="flex flex-wrap items-center gap-2 mt-4">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="text-xs text-gray-500">Ruang Lingkup:</span>
                 {item.ruangLingkup.map((rl) => (
                   <span
@@ -2966,12 +2966,12 @@ function addEditJurusanUnitOption() {
             <div className="px-5 py-4 space-y-2">
               {reviewDecision === 'Revisi' ? (
                 <p className="text-sm text-slate-700">
-                  Yakin ingin mengirim catatan revisi ke pengusul? Status pengajuan akan berubah menjadi <span className="font-semibold text-orange-600">Revisi</span> dan notifikasi akan dikirim ke Internal & Mitra.
+                  Yakin ingin mengirim catatan revisi? Status pengajuan akan berubah menjadi <span className="font-semibold text-orange-600">Revisi</span> dan notifikasi akan dikirim ke Pengaju untuk melakukan perbaikan sesuai catatan.
                 </p>
               ) : (
                 <>
                   <p className="text-sm text-slate-700">
-                    Yakin ingin meng-ACC dan mengupload dokumen final ini? Status pengajuan akan berubah menjadi <span className="font-semibold text-emerald-600">Disetujui</span> dan notifikasi akan dikirim ke Internal & Mitra.
+                    Yakin ingin ACC dan upload dokumen final? Status pengajuan akan berubah menjadi <span className="font-semibold text-emerald-600">Disetujui</span> Pastikan data dan dokumen sudah benar sebelum melanjutkan.
                   </p>
                   {reviewFinalFilePreview && (
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 text-xs">

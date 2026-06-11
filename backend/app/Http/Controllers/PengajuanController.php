@@ -245,8 +245,23 @@ class PengajuanController extends Controller
         $bulanRomawi = $this->toRomanMonth($bulan);
         $tahunPengajuan = (string) ($pengajuan->created_at?->format('Y') ?? now()->format('Y'));
 
-        $urutan = DokumenKerjasama::query()
-            ->count() + 1;
+        // Ambil semua nomor dokumen tahun ini, lalu cari max urutan yg ≤100 (format baru).
+        // Data lama dengan angka besar (mis. 975) diabaikan dari hitungan.
+        $nomorThisYear = DokumenKerjasama::query()
+            ->whereRaw("nomor_dokumen ~ ?", ["^[0-9]+/[^/]+/[^/]+/{$tahunPengajuan}(-[0-9]+)?\$"])
+            ->pluck('nomor_dokumen');
+
+        $maxUrutan = 0;
+        foreach ($nomorThisYear as $nomor) {
+            if (preg_match('/^(\d+)\//', $nomor, $matches)) {
+                $num = (int) $matches[1];
+                if ($num <= 100) {
+                    $maxUrutan = max($maxUrutan, $num);
+                }
+            }
+        }
+
+        $urutan = str_pad((string) ($maxUrutan + 1), 3, '0', STR_PAD_LEFT);
 
         return $urutan . '/' . $jenis . '.' . $kodeDirektur . '/' . $bulanRomawi . '/' . $tahunPengajuan;
     }

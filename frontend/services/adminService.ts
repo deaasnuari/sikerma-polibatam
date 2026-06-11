@@ -128,10 +128,14 @@ function saveNotifications(items: AdminNotification[]) {
 }
 
 function normalizeNotifications(items: AdminNotification[]): AdminNotification[] {
-  return items.map((notification) => ({
-    ...notification,
-    targetRole: notification.targetRole ?? 'admin',
-  }));
+  const seen = new Set<number>();
+  return items
+    .map((notification) => ({ ...notification, targetRole: notification.targetRole ?? 'admin' }))
+    .filter((notification) => {
+      if (seen.has(notification.id)) return false;
+      seen.add(notification.id);
+      return true;
+    });
 }
 
 function readNotifications(): AdminNotification[] {
@@ -194,15 +198,17 @@ export function addAdminNotification(
   notification: Omit<AdminNotification, 'id' | 'createdAt' | 'read'> &
     Partial<Pick<AdminNotification, 'createdAt' | 'read'>>
 ): AdminNotification[] {
+  const existing = readNotifications();
+  const newId = existing.reduce((max, n) => Math.max(max, n.id), 0) + 1;
   const updatedNotifications = [
     {
       ...notification,
       targetRole: notification.targetRole ?? 'admin',
-      id: Date.now(),
+      id: newId,
       read: notification.read ?? false,
       createdAt: notification.createdAt ?? 'Baru saja',
     },
-    ...readNotifications(),
+    ...existing,
   ];
 
   saveNotifications(updatedNotifications);
