@@ -411,23 +411,63 @@ export function getRekapStats(items: RekapDokumen[]) {
   };
 }
 
+// Ambil data pengajuan dari localStorage berdasarkan ID.
+function getPengajuanById(pengajuanId: number) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem('pengajuanKerjasamaData');
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed.find((item: { id: number }) => item.id === pengajuanId) || null;
+  } catch {
+    return null;
+  }
+}
+
 // Ubah data rekap menjadi format awal untuk modal edit.
+// Jika item memiliki sourcePengajuanId, ambil juga data dari pengajuan terkait untuk prefill.
 export function createDokumenFormData(item: RekapDokumen): DokumenData {
   const asalKategori = item.kategoriUnit || (rekapJurusanOptions.includes(item.unit) ? 'Jurusan' : 'Unit');
+
+  // Ambil data pengajuan jika sourcePengajuanId ada
+  let pengajuanData: {
+    namaPengusul?: string;
+    jabatanPengusul?: string;
+    emailPengusul?: string;
+    whatsappPengusul?: string;
+    mitraAlamat?: string;
+    mitraEmail?: string;
+    mitraTelepon?: string;
+    mitraKategori?: string;
+  } | null = null;
+
+if (item.sourcePengajuanId) {
+    pengajuanData = getPengajuanById(item.sourcePengajuanId);
+  }
 
   return {
     nomorDokumen: item.noDokumen,
     jenisDokumen: item.jenis,
-    namaPIC: '',
-    kategoriMitra: '',
+    namaPIC: pengajuanData?.namaPengusul || '',
+    kategoriMitra: pengajuanData?.mitraKategori || '',
     namaMitra: item.namaMitra,
     status: item.status,
-    jabatanMitra: '',
-    emailMitra: '',
+    jabatanMitra: pengajuanData?.jabatanPengusul || '',
+    emailMitra: pengajuanData?.emailPengusul || '',
     tanggalMulai: toDateInputValue(item.tanggalMulai),
     tanggalBerakhir: toDateInputValue(item.berlakuHingga),
-    alamatMitra: '',
-    whatsappMitra: item.whatsappNumber || '',
+    alamatMitra: pengajuanData?.mitraAlamat || '',
+    whatsappMitra: pengajuanData?.whatsappPengusul || item.whatsappNumber || '',
     asalKategori,
     unitKerja: item.unit,
     dokumenTerkait: item.dokumenTerkait,

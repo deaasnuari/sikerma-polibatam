@@ -282,7 +282,9 @@ class PengajuanController extends Controller
         $suffix = 1;
 
         while (true) {
-            $query = DokumenKerjasama::query()->where('nomor_dokumen', $final);
+            $query = DokumenKerjasama::query()->where(function ($q) use ($final) {
+                $q->where('nomor_dokumen', $final)->orWhere('no_dokumen', $final);
+            });
             if ($ignoreId !== null) {
                 $query->where('id', '!=', $ignoreId);
             }
@@ -376,18 +378,29 @@ class PengajuanController extends Controller
             DokumenFile::query()->where('dokumen_id', $dokumen->id)->delete();
 
             if ($pengajuanFiles->isNotEmpty()) {
-                $dokumenFilesPayload = $pengajuanFiles->map(fn ($file) => [
-                    'dokumen_id' => $dokumen->id,
-                    'peran_berkas' => $file->peran_berkas ?? 'lampiran',
-                    'nama_file' => (string) $file->nama_file,
-                    'path_file' => (string) $file->path_file,
-                    'mime_type' => $file->mime_type,
-                    'ukuran_file_bytes' => $file->ukuran_file_bytes,
-                    'diunggah_oleh_user_id' => $file->diunggah_oleh_user_id ?? $request->user()?->id,
-                    'diunggah_pada' => $file->diunggah_pada ?? now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ])->values()->all();
+                // Deduplicate by path_file to prevent inserting duplicate documents.
+                $seen = [];
+                $dokumenFilesPayload = $pengajuanFiles
+                    ->filter(function ($file) use (&$seen) {
+                        $key = (string) $file->path_file;
+                        if (isset($seen[$key])) {
+                            return false;
+                        }
+                        $seen[$key] = true;
+                        return true;
+                    })
+                    ->map(fn ($file) => [
+                        'dokumen_id' => $dokumen->id,
+                        'peran_berkas' => $file->peran_berkas ?? 'lampiran',
+                        'nama_file' => (string) $file->nama_file,
+                        'path_file' => (string) $file->path_file,
+                        'mime_type' => $file->mime_type,
+                        'ukuran_file_bytes' => $file->ukuran_file_bytes,
+                        'diunggah_oleh_user_id' => $file->diunggah_oleh_user_id ?? $request->user()?->id,
+                        'diunggah_pada' => $file->diunggah_pada ?? now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ])->values()->all();
 
                 DokumenFile::query()->insert($dokumenFilesPayload);
             }
@@ -628,6 +641,8 @@ class PengajuanController extends Controller
         }
 
         if (! empty($payload)) {
+            // Replace existing dokumen_final entries so re-submissions don't accumulate duplicates.
+            $pengajuan->pengajuanFiles()->where('peran_berkas', 'dokumen_final')->delete();
             $pengajuan->pengajuanFiles()->createMany($payload);
         }
     }
@@ -694,7 +709,7 @@ class PengajuanController extends Controller
             'pengusul' => ['required', 'string', 'max:200'],
             'tanggal' => ['nullable', 'date'],
             'mitra' => ['required', 'string', 'max:255'],
-            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA,LAINNYA'],
             'jurusan' => ['nullable', 'string', 'max:150'],
             'kategori' => ['nullable', 'string', 'in:Internal,Eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
@@ -733,7 +748,7 @@ class PengajuanController extends Controller
             'pengusul' => ['sometimes', 'required', 'string', 'max:200'],
             'tanggal' => ['nullable', 'date'],
             'mitra' => ['sometimes', 'required', 'string', 'max:255'],
-            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA,LAINNYA'],
             'jurusan' => ['nullable', 'string', 'max:150'],
             'kategori' => ['nullable', 'string', 'in:Internal,Eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
@@ -928,7 +943,7 @@ class PengajuanController extends Controller
             'telepon_mitra' => ['nullable', 'string', 'max:50'],
             'judul_pengajuan' => ['required', 'string', 'max:255'],
             'deskripsi_pengajuan' => ['nullable', 'string'],
-            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA,LAINNYA'],
             'kategori_pengajuan' => ['nullable', 'in:internal,eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
@@ -1014,7 +1029,7 @@ class PengajuanController extends Controller
             'telepon_mitra' => ['nullable', 'string', 'max:50'],
             'judul_pengajuan' => ['sometimes', 'required', 'string', 'max:255'],
             'deskripsi_pengajuan' => ['nullable', 'string'],
-            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA,LAINNYA'],
             'kategori_pengajuan' => ['nullable', 'in:internal,eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_berakhir' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
@@ -1056,26 +1071,32 @@ class PengajuanController extends Controller
                 // Write to pengajuan_log when status changes.
                 if ($statusBaru !== $statusLama) {
                     try {
-                        $this->writeReviewLog(
-                            $pengajuan,
-                            $statusLama,
-                            $statusBaru,
-                            $request->input('review_comment') ?? $request->input('catatan'),
-                            $request->user()?->id
-                        );
+                        DB::transaction(function () use ($pengajuan, $statusLama, $statusBaru, $request) {
+                            $this->writeReviewLog(
+                                $pengajuan,
+                                $statusLama,
+                                $statusBaru,
+                                $request->input('review_comment') ?? $request->input('catatan'),
+                                $request->user()?->id
+                            );
+                        });
                     } catch (\Throwable $exception) {
                         report($exception);
                     }
                 }
 
                 try {
-                    $this->syncPengajuanFiles($pengajuan, $request);
+                    DB::transaction(function () use ($pengajuan, $request) {
+                        $this->syncPengajuanFiles($pengajuan, $request);
+                    });
                 } catch (\Throwable $ignored) {
                     // Do not fail main pengajuan update when optional attachment sync is incompatible.
                 }
 
                 try {
-                    $this->syncAccFiles($pengajuan, $request);
+                    DB::transaction(function () use ($pengajuan, $request) {
+                        $this->syncAccFiles($pengajuan, $request);
+                    });
                 } catch (\Throwable $ignored) {
                     // Do not fail main update when acc file sync fails.
                 }

@@ -5,6 +5,10 @@ const REKAP_CACHE_TTL_MS = 60 * 1000;
 let rekapDokumenCache: { data: RekapDokumen[]; expiresAt: number } | null = null;
 let rekapDokumenInFlight: Promise<RekapDokumen[]> | null = null;
 
+export function invalidateRekapCache(): void {
+  rekapDokumenCache = null;
+}
+
 type ApiPaginatedResponse<T> = {
   success: boolean;
   message: string;
@@ -26,7 +30,7 @@ type ApiDokumenRow = {
   unit_prodi?: { id: number; nama: string } | null;
   file?: string | null;
   alasan_arsip?: string | null;
-  pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string } | null;
+  pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string; nama_mitra?: string | null } | null;
   // Sudah difilter oleh controller ke peran_berkas = 'dokumen_final' saja
   dokumen_files?: Array<{
     id: number;
@@ -82,17 +86,22 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
     
-    // Parse legacy Mitra from keterangan if mitra object is not present
+    // Priority: mitra relation → pengajuan.nama_mitra → keterangan → legacy file name
     let namaMitra = row.mitra?.nama_mitra;
+
+    if (!namaMitra && row.pengajuan?.nama_mitra) {
+      namaMitra = row.pengajuan.nama_mitra;
+    }
+
     if (!namaMitra && row.keterangan && row.keterangan.includes('Mitra:')) {
       const match = row.keterangan.match(/Mitra:\s*(.*?)(?:\s*\|\s*Bidang:|$)/i);
-      if (match && match[1]) {
+      if (match?.[1]) {
         namaMitra = match[1].trim();
       }
     }
-    
-    if (!namaMitra && row.file) {
-      // e.g. "49 MOU Solustar Pte Ltd 2017 (1).pdf..."
+
+    if (!namaMitra && row.file && !row.file.includes('/')) {
+      // Only parse legacy filenames (e.g. "49 MOU Solustar Pte Ltd 2017.pdf"), skip storage paths
       const cleanedFile = row.file.replace(/^\d+\s*(MOU|MOA|IA)\s*/i, '').replace(/\.pdf.*$/i, '').trim();
       if (cleanedFile && cleanedFile.length > 2) {
         namaMitra = cleanedFile;
@@ -104,7 +113,15 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     let dokumenTerkait: any[] = [];
     const finalFiles = row.dokumen_files ?? [];
     if (finalFiles.length > 0) {
-      dokumenTerkait = finalFiles.map((f) => {
+      const seenPaths = new Set<string>();
+      dokumenTerkait = finalFiles
+        .filter((f) => {
+          const key = f.path_file || f.nama_file;
+          if (seenPaths.has(key)) return false;
+          seenPaths.add(key);
+          return true;
+        })
+        .map((f) => {
         const rawPath = f.path_file || '';
         const fileUrl = rawPath.startsWith('http')
           ? rawPath
@@ -163,6 +180,74 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     rekapDokumenInFlight = null;
   }
 }
+
+function mapStatusToApi(status: string): 'active' | 'expiring' | 'archived' {
+  if (status === 'Akan Berakhir') return 'expiring';
+  if (status === 'Kadaluarsa') return 'archived';
+  return 'active';
+}
+
+function mapJenisToApi(jenis: string): 'MOU' | 'MOA' | 'IA' {
+  const upper = jenis.toUpperCase();
+  if (upper === 'MOA') return 'MOA';
+  if (upper === 'IA') return 'IA';
+  return 'MOU';
+}
+
+export async function updateDokumenKerjasamaById(
+  id: number,
+  payload: {
+    nomor_dokumen?: string;
+    nama_dokumen?: string;
+    jenis_dokumen?: string;
+    tanggal_mulai?: string | null;
+    tanggal_berakhir?: string | null;
+    status_siklus?: 'active' | 'expiring' | 'archived';
+  }
+): Promise<void> {
+  await apiRequest<unknown>(`/dokumen-kerjasama/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  rekapDokumenCache = null;
+}
+
+export async function updatePengajuanNamaMitra(
+  pengajuanId: number,
+  namaMitra: string
+): Promise<void> {
+  await apiRequest<unknown>(`/pengajuan/${pengajuanId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ nama_mitra: namaMitra }),
+  });
+}
+
+export async function uploadDokumenFile(
+  id: number,
+  blob: Blob,
+  fileName: string
+): Promise<void> {
+  const formData = new FormData();
+  formData.append('file', blob, fileName);
+  await apiRequest<unknown>(`/dokumen-kerjasama/${id}/upload-file`, {
+    method: 'POST',
+    body: formData,
+  });
+  rekapDokumenCache = null;
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
+  const byteChars = atob(data);
+  const byteArray = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteArray[i] = byteChars.charCodeAt(i);
+  }
+  return new Blob([byteArray], { type: mime });
+}
+
+export { mapStatusToApi, mapJenisToApi, dataUrlToBlob };
 
 export async function deleteDokumenKerjasamaById(id: number): Promise<void> {
   await apiRequest(`/dokumen-kerjasama/${id}`, {

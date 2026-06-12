@@ -305,13 +305,15 @@ function mapJenisDokumenFromApi(value: string): string {
   const upper = value.toUpperCase();
   if (upper === 'MOA') return 'MoA';
   if (upper === 'IA') return 'IA';
+  if (upper === 'LAINNYA') return 'Lainnya';
   return 'MoU';
 }
 
-function mapJenisDokumenToApi(value: string): 'MOU' | 'MOA' | 'IA' {
+function mapJenisDokumenToApi(value: string): 'MOU' | 'MOA' | 'IA' | 'LAINNYA' {
   const upper = value.toUpperCase();
   if (upper === 'MOA') return 'MOA';
   if (upper === 'IA') return 'IA';
+  if (upper === 'LAINNYA') return 'LAINNYA';
   return 'MOU';
 }
 

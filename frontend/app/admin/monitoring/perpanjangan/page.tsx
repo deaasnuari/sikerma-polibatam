@@ -12,6 +12,7 @@ import {
   type RenewalRequestStatus,
 } from '@/services/adminRenewalRequestService';
 import { addAdminNotification } from '@/services/adminService';
+import { invalidateRekapCache } from '@/services/dokumenKerjasamaApiService';
 
 type FilterKey = 'semua' | RenewalRequestStatus;
 
@@ -72,6 +73,10 @@ export default function MonitoringPerpanjanganPage() {
         applyApprovedRenewalToMonitoring(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
         applyApprovedRenewalToRekap(item.noDokumen, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
         applyApprovedRenewalToPengajuan(item.kerjasamaId, item.tanggalMulaiBaru, item.tanggalBerakhirBaru);
+        // Invalidate API cache so next fetch to monitoring/rekap data gets fresh data
+        invalidateRekapCache();
+        window.dispatchEvent(new Event('monitoring-data-updated'));
+        window.dispatchEvent(new Event('rekap-data-updated'));
       }
 
       addAdminNotification({

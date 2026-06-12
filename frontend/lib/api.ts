@@ -55,11 +55,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
   for (const baseUrl of API_BASE_URL_CANDIDATES) {
     try {
+      const isFormData = options.body instanceof FormData;
       const candidateResponse = await fetch(`${baseUrl}${normalizedEndpoint}`, {
         ...options,
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/json',
+          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...(options.headers || {}),
         },

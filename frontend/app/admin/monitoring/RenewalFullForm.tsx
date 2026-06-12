@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Plus, Upload, X, Download, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Upload, X, AlertCircle, RefreshCw, ChevronDown, Check } from 'lucide-react';
 import { compressImageFileIfNeeded, validateSelectedFile } from '@/lib/fileUploadUtils';
+import { getMasterRuangLingkup, getCachedMasterRuangLingkup, type MasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
 export interface RenewalFullFormProps {
   initialData: {
@@ -39,6 +40,35 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [masterRuangLingkupList, setMasterRuangLingkupList] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
+  const [loadingRuangLingkup, setLoadingRuangLingkup] = useState(masterRuangLingkupList.length === 0);
+  const [selectedRuangLingkup, setSelectedRuangLingkup] = useState<string[]>(initialData.ruangLingkup || []);
+  const [ruangLingkupOpen, setRuangLingkupOpen] = useState(false);
+  const ruangLingkupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getMasterRuangLingkup({ aktif: true })
+      .then((list) => setMasterRuangLingkupList(list))
+      .catch(() => {})
+      .finally(() => setLoadingRuangLingkup(false));
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ruangLingkupRef.current && !ruangLingkupRef.current.contains(e.target as Node)) {
+        setRuangLingkupOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleRuangLingkup = (nama: string) => {
+    setSelectedRuangLingkup((prev) =>
+      prev.includes(nama) ? prev.filter((n) => n !== nama) : [...prev, nama]
+    );
+  };
+
   const handleAddDokumen = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -59,7 +89,11 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
         quality: 0.8,
         minBytesToCompress: 400 * 1024,
       });
-      setDokumen([{ nama: processedFile.name, url: URL.createObjectURL(processedFile), ukuran: (processedFile.size / 1024 / 1024).toFixed(1) + ' MB', tanggal: new Date().toLocaleDateString('id-ID') }]);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDokumen([{ nama: processedFile.name, url: reader.result as string, ukuran: (processedFile.size / 1024 / 1024).toFixed(1) + ' MB', tanggal: new Date().toLocaleDateString('id-ID') }]);
+      };
+      reader.readAsDataURL(processedFile);
     };
     input.click();
   };
@@ -71,7 +105,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
   const handleSubmit = (e: any) => {
     e.preventDefault();
     setError('');
-    
+
     if (!form.tanggalMulaiBaru || form.tanggalMulaiBaru.trim() === '') {
       setError('Tanggal mulai perpanjangan wajib diisi.');
       return;
@@ -85,7 +119,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
       return;
     }
     if (dokumen.length === 0) {
-      setError('Silakan upload dokumen perpanjangan (MoU/MoA/IA terbaru).');
+      setError('Silakan upload dokumen final yang telah ditandatangani kedua belah pihak.');
       return;
     }
 
@@ -96,6 +130,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
         tanggalMulaiBaru: form.tanggalMulaiBaru,
         tanggalBerakhirBaru: form.tanggalBerakhirBaru,
         catatanPerpanjangan: form.catatanPerpanjangan,
+        ruangLingkup: selectedRuangLingkup,
         dokumen: dokumen[0],
       });
       setIsSubmitting(false);
@@ -110,7 +145,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-400 text-xs font-bold text-white">1</span>
           Data Kerjasama Saat Ini
         </h3>
-        
+
         <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg p-3 border border-gray-200">
             <label className="block text-xs font-semibold text-gray-600 mb-1">Nama Mitra</label>
@@ -132,18 +167,6 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
             <div className="bg-white rounded-lg p-3 border border-gray-200 md:col-span-2">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Judul Kerjasama</label>
               <p className="text-sm font-medium text-gray-900">{initialData.judulKerjasama}</p>
-            </div>
-          )}
-          {initialData.ruangLingkup.length > 0 && (
-            <div className="bg-white rounded-lg p-3 border border-gray-200 md:col-span-2">
-              <label className="block text-xs font-semibold text-gray-600 mb-2">Ruang Lingkup</label>
-              <div className="flex flex-wrap gap-2">
-                {initialData.ruangLingkup.map((tag) => (
-                  <span key={tag} className="inline-flex rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">
-                    {tag}
-                  </span>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -188,15 +211,77 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
               className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
           </div>
+
+          {/* Ruang Lingkup */}
+          <div ref={ruangLingkupRef} className="relative">
+            <label className="block text-xs font-semibold text-green-900 mb-1.5">Ruang Lingkup Kerjasama</label>
+            {/* Trigger button */}
+            <button
+              type="button"
+              onClick={() => setRuangLingkupOpen((o) => !o)}
+              className="w-full flex items-center justify-between rounded-lg border border-green-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors hover:border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+            >
+              <span className={selectedRuangLingkup.length === 0 ? 'text-gray-400' : 'font-medium'}>
+                {selectedRuangLingkup.length === 0
+                  ? 'Pilih ruang lingkup...'
+                  : selectedRuangLingkup.length === 1
+                    ? selectedRuangLingkup[0]
+                    : `${selectedRuangLingkup.length} ruang lingkup dipilih`}
+              </span>
+              <ChevronDown size={16} className={`text-green-600 transition-transform ${ruangLingkupOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {/* Selected tags */}
+            {selectedRuangLingkup.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {selectedRuangLingkup.map((nama) => (
+                  <span key={nama} className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                    {nama}
+                    <button type="button" onClick={() => toggleRuangLingkup(nama)} className="hover:text-green-600">
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Dropdown list */}
+            {ruangLingkupOpen && (
+              <div className="absolute z-20 mt-1 w-full rounded-lg border border-green-200 bg-white shadow-lg overflow-hidden">
+                {loadingRuangLingkup ? (
+                  <p className="px-3 py-2 text-xs text-gray-500">Memuat opsi...</p>
+                ) : masterRuangLingkupList.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-gray-500 italic">Tidak ada data tersedia.</p>
+                ) : (
+                  <ul className="max-h-52 overflow-y-auto py-1">
+                    {masterRuangLingkupList.map((item) => {
+                      const checked = selectedRuangLingkup.includes(item.nama_ruang_lingkup);
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => toggleRuangLingkup(item.nama_ruang_lingkup)}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors hover:bg-green-50 ${checked ? 'font-semibold text-green-800' : 'text-gray-700'}`}
+                          >
+                            {item.nama_ruang_lingkup}
+                            {checked && <Check size={14} className="text-green-600 shrink-0" />}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ===== BAGIAN 3: DOKUMEN PERPANJANGAN ===== */}
       <div className="rounded-xl border border-blue-300 bg-blue-50 p-4">
-        <h3 className="font-bold text-blue-900 mb-3 text-base flex items-center gap-2">
+        <h3 className="font-bold text-blue-900 mb-1 text-base flex items-center gap-2">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
-          Upload Dokumen Perpanjangan (MoU/MoA/IA Terbaru)
+          Upload Dokumen Perpanjangan
         </h3>
+        <p className="text-xs text-red-700 mb-3 pl-8">Upload dokumen final yang telah ditanda tangani kedua belah pihak.</p>
 
         <div className="space-y-3">
           {dokumen.length > 0 && (
@@ -234,7 +319,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
         </div>
       </div>
 
-      {/* ===== BAGIAN 4: ERROR MESSAGE ===== */}
+      {/* ===== ERROR MESSAGE ===== */}
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex gap-2">
           <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
@@ -242,7 +327,7 @@ export default function RenewalFullForm({ initialData, onSubmit }: RenewalFullFo
         </div>
       )}
 
-      {/* ===== BAGIAN 5: ACTION BUTTONS ===== */}
+      {/* ===== ACTION BUTTONS ===== */}
       <div className="flex gap-2 pt-2">
         <button
           type="submit"

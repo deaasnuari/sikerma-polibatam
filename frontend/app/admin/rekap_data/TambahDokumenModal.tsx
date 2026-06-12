@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, Upload, X } from 'lucide-react';
-import { rekapJurusanOptions, rekapUnitOptions, type DokumenData } from '@/services/adminRekapDataService';
+import { CheckCircle2, Download, FileText, Upload, X } from 'lucide-react';
+import { rekapJurusanOptions, rekapUnitOptions, type DokumenData, type DokumenTerkait } from '@/services/adminRekapDataService';
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
@@ -89,6 +89,12 @@ export default function TambahDokumenModal({
   const [errors, setErrors] = useState<Partial<Record<keyof DokumenData, string>>>({});
   const [uploadErrors, setUploadErrors] = useState<{ fileDokumen?: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentMode, setDocumentMode] = useState<'keep' | 'replace'>('replace');
+
+  const isEditMode = initialData !== null;
+  const existingDokumen: DokumenTerkait[] = formData.dokumenTerkait ?? [];
+  const hasExistingDokumen = isEditMode && existingDokumen.length > 0;
+
   const pilihanUnit = useMemo(
     () => (formData.asalKategori === 'Jurusan' ? ['Pilih Jurusan', ...jurusanOptions] : ['Pilih Unit', ...unitOptions]),
     [formData.asalKategori, jurusanOptions, unitOptions]
@@ -106,6 +112,7 @@ export default function TambahDokumenModal({
     setErrors({});
     setUploadErrors({});
     setSelectedFile(null);
+    setDocumentMode(initialData?.dokumenTerkait?.length ? 'keep' : 'replace');
   }, [initialData, isOpen]);
 
   useEffect(() => {
@@ -160,23 +167,23 @@ export default function TambahDokumenModal({
     });
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Partial<Record<keyof DokumenData, string>> = {};
     if (!formData.jenisDokumen || formData.jenisDokumen === 'Pilih Jenis') newErrors.jenisDokumen = 'Jenis dokumen wajib dipilih';
-    if (!formData.namaPIC.trim()) newErrors.namaPIC = 'Nama PIC wajib diisi';
-    if (!formData.kategoriMitra || formData.kategoriMitra === 'Pilih Kategori') newErrors.kategoriMitra = 'Kategori mitra wajib dipilih';
     if (!formData.namaMitra.trim()) newErrors.namaMitra = 'Nama mitra wajib diisi';
+    if (!isEditMode && !formData.namaPIC.trim()) newErrors.namaPIC = 'Nama PIC wajib diisi';
+    if (!isEditMode && (!formData.kategoriMitra || formData.kategoriMitra === 'Pilih Kategori')) newErrors.kategoriMitra = 'Kategori mitra wajib dipilih';
     if (!formData.unitKerja || formData.unitKerja === 'Pilih Jurusan' || formData.unitKerja === 'Pilih Unit') newErrors.unitKerja = `${formData.asalKategori} wajib dipilih`;
     if (!formData.status) newErrors.status = 'Status wajib dipilih';
     if (!formData.tanggalMulai) newErrors.tanggalMulai = 'Tanggal mulai wajib diisi';
     if (!formData.tanggalBerakhir) newErrors.tanggalBerakhir = 'Tanggal berakhir wajib diisi';
-    if (!formData.alamatMitra.trim()) newErrors.alamatMitra = 'Alamat mitra wajib diisi';
+    if (!isEditMode && !formData.alamatMitra.trim()) newErrors.alamatMitra = 'Alamat mitra wajib diisi';
 
     const nextUploadErrors: { fileDokumen?: string } = {};
-    if (formData.jenisDokumen && !selectedFile) {
+    const needNewFile = !hasExistingDokumen || documentMode === 'replace';
+    if (needNewFile && formData.jenisDokumen && !selectedFile) {
       nextUploadErrors.fileDokumen = 'Upload dokumen wajib diisi';
     }
 
@@ -186,35 +193,35 @@ export default function TambahDokumenModal({
       return;
     }
 
-    // Ambil data rekap yang sudah ada
-    let allData = [];
-    try {
-      allData = JSON.parse(window.localStorage.getItem('adminRekapDokumenData') || '[]');
-    } catch {}
-    const lastId = allData.length > 0 ? Math.max(...allData.map((d: any) => d.id ?? 0)) : 0;
-    const nextId = lastId + 1;
-
-    // Generate nomor dokumen otomatis
-    let nomorDokumen = '';
-    try {
-      // Import generateNoDokumen secara dinamis
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { generateNoDokumen } = require('@/services/adminMonitoringService');
-      nomorDokumen = generateNoDokumen({
-        urutan: nextId,
-        jenis: formData.jenisDokumen,
-        tanggal: formData.tanggalMulai,
-        unitName: formData.unitKerja,
-      });
-    } catch {
-      nomorDokumen = nextId.toString().padStart(2, '0');
-    }
-
     setErrors({});
     setUploadErrors({});
 
+    // In edit mode, keep existing nomor dokumen
+    let nomorDokumen = formData.nomorDokumen;
+    if (!isEditMode) {
+      let allData = [];
+      try {
+        allData = JSON.parse(window.localStorage.getItem('adminRekapDokumenData') || '[]');
+      } catch {}
+      const lastId = allData.length > 0 ? Math.max(...allData.map((d: any) => d.id ?? 0)) : 0;
+      const nextId = lastId + 1;
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { generateNoDokumen } = require('@/services/adminMonitoringService');
+        nomorDokumen = generateNoDokumen({
+          urutan: nextId,
+          jenis: formData.jenisDokumen,
+          tanggal: formData.tanggalMulai,
+          unitName: formData.unitKerja,
+        });
+      } catch {
+        nomorDokumen = nextId.toString().padStart(2, '0');
+      }
+    }
+
     let dokumenTerkait = formData.dokumenTerkait;
-    if (selectedFile) {
+    if (selectedFile && (documentMode === 'replace' || !hasExistingDokumen)) {
       const dataUrl = await readFileAsDataUrl(selectedFile);
       dokumenTerkait = [{
         nama: selectedFile.name,
@@ -222,6 +229,8 @@ export default function TambahDokumenModal({
         ukuran: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
         tanggal: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
       }];
+    } else if (isEditMode && documentMode === 'keep') {
+      dokumenTerkait = existingDokumen;
     }
 
     if (onSubmit) {
@@ -296,13 +305,16 @@ export default function TambahDokumenModal({
 
         <form onSubmit={handleSubmit} className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:gap-y-5 md:grid-cols-2">
-            <Field label="Nomor Dokumen *" error={errors.nomorDokumen}>
+            <Field label={isEditMode ? 'Nomor Dokumen (dapat diubah)' : 'Nomor Dokumen'} error={errors.nomorDokumen}>
               <TextInput
                 placeholder="Contoh: 001/MoU/2026"
                 value={formData.nomorDokumen}
                 onChange={(e) => handleInputChange('nomorDokumen', e.target.value)}
                 hasError={!!errors.nomorDokumen}
               />
+              {isEditMode && (
+                <p className="mt-1 text-[11px] text-slate-400">Ubah nomor dokumen jika diperlukan, lalu simpan perubahan.</p>
+              )}
             </Field>
 
             <Field label="Jenis Dokumen *" error={errors.jenisDokumen}>
@@ -345,7 +357,7 @@ export default function TambahDokumenModal({
                   </div>
                 </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-base font-bold text-[#173B82] sm:text-xl">{selectedTemplate.title}</p>
@@ -379,53 +391,116 @@ export default function TambahDokumenModal({
                   <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-[#173B82]">Catatan: {selectedTemplate.note}</p>
                 </div>
 
+                {/* Dokumen section */}
                 <div>
-                  <label className="mb-3 block text-base font-semibold leading-none text-gray-900 sm:text-lg">Upload Dokumen *</label>
-                  <p className="mb-2 rounded-lg border border-[#D7E0F0] bg-[#EEF3FF] px-3 py-2 text-xs text-[#1E376C]">
-                    Upload dokumen langsung di sini. Download template tidak wajib.
-                  </p>
-
-                  <label
-                    className={`block w-full rounded-2xl border-2 border-dashed p-4 text-center transition-all sm:p-5 ${
-                      selectedFile
-                        ? 'cursor-pointer border-green-400 bg-green-50 shadow-sm'
-                        : 'cursor-pointer border-[#BFD0EE] bg-[#F5F8FF]'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                      className="hidden"
-                    />
-                    <Upload className={`mx-auto ${selectedFile ? 'text-green-600' : 'text-[#1E376C]'}`} size={22} />
-                    <p className={`mt-2 text-base font-semibold ${selectedFile ? 'text-green-700' : 'text-[#1E376C]'}`}>
-                      {selectedFile ? 'Dokumen Berhasil Dipilih' : 'Upload Dokumen PDF'}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {selectedFile ? 'File siap dikirim bersama data dokumen.' : 'Upload file PDF dokumen kerjasama di sini'}
-                    </p>
-                    <span className={`mt-3 inline-flex rounded-lg px-3 py-1 text-xs font-semibold ${selectedFile ? 'bg-green-600 text-white' : 'bg-[#1E376C] text-white'}`}>
-                      {selectedFile ? 'Ganti File' : 'Pilih File PDF'}
-                    </span>
-                    <p className="mt-2 text-[11px] text-gray-500">Format: .pdf</p>
-                    <p className="text-[11px] text-gray-500">Ukuran maksimal 10 MB</p>
-                    {selectedFile && (
-                      <div className="mt-3 space-y-1">
-                        <div className="inline-flex items-center rounded-lg border border-green-200 bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-                          File dipilih: {selectedFile.name}
-                        </div>
-                        <p className="text-[11px] text-green-700">Ukuran file: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                      </div>
-                    )}
+                  <label className="mb-3 block text-base font-semibold leading-none text-gray-900 sm:text-lg">
+                    Dokumen Kerjasama {!hasExistingDokumen || documentMode === 'replace' ? '*' : ''}
                   </label>
 
-                  {uploadErrors.fileDokumen && <p className="mt-1 text-xs text-red-500">{uploadErrors.fileDokumen}</p>}
+                  {/* Existing docs (edit mode only) */}
+                  {hasExistingDokumen && (
+                    <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Dokumen tersimpan</p>
+                      <div className="space-y-2">
+                        {existingDokumen.map((doc, idx) => (
+                          <div key={idx} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1E376C]/10">
+                              <FileText size={14} className="text-[#1E376C]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-gray-800">{doc.nama}</p>
+                              <p className="text-xs text-gray-400">{doc.ukuran} · {doc.tanggal}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Toggle keep / replace */}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDocumentMode('keep');
+                            setSelectedFile(null);
+                            setUploadErrors({});
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                            documentMode === 'keep'
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                              : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
+                          }`}
+                        >
+                          <CheckCircle2 size={15} />
+                          Gunakan Dokumen Lama
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDocumentMode('replace')}
+                          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                            documentMode === 'replace'
+                              ? 'border-[#1E376C] bg-[#EEF3FF] text-[#1E376C]'
+                              : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
+                          }`}
+                        >
+                          <Upload size={15} />
+                          Ganti Dokumen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload area — shown in add mode OR when replacing */}
+                  {(!hasExistingDokumen || documentMode === 'replace') && (
+                    <>
+                      {!hasExistingDokumen && (
+                        <p className="mb-2 rounded-lg border border-[#D7E0F0] bg-[#EEF3FF] px-3 py-2 text-xs text-[#1E376C]">
+                          Upload dokumen langsung di sini. Download template tidak wajib.
+                        </p>
+                      )}
+
+                      <label
+                        className={`block w-full rounded-2xl border-2 border-dashed p-4 text-center transition-all sm:p-5 ${
+                          selectedFile
+                            ? 'cursor-pointer border-green-400 bg-green-50 shadow-sm'
+                            : 'cursor-pointer border-[#BFD0EE] bg-[#F5F8FF]'
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                          className="hidden"
+                        />
+                        <Upload className={`mx-auto ${selectedFile ? 'text-green-600' : 'text-[#1E376C]'}`} size={22} />
+                        <p className={`mt-2 text-base font-semibold ${selectedFile ? 'text-green-700' : 'text-[#1E376C]'}`}>
+                          {selectedFile ? 'Dokumen Berhasil Dipilih' : 'Upload Dokumen PDF'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {selectedFile ? 'File siap dikirim bersama data dokumen.' : 'Upload file PDF dokumen kerjasama di sini'}
+                        </p>
+                        <span className={`mt-3 inline-flex rounded-lg px-3 py-1 text-xs font-semibold ${selectedFile ? 'bg-green-600 text-white' : 'bg-[#1E376C] text-white'}`}>
+                          {selectedFile ? 'Ganti File' : 'Pilih File PDF'}
+                        </span>
+                        <p className="mt-2 text-[11px] text-gray-500">Format: .pdf</p>
+                        <p className="text-[11px] text-gray-500">Ukuran maksimal 10 MB</p>
+                        {selectedFile && (
+                          <div className="mt-3 space-y-1">
+                            <div className="inline-flex items-center rounded-lg border border-green-200 bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                              File dipilih: {selectedFile.name}
+                            </div>
+                            <p className="text-[11px] text-green-700">Ukuran file: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                          </div>
+                        )}
+                      </label>
+
+                      {uploadErrors.fileDokumen && <p className="mt-1 text-xs text-red-500">{uploadErrors.fileDokumen}</p>}
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            <Field label="Nama PIC *" error={errors.namaPIC}>
+            <Field label={`Nama PIC${!isEditMode ? ' *' : ''}`} error={errors.namaPIC}>
               <TextInput
                 placeholder="Nama PIC"
                 value={formData.namaPIC}
@@ -434,7 +509,7 @@ export default function TambahDokumenModal({
               />
             </Field>
 
-            <Field label="Kategori Mitra *" error={errors.kategoriMitra}>
+            <Field label={`Kategori Mitra${!isEditMode ? ' *' : ''}`} error={errors.kategoriMitra}>
               <SelectInput
                 options={kategoriOptions}
                 value={formData.kategoriMitra}
@@ -535,7 +610,7 @@ export default function TambahDokumenModal({
               />
             </Field>
 
-            <Field label="Alamat Mitra *" error={errors.alamatMitra}>
+            <Field label={`Alamat Mitra${!isEditMode ? ' *' : ''}`} error={errors.alamatMitra}>
               <TextInput
                 placeholder="Alamat Lengkap Mitra"
                 value={formData.alamatMitra}

@@ -102,7 +102,7 @@ const initialForm = {
 
 const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const JENIS_KERJASAMA_OPTIONS = ['MoU', 'MoA', 'IA'] as const;
+const JENIS_KERJASAMA_OPTIONS = ['MoU', 'MoA', 'IA', 'Lainnya'] as const;
 
 function parseJenisKerjasamaSelection(value: string): string[] {
   return value
@@ -199,7 +199,7 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   sectionKontakTitle: 'Kontak Person PIC',
   sectionKontakSubtitle: 'Informasi kontak person dari pihak mitra',
   sectionDokumenTitle: 'Dokumen Pendukung',
-  sectionDokumenSubtitle: 'Pilih jenis template lalu langsung upload dokumen pendukung.',
+  sectionDokumenSubtitle: 'Pilih jenis dokumen, unduh template bila diperlukan, lalu upload berkas pendukung.',
   labelNamaMitra: 'Nama Mitra',
   labelJenisMitra: 'Jenis Mitra',
   labelTeleponMitra: 'WhatsApp Aktif',
@@ -1079,14 +1079,14 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalMulai}</label>
               <div className="relative">
-                <input type="date" value={formData.tanggalMulai} onChange={(e) => handleChange('tanggalMulai', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" required />
+                <input type="date" value={formData.tanggalMulai} onChange={(e) => handleChange('tanggalMulai', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" />
                 <CalendarDays size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelTanggalBerakhir}</label>
               <div className="relative">
-                <input type="date" value={formData.tanggalBerakhir} onChange={(e) => handleChange('tanggalBerakhir', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" required />
+                <input type="date" value={formData.tanggalBerakhir} onChange={(e) => handleChange('tanggalBerakhir', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 pr-10 text-sm" />
                 <CalendarDays size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
@@ -1096,7 +1096,7 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelDeskripsi}</label>
-              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Jelaskan detail kerjasama yang diajukan" required />
+              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Jelaskan detail kerjasama yang diajukan" />
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelRuangLingkup}</label>
@@ -1218,9 +1218,11 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
           <h2 className="text-base font-bold text-slate-900">{appearanceSettings.sectionDokumenTitle}</h2>
           <p className="mb-4 text-xs text-slate-500">{appearanceSettings.sectionDokumenSubtitle}</p>
 
-          <div className="mb-4 grid gap-3 md:grid-cols-3">
-            {Object.entries(defaultTemplateDokumenMap).map(([key, template]) => {
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            {JENIS_KERJASAMA_OPTIONS.map((key) => {
+              const template = defaultTemplateDokumenMap[key as keyof typeof defaultTemplateDokumenMap];
               const active = selectedJenisKerjasama.includes(key);
+              const isLainnya = key === 'Lainnya';
 
               return (
                 <button
@@ -1235,11 +1237,11 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
                   } ${lockJenisKerjasama ? 'cursor-not-allowed opacity-80' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-[#173B82] px-2.5 py-1 text-xs font-bold text-white">{key}</span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${isLainnya ? 'bg-slate-500' : 'bg-[#173B82]'}`}>{key}</span>
                     {active && <span className="text-xs font-semibold text-[#173B82]">Terpilih</span>}
                   </div>
-                  <p className="mt-3 text-sm font-bold text-slate-900">{template.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{template.subtitle}</p>
+                  <p className="mt-3 text-sm font-bold text-slate-900">{isLainnya ? 'Dokumen Lainnya' : template?.title}</p>
+                  <p className="mt-1 text-xs text-slate-500">{isLainnya ? 'Format/template milik instansi sendiri' : template?.subtitle}</p>
                 </button>
               );
             })}
@@ -1247,17 +1249,29 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
 
           {selectedJenisKerjasama.length === 0 && (
             <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-              Belum ada template dipilih. Pilih minimal satu dari MoU, MoA, atau IA di atas.
+              Belum ada jenis dipilih. Pilih minimal satu jenis dokumen di atas.
             </div>
           )}
 
           {selectedJenisKerjasama.length > 0 && (
             <div className="mb-4 space-y-4">
               {selectedJenisKerjasama.map((jenisKerjasama) => {
-                const template = defaultTemplateDokumenMap[jenisKerjasama];
-                if (!template) {
-                  return null;
+                const template = defaultTemplateDokumenMap[jenisKerjasama as keyof typeof defaultTemplateDokumenMap];
+                const isLainnya = jenisKerjasama === 'Lainnya';
+
+                if (isLainnya) {
+                  return (
+                    <div key={jenisKerjasama} className="rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex rounded-full bg-slate-500 px-2.5 py-1 text-xs font-bold text-white">Lainnya</span>
+                      </div>
+                      <p className="text-base font-bold text-slate-800">Dokumen Lainnya</p>
+                      <p className="mt-1 text-sm text-slate-600">Gunakan format atau template milik instansi Anda sendiri. Upload dokumen langsung di bawah ini tanpa perlu mengikuti template standar.</p>
+                    </div>
+                  );
                 }
+
+                if (!template) return null;
 
                 return (
                   <div key={jenisKerjasama} className="rounded-xl border border-[#D7E0F0] bg-[#F8FAFF] p-4">
@@ -1287,7 +1301,9 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
                       ))}
                     </div>
 
-                    <p className="mt-3 text-xs text-slate-600">Catatan: {template.note}</p>
+                    <p className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-slate-700">
+                      <span className="font-semibold">Catatan:</span> {template.note} Anda juga dapat mengunggah dokumen dengan format atau template milik instansi sendiri jika sudah tersedia — tidak wajib menggunakan template di atas.
+                    </p>
                   </div>
                 );
               })}

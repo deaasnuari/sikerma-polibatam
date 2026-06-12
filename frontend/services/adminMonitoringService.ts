@@ -451,14 +451,22 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
     const mapped = items.map((row: any) => {
       const { status, sisaMasaBerlaku } = resolveStatusAndSisa(row.tanggal_berakhir);
       
+      // Priority: mitra relation → pengajuan.nama_mitra → keterangan → legacy file name
       let namaMitra = row.mitra?.nama_mitra;
+
+      if (!namaMitra && row.pengajuan?.nama_mitra) {
+        namaMitra = row.pengajuan.nama_mitra;
+      }
+
       if (!namaMitra && row.keterangan && row.keterangan.includes('Mitra:')) {
         const match = row.keterangan.match(/Mitra:\s*(.*?)(?:\s*\|\s*Bidang:|$)/i);
         if (match && match[1]) {
           namaMitra = match[1].trim();
         }
       }
-      if (!namaMitra && row.file) {
+
+      if (!namaMitra && row.file && !row.file.includes('/')) {
+        // Only parse legacy filenames (e.g. "49 MOU Solustar Pte Ltd 2017.pdf"), skip storage paths
         const cleanedFile = row.file.replace(/^\d+\s*(MOU|MOA|IA)\s*/i, '').replace(/\.pdf.*$/i, '').trim();
         if (cleanedFile && cleanedFile.length > 2) {
           namaMitra = cleanedFile;

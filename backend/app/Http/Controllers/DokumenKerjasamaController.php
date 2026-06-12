@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DokumenFile;
 use App\Models\DokumenLog;
 use App\Models\DokumenKerjasama;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -11,6 +15,36 @@ use Illuminate\Http\Response;
 
 class DokumenKerjasamaController extends Controller
 {
+    private function persistDataUrlFile(string $dataUrl, string $folder): ?string
+    {
+        if (!preg_match('/^data:([\w\/+.-]+);base64,(.+)$/', $dataUrl, $matches)) {
+            return null;
+        }
+
+        $mimeType = strtolower($matches[1]);
+        $base64 = preg_replace('/\s+/', '', $matches[2]) ?? '';
+        $binary = base64_decode($base64, true);
+
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        $ext = match ($mimeType) {
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/msword' => 'doc',
+            default => 'bin',
+        };
+
+        $relativePath = $folder . '/' . date('Y/m') . '/' . Str::random(16) . '.' . $ext;
+        Storage::disk('public')->put($relativePath, $binary);
+
+        return $relativePath;
+    }
+
     private function ensureAdmin(Request $request): ?Response
     {
         $user = $request->user();
@@ -30,11 +64,11 @@ class DokumenKerjasamaController extends Controller
     public function index(Request $request): Response
     {
         $query = DokumenKerjasama::query()->with([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra',
             'unitProdi:id,nama,jenis_node,kategori_unit',
             'mitra:id,nama_mitra,negara',
             'dokumenFiles' => function ($q) {
-                $q->where('peran_berkas', 'dokumen_final');
+                $q->whereIn('peran_berkas', ['dokumen_final', 'dokumen_perpanjangan']);
             },
         ]);
 
@@ -68,7 +102,7 @@ class DokumenKerjasamaController extends Controller
     public function show(DokumenKerjasama $dokumen_kerjasama): Response
     {
         $dokumen_kerjasama->load([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra',
             'unitProdi:id,nama,jenis_node,kategori_unit',
             'mitra:id,nama_mitra,negara',
         ]);
@@ -91,7 +125,7 @@ class DokumenKerjasamaController extends Controller
             'no_permohonan' => ['required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
             'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen'],
             'nama_dokumen' => ['required', 'string', 'max:255'],
-            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['required', 'in:MOU,MOA,IA,LAINNYA'],
             'judul_dokumen' => ['nullable', 'string', 'max:255'],
             'ruang_lingkup_ids' => ['nullable', 'array'],
             'ruang_lingkup_ids.*' => ['integer', 'exists:master_ruang_lingkup,id'],
@@ -139,7 +173,7 @@ class DokumenKerjasamaController extends Controller
             'no_permohonan' => ['sometimes', 'required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
             'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen,' . $dokumen_kerjasama->id],
             'nama_dokumen' => ['sometimes', 'required', 'string', 'max:255'],
-            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA'],
+            'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA,LAINNYA'],
             'judul_dokumen' => ['nullable', 'string', 'max:255'],
             'ruang_lingkup_ids' => ['nullable', 'array'],
             'ruang_lingkup_ids.*' => ['integer', 'exists:master_ruang_lingkup,id'],
@@ -175,6 +209,41 @@ class DokumenKerjasamaController extends Controller
             'success' => true,
             'data' => $dokumen_kerjasama,
             'message' => 'Dokumen kerjasama updated successfully',
+        ]);
+    }
+
+    public function uploadFile(Request $request, DokumenKerjasama $dokumen_kerjasama): Response
+    {
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        $uploadedFile = $request->file('file');
+        $path = $uploadedFile->store('pengajuan/' . now()->format('Y/m'), 'public');
+
+        DokumenFile::query()
+            ->where('dokumen_id', $dokumen_kerjasama->id)
+            ->where('peran_berkas', 'dokumen_final')
+            ->delete();
+
+        $dokumenFile = DokumenFile::create([
+            'dokumen_id'           => $dokumen_kerjasama->id,
+            'peran_berkas'         => 'dokumen_final',
+            'nama_file'            => $uploadedFile->getClientOriginalName(),
+            'path_file'            => $path,
+            'mime_type'            => $uploadedFile->getMimeType(),
+            'ukuran_file_bytes'    => $uploadedFile->getSize(),
+            'diunggah_oleh_user_id' => $request->user()?->id,
+        ]);
+
+        return response([
+            'success' => true,
+            'data'    => $dokumenFile,
+            'message' => 'File uploaded successfully',
         ]);
     }
 
@@ -222,7 +291,9 @@ class DokumenKerjasamaController extends Controller
             'tanggal_mulai_baru' => ['required', 'date'],
             'tanggal_berakhir_baru' => ['required', 'date', 'after_or_equal:tanggal_mulai_baru'],
             'catatan_perpanjangan' => ['required', 'string'],
-            'bukti_perpanjangan' => ['nullable', 'string', 'max:255'],
+            'bukti_perpanjangan' => ['nullable', 'string'],
+            'ruang_lingkup' => ['nullable', 'array'],
+            'ruang_lingkup.*' => ['string', 'max:150'],
             'requester_role' => ['nullable', 'in:admin,internal,eksternal,pimpinan'],
             'notification_href' => ['nullable', 'string', 'max:255'],
         ]);
@@ -243,13 +314,25 @@ class DokumenKerjasamaController extends Controller
         $quarterLabels = [1 => 'Jan-Mar', 2 => 'Apr-Jun', 3 => 'Jul-Sep', 4 => 'Okt-Des'];
         $periodeLabel = sprintf('Triwulan %d(%s)', $quarter, $quarterLabels[$quarter] ?? 'Jan-Mar');
 
+        // Persist dokumen perpanjangan jika dikirim sebagai data URL base64.
+        $buktiRaw = $validated['bukti_perpanjangan'] ?? null;
+        $buktiPath = null;
+        $buktiNama = null;
+        if ($buktiRaw !== null && str_starts_with($buktiRaw, 'data:')) {
+            $buktiPath = $this->persistDataUrlFile($buktiRaw, 'perpanjangan');
+        } elseif ($buktiRaw !== null && !str_starts_with($buktiRaw, 'data:')) {
+            // Fallback: simpan nama file saja jika bukan data URL.
+            $buktiNama = $buktiRaw;
+        }
+
+        $ruangLingkupBaru = $validated['ruang_lingkup'] ?? [];
+
         $log = DokumenLog::create([
             'dokumen_id' => $dokumen_kerjasama->id,
             'tipe_log' => 'perpanjangan',
             'judul_log' => 'Pengajuan perpanjangan dokumen',
             'isi_log' => 'Permintaan perpanjangan diajukan dari modul Monitoring Kerjasama.',
-            // Simpan field perpanjangan di kolom terpisah, bukan digabung ke payload_json.
-            'payload_json' => null,
+            'payload_json' => ['ruang_lingkup' => $ruangLingkupBaru],
             // Struktur lama JSON monitoring dipisah ke kolom tabel dokumen_log.
             'nomor' => $nomorDokumen,
             'mitra' => $namaMitra,
@@ -262,12 +345,12 @@ class DokumenKerjasamaController extends Controller
             'periode' => $periodeLabel,
             'judul' => $dokumen_kerjasama->judul_dokumen,
             'manfaat' => $validated['catatan_perpanjangan'],
-            'bukti' => $validated['bukti_perpanjangan'] ?? null,
+            'bukti' => $buktiPath ?? $buktiNama,
             'status' => 'aktif',
             'pic' => null,
             'tgl_monitoring' => Carbon::today(),
             'catatan_perpanjangan' => $validated['catatan_perpanjangan'],
-            'bukti_perpanjangan' => $validated['bukti_perpanjangan'] ?? null,
+            'bukti_perpanjangan' => $buktiPath ?? $buktiNama,
             'tanggal_mulai_perpanjangan' => $validated['tanggal_mulai_baru'],
             'tanggal_berakhir_perpanjangan' => $validated['tanggal_berakhir_baru'],
             'status_perpanjangan' => 'menunggu',
@@ -316,7 +399,31 @@ class DokumenKerjasamaController extends Controller
                 $dokumen->tanggal_mulai = $dokumen_log->tanggal_mulai_perpanjangan;
                 $dokumen->tanggal_berakhir = $dokumen_log->tanggal_berakhir_perpanjangan;
                 $dokumen->status_siklus = 'active';
+
+                // Sync ruang lingkup baru jika ada di payload_json.
+                $payload = $dokumen_log->payload_json ?? [];
+                $ruangLingkupBaru = $payload['ruang_lingkup'] ?? null;
+                if (!empty($ruangLingkupBaru)) {
+                    $dokumen->ruang_lingkup_ids = $ruangLingkupBaru;
+                }
+
                 $dokumen->save();
+
+                // Sync dokumen perpanjangan ke dokumen_file jika ada.
+                $buktiPath = $dokumen_log->bukti_perpanjangan;
+                if ($buktiPath && !str_starts_with($buktiPath, 'data:') && Schema::hasTable('dokumen_file')) {
+                    $ext = strtolower(pathinfo($buktiPath, PATHINFO_EXTENSION));
+                    $mimeMap = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'doc' => 'application/msword'];
+                    DokumenFile::create([
+                        'dokumen_id' => $dokumen->id,
+                        'peran_berkas' => 'dokumen_perpanjangan',
+                        'nama_file' => basename($buktiPath),
+                        'path_file' => $buktiPath,
+                        'mime_type' => $mimeMap[$ext] ?? null,
+                        'diunggah_oleh_user_id' => $request->user()?->id,
+                        'diunggah_pada' => now(),
+                    ]);
+                }
             }
         }
 
@@ -365,6 +472,12 @@ class DokumenKerjasamaController extends Controller
             'tanggalBerakhirBaru' => $log->tanggal_berakhir_perpanjangan?->format('Y-m-d') ?? null,
             'catatan' => $log->catatan_perpanjangan,
             'buktiPerpanjangan' => $log->bukti_perpanjangan,
+            'buktiPerpanjanganUrl' => $log->bukti_perpanjangan
+                ? (str_starts_with($log->bukti_perpanjangan, 'http')
+                    ? $log->bukti_perpanjangan
+                    : url('storage/' . ltrim($log->bukti_perpanjangan, '/')))
+                : null,
+            'ruangLingkup' => $log->payload_json['ruang_lingkup'] ?? [],
             'status' => $log->status_perpanjangan ?: 'menunggu',
             'requestedAt' => optional($log->dibuat_pada)->toIso8601String(),
             'requesterRole' => $log->requester_role ?: 'admin',

@@ -38,6 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::post('/pengajuan-aktivitas', [PengajuanAktivitasController::class, 'store']);
 	Route::put('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'update']);
 	Route::delete('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'destroy']);
+	Route::post('/dokumen-kerjasama/{dokumen_kerjasama}/upload-file', [DokumenKerjasamaController::class, 'uploadFile'])
+		->whereNumber('dokumen_kerjasama');
 	Route::get('/dokumen-kerjasama/perpanjangan/requests', [DokumenKerjasamaController::class, 'renewalRequests']);
 	Route::post('/dokumen-kerjasama/{dokumen_kerjasama}/perpanjangan', [DokumenKerjasamaController::class, 'submitRenewalRequest'])
 		->whereNumber('dokumen_kerjasama');

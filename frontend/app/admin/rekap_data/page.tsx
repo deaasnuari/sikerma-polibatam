@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip } from 'lucide-react';
+import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip, RefreshCw } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
 import {
   addRekapDokumen,
@@ -10,20 +10,18 @@ import {
   deleteRekapDokumen,
   filterRekapData,
   getAvailableYears,
-  getRekapData,
   getRekapJenisOptions,
   getRekapStats,
   getRekapUnitOptions,
   rekapJenisBadgeMap,
   rekapStatusBadgeMap,
   rekapStatusOptions,
-  updateRekapDokumen,
   type DokumenData,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
-import { deleteDokumenKerjasamaById, fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
+import { dataUrlToBlob, deleteDokumenKerjasamaById, fetchRekapDokumenFromApi, mapJenisToApi, mapStatusToApi, updateDokumenKerjasamaById, updatePengajuanNamaMitra, uploadDokumenFile } from '@/services/dokumenKerjasamaApiService';
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
-import { generateNoDokumen } from '@/services/adminMonitoringService';
+import { getRenewalRequests, type RenewalRequestItem } from '@/services/adminRenewalRequestService';
 
 export default function RekapDataPage() {
   const router = useRouter();
@@ -40,6 +38,7 @@ export default function RekapDataPage() {
   const [deleteCandidate, setDeleteCandidate] = useState<RekapDokumen | null>(null);
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
   const [masterUnitOptions, setMasterUnitOptions] = useState<string[]>([]);
+  const [renewalHistory, setRenewalHistory] = useState<RenewalRequestItem[]>([]);
 
 
   useEffect(() => {
@@ -69,7 +68,37 @@ export default function RekapDataPage() {
     };
   }, []);
 
+  // Re-fetch when perpanjangan approval dispatches the event
+  useEffect(() => {
+    const handler = async () => {
+      try {
+        const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
+        setRekapData(rows);
+        // Also refresh the open detail panel so dates/docs update immediately.
+        setDetailItem((prev) => {
+          if (!prev) return null;
+          const fresh = rows.find((r) => r.id === prev.id || r.noDokumen === prev.noDokumen);
+          return fresh ?? prev;
+        });
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('rekap-data-updated', handler);
+    return () => window.removeEventListener('rekap-data-updated', handler);
+  }, []);
 
+  // Load perpanjangan history when detail modal opens
+  useEffect(() => {
+    if (!detailItem?.id) {
+      setRenewalHistory([]);
+      return;
+    }
+    const targetId = detailItem.id;
+    getRenewalRequests()
+      .then((all) => setRenewalHistory(all.filter((r) => r.kerjasamaId === targetId && r.status === 'disetujui')))
+      .catch(() => setRenewalHistory([]));
+  }, [detailItem?.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -495,7 +524,7 @@ export default function RekapDataPage() {
       </section>
 
       {detailItem && (() => {
-        const statusBadge: Record<string, { bg: string; text: string; icon: JSX.Element }> = {
+        const statusBadge: Record<string, { bg: string; text: string; icon: ReturnType<typeof CheckCircle2> }> = {
           'Aktif': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: <CheckCircle2 size={13} /> },
           'Akan Berakhir': { bg: 'bg-amber-100', text: 'text-amber-700', icon: <Clock size={13} /> },
           'Kadaluarsa': { bg: 'bg-rose-100', text: 'text-rose-700', icon: <XCircle size={13} /> },
@@ -622,8 +651,8 @@ export default function RekapDataPage() {
                 </div>
                 {detailItem.dokumenTerkait?.length ? (
                   <div className="space-y-2">
-                    {detailItem.dokumenTerkait.map((doc) => (
-                      <div key={`${doc.nama}-${doc.tanggal}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                    {detailItem.dokumenTerkait.map((doc, idx) => (
+                      <div key={`${doc.nama}-${doc.tanggal}-${idx}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1E376C]/10">
                             <FileText size={14} className="text-[#1E376C]" />
@@ -648,6 +677,52 @@ export default function RekapDataPage() {
                   <p className="text-sm text-gray-500">Belum ada dokumen yang diunggah.</p>
                 )}
               </div>
+
+              {/* Riwayat Perpanjangan */}
+              {renewalHistory.length > 0 && (
+                <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <RefreshCw size={14} className="text-green-700" />
+                    <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">Riwayat Perpanjangan</p>
+                  </div>
+                  <div className="space-y-2">
+                    {renewalHistory.map((r) => (
+                      <div key={r.id} className="rounded-lg border border-green-200 bg-white px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800">
+                              Periode: {r.tanggalMulaiBaru} — {r.tanggalBerakhirBaru}
+                            </p>
+                            {r.ruangLingkup && r.ruangLingkup.length > 0 && (
+                              <p className="mt-0.5 text-[11px] text-gray-600">Ruang Lingkup: {r.ruangLingkup.join(', ')}</p>
+                            )}
+                            {r.catatan && (
+                              <p className="mt-0.5 text-[11px] text-gray-500 leading-snug">{r.catatan}</p>
+                            )}
+                            {r.buktiPerpanjanganUrl && (
+                              <a
+                                href={r.buktiPerpanjanganUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline"
+                              >
+                                <FileText size={11} />
+                                Lihat Dokumen
+                              </a>
+                            )}
+                          </div>
+                          <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+                            Disetujui
+                          </span>
+                        </div>
+                        {r.decidedAt && (
+                          <p className="mt-1 text-[10px] text-gray-400">Disetujui {r.decidedAt}{r.decidedBy ? ` oleh ${r.decidedBy}` : ''}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Lihat Story */}
               {detailItem.sourcePengajuanId && (
@@ -701,23 +776,70 @@ export default function RekapDataPage() {
         initialData={editingItem ? createDokumenFormData(editingItem) : null}
         title="Edit Dokumen"
         submitLabel="Simpan Perubahan"
-        onSubmit={(data: DokumenData) => {
+        onSubmit={async (data: DokumenData) => {
           if (!editingItem) {
             return;
           }
 
-          const updated = updateRekapDokumen(editingItem.noDokumen, data);
-          // Sync tabel langsung tanpa tunggu API refresh
-          setRekapData(updated.length > 0 ? updated : (prev) => prev.map((r) =>
+          // Optimistic update sementara menunggu API selesai
+          setRekapData((prev) => prev.map((r) =>
             r.noDokumen === editingItem.noDokumen
-              ? { ...r, namaMitra: data.namaMitra, jenis: (data.jenisDokumen as 'MoU' | 'MoA' | 'IA'), unit: data.unitKerja }
+              ? {
+                  ...r,
+                  namaMitra: data.namaMitra,
+                  jenis: data.jenisDokumen as 'MoU' | 'MoA' | 'IA',
+                  unit: data.unitKerja,
+                  tanggalMulai: data.tanggalMulai || r.tanggalMulai,
+                  berlakuHingga: data.tanggalBerakhir || r.berlakuHingga,
+                  status: data.status as 'Aktif' | 'Akan Berakhir' | 'Kadaluarsa',
+                  noDokumen: data.nomorDokumen || r.noDokumen,
+                }
               : r
           ));
           setEditingItem(null);
-          setFeedbackModal({
-            title: 'Perubahan Berhasil Disimpan',
-            message: `Dokumen "${data.namaMitra}" berhasil diperbarui.`,
-          });
+
+          try {
+            const promises: Promise<void>[] = [];
+
+            if (typeof editingItem.id === 'number') {
+              const apiPayload: Parameters<typeof updateDokumenKerjasamaById>[1] = {
+                nomor_dokumen: data.nomorDokumen || undefined,
+                jenis_dokumen: mapJenisToApi(data.jenisDokumen),
+                tanggal_mulai: data.tanggalMulai || null,
+                tanggal_berakhir: data.tanggalBerakhir || null,
+                status_siklus: mapStatusToApi(data.status),
+              };
+              promises.push(updateDokumenKerjasamaById(editingItem.id, apiPayload));
+            }
+
+            if (typeof editingItem.sourcePengajuanId === 'number' && data.namaMitra && data.namaMitra !== editingItem.namaMitra) {
+              promises.push(updatePengajuanNamaMitra(editingItem.sourcePengajuanId, data.namaMitra));
+            }
+
+            await Promise.all(promises);
+
+            // Upload file baru jika user memilih "Ganti Dokumen"
+            const newDoc = data.dokumenTerkait?.[0];
+            if (typeof editingItem.id === 'number' && newDoc?.url?.startsWith('data:')) {
+              const blob = dataUrlToBlob(newDoc.url);
+              await uploadDokumenFile(editingItem.id, blob, newDoc.nama);
+            }
+
+            // Refresh dari API agar data konsisten
+            const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
+            setRekapData(rows);
+
+            setFeedbackModal({
+              title: 'Perubahan Berhasil Disimpan',
+              message: `Dokumen "${data.namaMitra}" berhasil diperbarui.`,
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Gagal menyimpan perubahan ke server.';
+            setFeedbackModal({
+              title: 'Gagal Menyimpan Perubahan',
+              message,
+            });
+          }
         }}
       />
 

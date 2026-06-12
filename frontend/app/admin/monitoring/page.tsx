@@ -495,7 +495,7 @@ export default function MonitoringdanstatusPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100"
               >
                 <RefreshCw size={16} />
-                Mau Perpanjang
+                Perpanjang
               </button>
 
               <button
@@ -565,7 +565,8 @@ export default function MonitoringdanstatusPage() {
                     tanggalMulaiBaru: data.tanggalMulaiBaru,
                     tanggalBerakhirBaru: data.tanggalBerakhirBaru,
                     catatan: data.catatanPerpanjangan,
-                    buktiPerpanjangan: data?.dokumen?.nama || null,
+                    buktiPerpanjangan: data?.dokumen?.url || null,
+                    ruangLingkup: data?.ruangLingkup || [],
                     requesterRole: renewalNotificationTarget.targetRole,
                     notificationHref: renewalNotificationTarget.href,
                   });
