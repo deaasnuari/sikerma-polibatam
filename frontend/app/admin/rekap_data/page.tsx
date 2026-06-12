@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip, RefreshCw } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
@@ -39,6 +39,8 @@ export default function RekapDataPage() {
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
   const [masterUnitOptions, setMasterUnitOptions] = useState<string[]>([]);
   const [renewalHistory, setRenewalHistory] = useState<RenewalRequestItem[]>([]);
+  const detailItemRef = useRef<RekapDokumen | null>(null);
+  useEffect(() => { detailItemRef.current = detailItem; }, [detailItem]);
 
 
   useEffect(() => {
@@ -74,12 +76,18 @@ export default function RekapDataPage() {
       try {
         const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
         setRekapData(rows);
-        // Also refresh the open detail panel so dates/docs update immediately.
         setDetailItem((prev) => {
           if (!prev) return null;
           const fresh = rows.find((r) => r.id === prev.id || r.noDokumen === prev.noDokumen);
           return fresh ?? prev;
         });
+        // Refresh renewalHistory for the currently open item (ID unchanged, so its useEffect won't re-run)
+        const currentId = detailItemRef.current?.id;
+        if (currentId) {
+          getRenewalRequests()
+            .then((all) => setRenewalHistory(all.filter((r) => r.kerjasamaId === currentId && r.status === 'disetujui')))
+            .catch(() => {});
+        }
       } catch {
         // ignore
       }
@@ -623,6 +631,18 @@ export default function RekapDataPage() {
                     <p className="font-semibold text-gray-800">{detailItem.tahun || '-'}</p>
                   </div>
                 </div>
+                {detailItem.ruangLingkup && detailItem.ruangLingkup.length > 0 && (
+                  <div className="mt-3 border-t border-gray-200 pt-3">
+                    <p className="text-[11px] text-gray-500 mb-1">Ruang Lingkup</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {detailItem.ruangLingkup.map((rl, i) => (
+                        <span key={i} className="rounded-full bg-[#1E376C]/10 px-2.5 py-0.5 text-[11px] font-medium text-[#1E376C]">
+                          {rl}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Kontak */}

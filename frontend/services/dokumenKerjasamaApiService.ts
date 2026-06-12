@@ -26,12 +26,12 @@ type ApiDokumenRow = {
   tanggal_mulai?: string | null;
   tanggal_berakhir?: string | null;
   status_siklus?: 'active' | 'expiring' | 'archived' | null;
+  ruang_lingkup_ids?: any[] | null;
   mitra?: { id: number; nama_mitra: string } | null;
   unit_prodi?: { id: number; nama: string } | null;
   file?: string | null;
   alasan_arsip?: string | null;
   pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string; nama_mitra?: string | null } | null;
-  // Sudah difilter oleh controller ke peran_berkas = 'dokumen_final' saja
   dokumen_files?: Array<{
     id: number;
     nama_file: string;
@@ -148,6 +148,10 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       });
     }
 
+      const ruangLingkup = Array.isArray(row.ruang_lingkup_ids)
+        ? (row.ruang_lingkup_ids as any[]).map(String).filter(Boolean)
+        : [];
+
       return {
       id: row.id,
       sourcePengajuanId: row.sumber_pengajuan_id || undefined,
@@ -161,6 +165,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       status: mapStatus(row.status_siklus),
       whatsappNumber: row.pengajuan?.whatsapp_pengusul || undefined,
       dokumenTerkait,
+      ruangLingkup,
       alasanArsip: row.alasan_arsip || null,
       buktiPdf: dokumenTerkait.length > 0 ? dokumenTerkait[0].url : null,
     };

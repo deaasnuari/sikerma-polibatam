@@ -25,6 +25,7 @@ export interface RekapDokumen {
   tahun: string;
   status: RekapStatus;
   whatsappNumber?: string;
+  ruangLingkup?: string[];
   dokumenTerkait?: DokumenTerkait[];
 }
 

@@ -473,6 +473,10 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
         }
       }
       
+      const ruangLingkup = Array.isArray(row.ruang_lingkup_ids)
+        ? (row.ruang_lingkup_ids as any[]).map(String).filter(Boolean)
+        : [];
+
       return {
         id: row.id,
         sourcePengajuanId: row.sumber_pengajuan_id || undefined,
@@ -484,8 +488,8 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
         tanggalMulai: formatDisplayDate(row.tanggal_mulai),
         tanggalBerakhir: formatDisplayDate(row.tanggal_berakhir),
         sisaMasaBerlaku: sisaMasaBerlaku,
-        ruangLingkup: [],
-        whatsappNumber: '-',
+        ruangLingkup,
+        whatsappNumber: row.pengajuan?.whatsapp_pengusul || '-',
         emailMitra: '-'
       } as Kerjasama;
     });
