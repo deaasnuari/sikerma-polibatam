@@ -833,7 +833,15 @@ async function saveReview() {
             isAcc: true,
           };
           const existingAttachments = reviewUpdated.fileAttachments || reviewItem.fileAttachments || [];
-          reviewUpdated.fileAttachments = [...existingAttachments, accAttachment];
+          // Hindari duplikat: hanya tambahkan jika server belum menyertakannya
+          const alreadyInServer = existingAttachments.some(
+            (f) => f.isAcc && f.name === accAttachment.name
+          );
+          if (!alreadyInServer) {
+            reviewUpdated.fileAttachments = [...existingAttachments, accAttachment];
+          } else {
+            reviewUpdated.fileAttachments = existingAttachments;
+          }
         }
         setPengajuanData((prev) => prev.map((item) => {
           if (item.id !== reviewUpdated.id) return item;
@@ -852,10 +860,11 @@ async function saveReview() {
           return merged;
         }));
 
+        const catatanAcc = reviewComment.trim();
         if (reviewFinalFile) {
           addAdminNotification({
             title: 'Dokumen Final Diupload',
-            message: `Dokumen final untuk "${judulShort}" telah diupload dan di-ACC oleh admin.`,
+            message: `Dokumen final untuk "${judulShort}" telah diupload dan di-ACC oleh admin.${catatanAcc ? ` Catatan: ${catatanAcc}` : ''}`,
             from: 'Admin',
             href: '/internal/data_pengajuan',
             category: 'approval',
@@ -863,7 +872,7 @@ async function saveReview() {
           });
           addAdminNotification({
             title: 'Dokumen Final Siap Diunduh',
-            message: `Dokumen final "${judulShort}" telah di-ACC dan siap diunduh.`,
+            message: `Dokumen final "${judulShort}" telah di-ACC dan siap diunduh.${catatanAcc ? ` Catatan: ${catatanAcc}` : ''}`,
             from: 'Admin',
             href: '/eksternal/daftar_kerjasama',
             category: 'approval',
@@ -872,7 +881,7 @@ async function saveReview() {
         } else {
           addAdminNotification({
             title: 'Status Pengajuan Diperbarui',
-            message: `Pengajuan "${judulShort}" telah disetujui oleh admin.`,
+            message: `Pengajuan "${judulShort}" telah disetujui oleh admin.${catatanAcc ? ` Catatan: ${catatanAcc}` : ''}`,
             from: 'Admin',
             href: '/internal/data_pengajuan',
             category: 'approval',
@@ -880,7 +889,7 @@ async function saveReview() {
           });
           addAdminNotification({
             title: 'Pengajuan Disetujui',
-            message: `Pengajuan "${judulShort}" telah disetujui.`,
+            message: `Pengajuan "${judulShort}" telah disetujui.${catatanAcc ? ` Catatan: ${catatanAcc}` : ''}`,
             from: 'Admin',
             href: '/eksternal/daftar_kerjasama',
             category: 'approval',
@@ -1919,7 +1928,11 @@ function addEditJurusanUnitOption() {
 
                 {(() => {
                   const originalFiles = detailFileEntries.filter((f) => !f.isAcc);
-                  const accFiles = detailFileEntries.filter((f) => f.isAcc);
+                  // Deduplicate ACC files by name, keep the last (terbaru)
+                  const accFilesRaw = detailFileEntries.filter((f) => f.isAcc);
+                  const accFilesMap = new Map<string, typeof accFilesRaw[number]>();
+                  for (const f of accFilesRaw) accFilesMap.set(f.name, f);
+                  const accFiles = Array.from(accFilesMap.values());
                   return (
                     <>
                       {originalFiles.length === 0 ? (
@@ -2121,6 +2134,17 @@ function addEditJurusanUnitOption() {
                       </div>
                     </div>
                   )}
+
+                  <div className="mt-3">
+                    <label className="text-xs font-semibold text-gray-700">Catatan ACC </label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      rows={3}
+                      placeholder="Tambahkan catatan untuk Internal/Mitra bersama dokumen final ini..."
+                      className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                    />
+                  </div>
                 </div>
               )}
 
