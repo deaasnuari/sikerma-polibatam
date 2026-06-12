@@ -169,7 +169,7 @@ export default function LoginPage() {
                       <option value="" disabled>
                         Pilih Role
                       </option>
-                      <option value="admin">Admin/Humas</option>
+                      <option value="admin">Admin</option>
                       <option value="pimpinan">Pimpinan</option>
                       <option value="internal">Internal</option>
                       <option value="external">Eksternal</option>
