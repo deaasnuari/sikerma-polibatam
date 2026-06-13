@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Archive,
   Search,
@@ -9,6 +10,7 @@ import {
   FileText,
   AlertCircle,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { fetchArsipDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
 
@@ -36,12 +38,6 @@ function toDisplayDate(value?: string): string {
   return parsed.toLocaleDateString('en-GB');
 }
 
-const followUpColor: Record<string, { bg: string; text: string }> = {
-  Direspon: { bg: 'bg-green-100', text: 'text-green-700' },
-  'Tidak Direspon': { bg: 'bg-red-100', text: 'text-red-700' },
-  Menunggu: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-};
-
 const jenisColor: Record<string, string> = {
   MoA: 'bg-blue-50 text-blue-700',
   MoU: 'bg-purple-50 text-purple-700',
@@ -49,9 +45,15 @@ const jenisColor: Record<string, string> = {
 };
 
 export default function ArsipDokumenPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [data, setData] = useState<ArsipDokumen[]>([]);
   const [activeTab, setActiveTab] = useState<'akan-kadaluarsa' | 'kadaluarsa'>('akan-kadaluarsa');
+
+  const handlePerpanjang = (item: ArsipDokumen) => {
+    sessionStorage.setItem('open-perpanjang-id', String(item.id));
+    router.push('/admin/monitoring');
+  };
 
   // Helper function to determine document status
   const getDocumentStatus = (berlakuHingga: string): 'akan-kadaluarsa' | 'kadaluarsa' | null => {
@@ -83,17 +85,6 @@ export default function ArsipDokumenPage() {
 
     // Masih jauh dari masa berlaku, tidak perlu di arsip
     return null;
-  };
-
-  const getRowStyling = (berlakuHingga: string) => {
-    const status = getDocumentStatus(berlakuHingga);
-    if (status === 'kadaluarsa') {
-      return 'bg-red-50/40 hover:bg-red-50';
-    } else if (status === 'akan-kadaluarsa') {
-      return 'bg-orange-50/30 hover:bg-orange-50';
-    } else {
-      return 'hover:bg-gray-50';
-    }
   };
 
   useEffect(() => {
@@ -282,7 +273,7 @@ export default function ArsipDokumenPage() {
                 <span className="font-semibold">Sudah Kadaluarsa (❌)</span>: Dokumen yang sudah melampaui tanggal berlaku
               </li>
               <li>
-                Dokumen yang sudah kadaluarsa dapat diperpanjang dengan membuat pengajuan kerjasama baru
+                Dokumen yang sudah kadaluarsa dapat diperpanjang — klik tombol <span className="font-semibold">Perpanjang</span> untuk langsung membuka form perpanjangan di halaman Monitoring
               </li>
               <li>
                 Arsip dapat dihapus permanen oleh admin jika tidak diperlukan lagi
@@ -343,125 +334,109 @@ export default function ArsipDokumenPage() {
       {/* Table */}
       <div className="table-shell">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="min-w-[900px] w-full text-sm border-collapse">
             <thead>
-              <tr className="table-head border-b border-gray-200">
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  No.Dokumen
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Nama Mitra
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Jenis
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Tanggal Mulai
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Berlaku Hingga
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Status
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Alasan Arsip
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Bukti PDF
-                </th>
-                <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
-                  Aksi
-                </th>
+              <tr className="table-head border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="py-3 px-4 whitespace-nowrap">No. Dokumen</th>
+                <th className="py-3 px-4">Nama Mitra</th>
+                <th className="py-3 px-4 whitespace-nowrap">Jenis</th>
+                <th className="py-3 px-4 whitespace-nowrap">Tgl Mulai</th>
+                <th className="py-3 px-4 whitespace-nowrap">Berlaku Hingga</th>
+                <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                <th className="py-3 px-4">Alasan Arsip</th>
+                <th className="py-3 px-4 whitespace-nowrap text-center">Bukti PDF</th>
+                <th className="py-3 px-4 whitespace-nowrap text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="py-10 text-center text-gray-400"
-                  >
+                  <td colSpan={9} className="py-10 text-center text-gray-400">
                     Tidak ada data ditemukan
                   </td>
                 </tr>
               )}
-
-              {filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`border-b border-gray-100 transition ${getRowStyling(item.berlakuHingga)}`}
-                >
-                  <td className="py-3.5 px-4 font-medium text-gray-900">
-                    {item.noDokumen}
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-700">
-                    {item.namaMitra}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${jenisColor[item.jenis]}`}
-                    >
-                      {item.jenis}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-600">
-                    {item.tanggalMulai}
-                  </td>
-                  <td className="py-3.5 px-4 text-gray-600">
-                    {item.berlakuHingga}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        getDocumentStatus(item.berlakuHingga) === 'kadaluarsa'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}
-                    >
-                      {getDocumentStatus(item.berlakuHingga) === 'kadaluarsa' ? '❌ Kadaluarsa' : '⏰ Akan Kadaluarsa'}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-sm text-gray-700 max-w-xs truncate" title={item.alasanArsip || '-'}>
-                    {item.alasanArsip || '-'}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {item.buktiPdf ? (
-                      <a
-                        href={item.buktiPdf}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs font-medium"
-                        title="Lihat Bukti PDF"
-                      >
-                        <FileText size={14} />
-                        Lihat PDF
-                      </a>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">
-                        Tidak ada
+              {filtered.map((item) => {
+                const isKadaluarsa = getDocumentStatus(item.berlakuHingga) === 'kadaluarsa';
+                return (
+                  <tr
+                    key={item.id}
+                    className={`border-b border-gray-100 transition-colors ${
+                      isKadaluarsa ? 'bg-red-50/40 hover:bg-red-50' : 'bg-orange-50/30 hover:bg-orange-50'
+                    }`}
+                  >
+                    <td className="py-3 px-4 font-medium text-gray-900 whitespace-nowrap text-xs">
+                      {item.noDokumen}
+                    </td>
+                    <td className="py-3 px-4 text-gray-700 max-w-[200px]">
+                      <span className="block truncate" title={item.namaMitra}>
+                        {item.namaMitra}
                       </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"
-                        title="Download Dokumen"
-                      >
-                        <Download size={14} className="text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
-                        title="Hapus Arsip"
-                      >
-                        <Trash2 size={14} className="text-red-600" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${jenisColor[item.jenis]}`}>
+                        {item.jenis}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap text-xs">{item.tanggalMulai}</td>
+                    <td className="py-3 px-4 whitespace-nowrap text-xs font-semibold">
+                      <span className={isKadaluarsa ? 'text-red-600' : 'text-orange-600'}>{item.berlakuHingga}</span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        isKadaluarsa ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {isKadaluarsa ? '❌ Kadaluarsa' : '⏰ Akan Kadaluarsa'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs text-gray-600 max-w-[180px]">
+                      <span className="block truncate" title={item.alasanArsip || '-'}>
+                        {item.alasanArsip || '-'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {item.buktiPdf ? (
+                        <a
+                          href={item.buktiPdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap"
+                        >
+                          <FileText size={13} />
+                          Lihat PDF
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handlePerpanjang(item)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
+                          title="Perpanjang di Monitoring"
+                        >
+                          <RefreshCw size={11} />
+                          Perpanjang
+                        </button>
+                        <button
+                          className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition"
+                          title="Download"
+                        >
+                          <Download size={13} className="text-blue-600" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
+                          title="Hapus Arsip"
+                        >
+                          <Trash2 size={13} className="text-red-600" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

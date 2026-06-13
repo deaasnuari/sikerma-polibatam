@@ -64,9 +64,9 @@ class DokumenKerjasamaController extends Controller
     public function index(Request $request): Response
     {
         $query = DokumenKerjasama::query()->with([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra,email_pengusul',
             'unitProdi:id,nama,jenis_node,kategori_unit',
-            'mitra:id,nama_mitra,negara',
+            'mitra:id,nama_mitra,negara,email_mitra,email_kontak_utama',
             'dokumenFiles' => function ($q) {
                 $q->whereIn('peran_berkas', ['dokumen_final', 'dokumen_perpanjangan']);
             },
@@ -102,9 +102,9 @@ class DokumenKerjasamaController extends Controller
     public function show(DokumenKerjasama $dokumen_kerjasama): Response
     {
         $dokumen_kerjasama->load([
-            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra',
+            'pengajuan:id,nomor_pengajuan,nama_pengusul,whatsapp_pengusul,nama_mitra,email_pengusul',
             'unitProdi:id,nama,jenis_node,kategori_unit',
-            'mitra:id,nama_mitra,negara',
+            'mitra:id,nama_mitra,negara,email_mitra,email_kontak_utama',
         ]);
 
         return response([

@@ -490,7 +490,7 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
         sisaMasaBerlaku: sisaMasaBerlaku,
         ruangLingkup,
         whatsappNumber: row.pengajuan?.whatsapp_pengusul || '-',
-        emailMitra: '-'
+        emailMitra: row.mitra?.email_mitra || row.mitra?.email_kontak_utama || row.pengajuan?.email_pengusul || '-',
       } as Kerjasama;
     });
     
@@ -701,75 +701,44 @@ export function applyApprovedRenewalToMonitoring(
   return updated;
 }
 
-/**
- * Mengirim notifikasi email ke mitra kerjasama
- * @param emailMitra Email tujuan mitra
- * @param jenis Jenis notifikasi: 'reminder-3bulan', 'reminder-1bulan', atau 'urgent'
- * @param noDokumen Nomor dokumen kerjasama
- * @param namaMitra Nama mitra kerjasama
- * @returns Promise dengan hasil pengiriman email
- */
 export async function sendNotificationEmail(
   emailMitra: string,
   jenis: 'reminder-3bulan' | 'reminder-1bulan' | 'urgent',
   noDokumen: string,
   namaMitra: string
 ): Promise<{ success: boolean; message: string }> {
+  const subjects: Record<typeof jenis, string> = {
+    'reminder-3bulan': '[SIKERMA] Pengingat: Kerjasama Akan Berakhir dalam 3 Bulan',
+    'reminder-1bulan': '[SIKERMA] Pengingat: Kerjasama Akan Berakhir dalam 1 Bulan',
+    urgent: '[SIKERMA] URGENT: Kerjasama Segera Berakhir',
+  };
+
+  const bodies: Record<typeof jenis, string> = {
+    'reminder-3bulan': `Kepada Yth. ${namaMitra},\n\nBersama ini kami informasikan bahwa dokumen kerjasama No. ${noDokumen} antara pihak Anda dengan Politeknik Negeri Batam akan berakhir masa berlakunya dalam 3 (tiga) bulan ke depan.\n\nMohon untuk mempersiapkan proses perpanjangan atau menghubungi kami segera untuk tindak lanjut.\n\nHormat kami,\nAdmin SIKERMA\nPoliteknik Negeri Batam`,
+    'reminder-1bulan': `Kepada Yth. ${namaMitra},\n\nBersama ini kami informasikan bahwa dokumen kerjasama No. ${noDokumen} antara pihak Anda dengan Politeknik Negeri Batam akan berakhir masa berlakunya dalam 1 (satu) bulan ke depan.\n\nSegera hubungi kami untuk memproses perpanjangan kerjasama.\n\nHormat kami,\nAdmin SIKERMA\nPoliteknik Negeri Batam`,
+    urgent: `Kepada Yth. ${namaMitra},\n\nPERHATIAN: Dokumen kerjasama No. ${noDokumen} antara pihak Anda dengan Politeknik Negeri Batam akan BERAKHIR dalam waktu kurang dari 1 (satu) minggu!\n\nSegera lakukan perpanjangan atau hubungi kami SEKARANG untuk menghindari berakhirnya kerjasama.\n\nHormat kami,\nAdmin SIKERMA\nPoliteknik Negeri Batam`,
+  };
+
   try {
-    // Mapping jenis notifikasi ke template email
-    const notificationTemplates = {
-      'reminder-3bulan': {
-        subject: 'Pengingat: Kerjasama akan berakhir dalam 3 bulan',
-        body: `Halo ${namaMitra},\n\nKerjasama Anda (No. ${noDokumen}) akan berakhir dalam 3 bulan. Mohon untuk mempersiapkan perpanjangan atau tindak lanjut yang diperlukan.\n\nTerima kasih,\nAdmin SIKERMA Polibatam`,
-      },
-      'reminder-1bulan': {
-        subject: 'Pengingat: Kerjasama akan berakhir dalam 1 bulan',
-        body: `Halo ${namaMitra},\n\nKerjasama Anda (No. ${noDokumen}) akan berakhir dalam 1 bulan. Segera hubungi kami untuk perpanjangan.\n\nTerima kasih,\nAdmin SIKERMA Polibatam`,
-      },
-      urgent: {
-        subject: 'URGENT: Kerjasama akan berakhir minggu depan',
-        body: `Halo ${namaMitra},\n\nKerjasama Anda (No. ${noDokumen}) akan berakhir minggu depan! Segera lakukan perpanjangan atau hubungi kami untuk tindak lanjut.\n\nTerima kasih,\nAdmin SIKERMA Polibatam`,
-      },
-    };
-
-    const template = notificationTemplates[jenis];
-
-    // Simulasi pengiriman email (akan diintegrasikan dengan backend API)
-    // TODO: Ganti dengan actual API call ke backend
-    const response = await fetch('/api/backend/notifications/send-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: emailMitra,
-        subject: template.subject,
-        body: template.body,
-        jenis,
-        noDokumen,
-        namaMitra,
-      }),
-    });
-
-    if (!response.ok) {
-      // Jika API belum tersedia, lakukan simulasi
-      console.warn('Email notification API not yet available, using simulation');
-      return {
-        success: true,
-        message: `Notifikasi berhasil disimulasikan ke ${emailMitra}`,
-      };
-    }
-
-    const data = await response.json();
-    return {
-      success: true,
-      message: `Notifikasi berhasil dikirim ke ${emailMitra}`,
-    };
+    const result = await apiRequest<{ success: boolean; message: string }>(
+      '/notifications/send-email',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: emailMitra,
+          subject: subjects[jenis],
+          body: bodies[jenis],
+          jenis,
+          noDokumen,
+          namaMitra,
+        }),
+      }
+    );
+    return result;
   } catch (error) {
-    console.error('Error sending notification email:', error);
     return {
       success: false,
-      message: 'Gagal mengirim notifikasi email. Silakan coba lagi.',
+      message: error instanceof Error ? error.message : 'Gagal mengirim email notifikasi.',
     };
   }
 }

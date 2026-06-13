@@ -73,7 +73,13 @@ export default function NotificationHistoryModal({
     return null;
   }
 
+  const isEmailValid = !!emailMitra && emailMitra.trim() !== '' && emailMitra.trim() !== '-' && emailMitra.includes('@');
+
   const handleSendNotification = async (jenis: string) => {
+    if (!isEmailValid) {
+      setFeedbackMessage({ type: 'error', text: 'Email mitra tidak tersedia. Perbarui data mitra terlebih dahulu sebelum mengirim notifikasi.' });
+      return;
+    }
     setSendingNotification(jenis);
     setFeedbackMessage(null);
 
@@ -161,16 +167,22 @@ export default function NotificationHistoryModal({
           )}
 
           {/* Send Notification Buttons */}
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className={`rounded-xl border p-4 ${isEmailValid ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
             <p className="mb-3 text-sm font-semibold text-[#1E376C]">Kirim Notifikasi Manual ke Email Mitra</p>
+            {!isEmailValid && (
+              <div className="mb-3 flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2.5">
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-orange-500" />
+                <p className="text-xs text-orange-700">Email mitra tidak tersedia. Perbarui data mitra terlebih dahulu agar notifikasi dapat dikirim.</p>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {Object.entries(notificationConfig).map(([key, config]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => handleSendNotification(key)}
-                  disabled={sendingNotification !== null}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+                  disabled={sendingNotification !== null || !isEmailValid}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"
                 >
                   {sendingNotification === key ? (
                     <>
@@ -187,7 +199,10 @@ export default function NotificationHistoryModal({
               ))}
             </div>
             <p className="mt-3 text-xs text-gray-600">
-              Email akan dikirim ke: <span className="font-semibold">{emailMitra}</span>
+              Email akan dikirim ke:{' '}
+              <span className={`font-semibold ${isEmailValid ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+                {isEmailValid ? emailMitra : 'Tidak tersedia'}
+              </span>
             </p>
           </div>
 

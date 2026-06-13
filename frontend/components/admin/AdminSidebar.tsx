@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, FileText, RefreshCw, BarChart3,
-  BookOpen, Archive, Users, Handshake, ChevronLeft, ChevronRight,
+  BookOpen, Archive, Users, Handshake, ChevronLeft, ChevronRight, Bell,
   type LucideIcon,
 } from 'lucide-react';
+import { getUnreadCountByHref } from '@/services/adminService';
 
 export interface SidebarMenuItem {
   icon: LucideIcon;
@@ -26,6 +27,8 @@ interface AdminSidebarProps {
   backgroundClassName?: string;
   activeItemClassName?: string;
 }
+
+const PERPANJANGAN_HREF = '/admin/monitoring/perpanjangan';
 
 const defaultMenuItems: SidebarMenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
@@ -54,6 +57,15 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const [perpanjanganBadge, setPerpanjanganBadge] = useState(0);
+
+  useEffect(() => {
+    const sync = () => setPerpanjanganBadge(getUnreadCountByHref(PERPANJANGAN_HREF));
+    sync();
+    window.addEventListener('admin-notifications-updated', sync);
+    return () => window.removeEventListener('admin-notifications-updated', sync);
+  }, []);
 
   useEffect(() => {
     const hrefs = new Set<string>();
@@ -151,6 +163,8 @@ export default function AdminSidebar({
               );
             }
 
+            const hasPerpanjanganBadge = item.children?.some((c) => c.href === PERPANJANGAN_HREF) && perpanjanganBadge > 0;
+
             return (
               <div key={`${item.label}-${item.href}`} className="space-y-1">
                 <Link
@@ -160,16 +174,30 @@ export default function AdminSidebar({
                   onFocus={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
                   title={!isOpen ? item.label : undefined}
-                  className={sharedClassName}
+                  className={`${sharedClassName} relative`}
                 >
-                  <Icon size={14} className="flex-shrink-0" />
+                  <span className="relative flex-shrink-0">
+                    <Icon size={14} />
+                    {/* Dot indicator on collapsed parent when badge > 0 */}
+                    {!isOpen && hasPerpanjanganBadge && (
+                      <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-1 ring-[#091222]" />
+                    )}
+                  </span>
                   {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
+                  {/* Badge count on expanded parent when children not visible */}
+                  {isOpen && !showChildren && hasPerpanjanganBadge && (
+                    <span className="ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {perpanjanganBadge > 9 ? '9+' : perpanjanganBadge}
+                    </span>
+                  )}
                 </Link>
 
                 {showChildren && (
                   <div className="ml-7 space-y-1 border-l border-slate-600/60 pl-3">
                     {item.children?.map((child) => {
                       const childActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
+                      const childBadge = child.href === PERPANJANGAN_HREF ? perpanjanganBadge : 0;
+                      const hasBell = childBadge > 0;
 
                       return (
                         <Link
@@ -179,13 +207,26 @@ export default function AdminSidebar({
                           onMouseEnter={() => handlePrefetch(child.href)}
                           onFocus={() => handlePrefetch(child.href)}
                           onTouchStart={() => handlePrefetch(child.href)}
-                          className={`block rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
-                            childActive
-                              ? 'bg-[#57C9E8]/20 text-white'
-                              : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-medium transition-colors ${
+                            hasBell
+                              ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
+                              : childActive
+                                ? 'bg-[#57C9E8]/20 text-white'
+                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          {child.label}
+                          {hasBell && (
+                            <span className="relative flex-shrink-0">
+                              <Bell size={10} className="animate-[wiggle_1s_ease-in-out_infinite] text-amber-300" />
+                              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+                            </span>
+                          )}
+                          <span className="flex-1 truncate">{child.label}</span>
+                          {hasBell && (
+                            <span className="ml-auto inline-flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                              {childBadge > 9 ? '9+' : childBadge}
+                            </span>
+                          )}
                         </Link>
                       );
                     })}

@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-hidden pb-4">
+          <main className="flex-2 flex flex-col overflow-hidden">
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm p-3">
               {children}

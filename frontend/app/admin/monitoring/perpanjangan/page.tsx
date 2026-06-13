@@ -11,7 +11,7 @@ import {
   type RenewalRequestItem,
   type RenewalRequestStatus,
 } from '@/services/adminRenewalRequestService';
-import { addAdminNotification } from '@/services/adminService';
+import { addAdminNotification, markNotificationsByHrefAsRead } from '@/services/adminService';
 import { invalidateRekapCache } from '@/services/dokumenKerjasamaApiService';
 
 type FilterKey = 'semua' | RenewalRequestStatus;
@@ -27,6 +27,9 @@ export default function MonitoringPerpanjanganPage() {
   const [items, setItems] = useState<RenewalRequestItem[]>([]);
 
   useEffect(() => {
+    // Tandai notifikasi perpanjangan sebagai sudah dibaca saat halaman ini dibuka
+    markNotificationsByHrefAsRead('/admin/monitoring/perpanjangan');
+
     const syncItems = async () => {
       try {
         const data = await getRenewalRequests();
@@ -93,7 +96,7 @@ export default function MonitoringPerpanjanganPage() {
     }
   };
 
-
+//FORM PERMINTAAN PERPANJANGAN ACC/TIDAK
   return (
     <div className="space-y-5">
       <div>

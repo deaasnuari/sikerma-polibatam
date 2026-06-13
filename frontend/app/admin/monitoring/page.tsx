@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { AlertCircle, Archive, CalendarClock, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Archive, Bell, CalendarClock, CheckCircle2, ChevronLeft, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
 // import RenewalHistoryModal from './RenewalHistoryModal';
 import RenewalFullForm from './RenewalFullForm';
@@ -56,6 +56,16 @@ export default function MonitoringdanstatusPage() {
     kerjasamaId: null,
   });
 
+  // Toast hint setelah perpanjangan berhasil diajukan
+  const [perpanjanganHint, setPerpanjanganHint] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPerpanjanganHint = () => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    setPerpanjanganHint(true);
+    hintTimerRef.current = setTimeout(() => setPerpanjanganHint(false), 7000);
+  };
+
 
   const resolveRenewalNotificationTarget = (item: Kerjasama) => {
     const sourceItem = item.sourcePengajuanId
@@ -82,12 +92,25 @@ export default function MonitoringdanstatusPage() {
     };
   };
 
+  // Auto-buka form perpanjangan jika diarahkan dari halaman Arsip Dokumen
+  useEffect(() => {
+    if (monitoringData.length === 0) return;
+    const pendingId = sessionStorage.getItem('open-perpanjang-id');
+    if (!pendingId) return;
+    sessionStorage.removeItem('open-perpanjang-id');
+    const targetId = parseInt(pendingId, 10);
+    const found = monitoringData.find((k) => k.id === targetId);
+    if (found) {
+      setRenewalChoiceModal({ open: true, kerjasamaId: targetId });
+    }
+  }, [monitoringData]);
+
   useEffect(() => {
     let mounted = true;
     const syncMonitoringData = async () => {
       // First, immediately show cached/default data so UI doesn't blink empty
       setMonitoringData(getMonitoringData());
-      
+
       // Then fetch real data from API and update
       const { fetchMonitoringDataFromApi } = await import('@/services/adminMonitoringService');
       const realData = await fetchMonitoringDataFromApi();
@@ -593,7 +616,7 @@ export default function MonitoringdanstatusPage() {
                     data.catatanPerpanjangan
                   );
 
-                  // Tambah notifikasi admin
+                  // Notifikasi untuk pihak pengusul
                   addAdminNotification({
                     title: 'Permintaan Perpanjangan Kerjasama',
                     message: `Perpanjangan kerjasama dengan ${selectedRenewalItem.namaMitra} (${selectedRenewalItem.noDokumen}) telah diajukan. Periode baru: ${data.tanggalMulaiBaru} s/d ${data.tanggalBerakhirBaru}`,
@@ -603,8 +626,18 @@ export default function MonitoringdanstatusPage() {
                     targetRole: renewalNotificationTarget.targetRole,
                   });
 
+                  // Notifikasi untuk admin agar muncul di sidebar "Permintaan Perpanjangan"
+                  addAdminNotification({
+                    title: 'Permintaan Perpanjangan Baru',
+                    message: `Perpanjangan ${selectedRenewalItem.noDokumen} (${selectedRenewalItem.namaMitra}) menunggu review. Periode: ${data.tanggalMulaiBaru} s/d ${data.tanggalBerakhirBaru}`,
+                    from: 'Sistem Monitoring',
+                    href: '/admin/monitoring/perpanjangan',
+                    category: 'approval',
+                    targetRole: 'admin',
+                  });
+
                   setRenewalModal({ open: false, kerjasamaId: null });
-                  alert('✓ Perpanjangan kerjasama berhasil diajukan!\n\nData telah dikirim ke database dokumen log.');
+                  showPerpanjanganHint();
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Gagal mengajukan perpanjangan.';
                   alert(`✗ ${message}`);
@@ -665,6 +698,56 @@ export default function MonitoringdanstatusPage() {
           setNonactiveModal({ open: false, kerjasamaId: null });
         }}
       />
+
+      {/* Toast hint setelah perpanjangan berhasil diajukan */}
+      {perpanjanganHint && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4">
+          <div className="relative flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-2xl max-w-sm">
+            {/* Bouncing left arrows pointing toward sidebar */}
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex gap-0.5 text-amber-500">
+              <ChevronLeft size={14} className="animate-bounce" />
+              <ChevronLeft size={14} className="animate-bounce opacity-60" style={{ animationDelay: '120ms' }} />
+            </div>
+
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle2 size={18} className="text-green-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-gray-900">Perpanjangan Berhasil Diajukan!</p>
+              <p className="mt-0.5 text-xs text-gray-600 leading-snug">
+                Jangan lupa cek{' '}
+                <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700">
+                  <Bell size={11} />
+                  Permintaan Perpanjangan
+                </span>{' '}
+                di sidebar untuk menyetujui atau menolak.
+              </p>
+              <div className="mt-2.5 flex items-center gap-2">
+                <a
+                  href="/admin/monitoring/perpanjangan"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#1E376C] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                >
+                  Lihat Sekarang
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPerpanjanganHint(false)}
+                  className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPerpanjanganHint(false)}
+              className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

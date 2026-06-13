@@ -194,6 +194,18 @@ export function markAllNotificationsAsRead(): AdminNotification[] {
   return updatedNotifications;
 }
 
+export function markNotificationsByHrefAsRead(href: string): AdminNotification[] {
+  const updatedNotifications = readNotifications().map((notification) =>
+    notification.href === href ? { ...notification, read: true } : notification
+  );
+  saveNotifications(updatedNotifications);
+  return updatedNotifications;
+}
+
+export function getUnreadCountByHref(href: string): number {
+  return readNotifications().filter((n) => !n.read && n.href === href).length;
+}
+
 export function addAdminNotification(
   notification: Omit<AdminNotification, 'id' | 'createdAt' | 'read'> &
     Partial<Pick<AdminNotification, 'createdAt' | 'read'>>
