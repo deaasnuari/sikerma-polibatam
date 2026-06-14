@@ -24,6 +24,30 @@ class PengajuanController extends Controller
     private static ?bool $dokumenFileTableExists = null;
     private static ?bool $dokumenLogTableExists = null;
 
+    private function generateNomorPMH(): string
+    {
+        // Cari nomor PMH tertinggi yang sudah ada di database
+        $lastNomor = DB::table('pengajuan_v2')
+            ->where('nomor_pengajuan', 'LIKE', 'PMH-%')
+            ->orderByRaw("LENGTH(nomor_pengajuan) DESC, nomor_pengajuan DESC")
+            ->value('nomor_pengajuan');
+
+        $nextNum = 1;
+        if ($lastNomor) {
+            $numPart = (int) substr($lastNomor, 4); // strip "PMH-"
+            $nextNum = $numPart + 1;
+        }
+
+        // Pastikan unik 
+        do {
+            $nomor = 'PMH-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+            $exists = DB::table('pengajuan_v2')->where('nomor_pengajuan', $nomor)->exists();
+            if ($exists) $nextNum++;
+        } while ($exists);
+
+        return $nomor;
+    }
+
     private function hasPengajuanColumn(string $column): bool
     {
         if (array_key_exists($column, self::$pengajuanColumnCache)) {
@@ -931,7 +955,7 @@ class PengajuanController extends Controller
         $ruangLingkupIds = $this->normalizeRuangLingkupIds($request);
 
         $validated = $request->validate([
-            'nomor_pengajuan' => ['required', 'string', 'max:50', 'unique:pengajuan_v2,nomor_pengajuan'],
+            'nomor_pengajuan' => ['nullable', 'string', 'max:50', 'unique:pengajuan_v2,nomor_pengajuan'],
             'user_pengusul_id' => ['nullable', 'integer', 'exists:users,id'],
             'nama_pengusul' => ['required', 'string', 'max:200'],
             'jabatan_pengusul' => ['nullable', 'string', 'max:150'],
@@ -955,6 +979,11 @@ class PengajuanController extends Controller
         $validated['jenis_dokumen'] = strtoupper((string) $validated['jenis_dokumen']);
         $validated['ruang_lingkup_ids'] = $ruangLingkupIds;
 
+        // Auto-generate nomor PMH jika tidak dikirim dari frontend
+        if (empty($validated['nomor_pengajuan'])) {
+            $validated['nomor_pengajuan'] = $this->generateNomorPMH();
+        }
+
         if ($this->hasPengajuanColumn('file_name') && $request->has('file_name')) {
             $validated['file_name'] = (string) $request->input('file_name', '');
         }
@@ -965,6 +994,20 @@ class PengajuanController extends Controller
 
         try {
             $pengajuan = Pengajuan::create($validated);
+
+            // Set tahapan awal "Pengajuan Awal" secara otomatis
+            if ($this->hasPengajuanColumn('tahapan_stage')) {
+                $pengajuan->update([
+                    'tahapan_stage'   => 'Pengajuan Awal',
+                    'tahapan_group'   => 'todo',
+                    'tahapan_riwayat' => [[
+                        'stage'      => 'Pengajuan Awal',
+                        'group'      => 'todo',
+                        'changed_at' => now()->toISOString(),
+                        'changed_by' => 'Sistem (pengajuan baru)',
+                    ]],
+                ]);
+            }
 
             try {
                 $this->syncPengajuanFiles($pengajuan, $request);
@@ -984,6 +1027,46 @@ class PengajuanController extends Controller
             'data' => $pengajuan,
             'message' => 'Pengajuan created successfully',
         ], 201);
+    }
+
+    public function updateTahapan(Request $request, Pengajuan $pengajuan): Response
+    {
+        if (! $this->hasPengajuanColumn('tahapan_stage')) {
+            return response([
+                'success' => false,
+                'message' => 'Fitur tahapan belum tersedia di server ini.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'stage' => ['required', 'string', 'max:100'],
+            'group' => ['required', 'string', 'in:todo,in_progress,complete'],
+        ]);
+
+        $currentRiwayat = is_array($pengajuan->tahapan_riwayat) ? $pengajuan->tahapan_riwayat : [];
+        $currentRiwayat[] = [
+            'stage'      => $validated['stage'],
+            'group'      => $validated['group'],
+            'changed_at' => now()->toISOString(),
+            'changed_by' => $request->user()?->name ?? 'Admin',
+        ];
+
+        $pengajuan->update([
+            'tahapan_stage'   => $validated['stage'],
+            'tahapan_group'   => $validated['group'],
+            'tahapan_riwayat' => $currentRiwayat,
+        ]);
+
+        return response([
+            'success' => true,
+            'data'    => [
+                'id'               => $pengajuan->id,
+                'tahapan_stage'    => $pengajuan->tahapan_stage,
+                'tahapan_group'    => $pengajuan->tahapan_group,
+                'tahapan_riwayat'  => $pengajuan->tahapan_riwayat,
+            ],
+            'message' => 'Tahapan berhasil diperbarui',
+        ]);
     }
 
     public function update(Request $request, Pengajuan $pengajuan): Response

@@ -2,6 +2,7 @@
 
 import { X, FileText, CheckCircle2, Clock3, XCircle, ExternalLink, Paperclip, Download, ShieldCheck } from 'lucide-react';
 import type { PengajuanItem, PengajuanStatus } from '@/services/adminPengajuanService';
+import CatatanAdminPanel from '@/components/CatatanAdminPanel';
 
 interface Props {
   item: PengajuanItem;
@@ -216,6 +217,9 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
               <p className="text-xs text-slate-500">Belum ada dokumen final yang diupload.</p>
             )}
           </div>
+
+          {/* Catatan Admin — hanya terlihat oleh Admin */}
+          <CatatanAdminPanel pengajuanId={item.id} />
         </div>
       </div>
     </div>

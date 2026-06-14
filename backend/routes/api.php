@@ -10,6 +10,7 @@ use App\Http\Controllers\MasterRuangLingkupController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MasterUnitProdiController;
+use App\Http\Controllers\CatatanAdminController;
 use App\Http\Controllers\PengajuanController;
 use App\Http\Controllers\PengajuanAktivitasController;
 use Illuminate\Support\Facades\Route;
@@ -34,10 +35,17 @@ Route::middleware('auth:sanctum')->group(function () {
 		->parameters(['ruang-lingkup' => 'ruang_lingkup']);
 
 	Route::apiResource('/pengajuan', PengajuanController::class);
+	Route::patch('/pengajuan/{pengajuan}/tahapan', [PengajuanController::class, 'updateTahapan']);
 	Route::get('/pengajuan-aktivitas', [PengajuanAktivitasController::class, 'index']);
 	Route::post('/pengajuan-aktivitas', [PengajuanAktivitasController::class, 'store']);
 	Route::put('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'update']);
 	Route::delete('/pengajuan-aktivitas/{pengajuan_aktivitas}', [PengajuanAktivitasController::class, 'destroy']);
+
+	// Catatan Admin (hanya dapat diakses oleh Admin, tidak ditampilkan ke Internal/Mitra)
+	Route::get('/catatan-admin', [CatatanAdminController::class, 'index']);
+	Route::post('/catatan-admin', [CatatanAdminController::class, 'store']);
+	Route::put('/catatan-admin/{catatan_admin}', [CatatanAdminController::class, 'update']);
+	Route::delete('/catatan-admin/{catatan_admin}', [CatatanAdminController::class, 'destroy']);
 	Route::post('/dokumen-kerjasama/{dokumen_kerjasama}/upload-file', [DokumenKerjasamaController::class, 'uploadFile'])
 		->whereNumber('dokumen_kerjasama');
 	Route::get('/dokumen-kerjasama/perpanjangan/requests', [DokumenKerjasamaController::class, 'renewalRequests']);

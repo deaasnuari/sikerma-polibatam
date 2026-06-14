@@ -224,7 +224,8 @@ async function buildPersistentFileAttachments(files: File[]) {
 
 export default function PengajuanKerjasama() {
   const searchParams = useSearchParams();
-  const isAjukanView = searchParams.get('view') === 'ajukan';
+  const isAjukanView  = searchParams.get('view') === 'ajukan';
+  const reviewTargetId = searchParams.get('review') ? Number(searchParams.get('review')) : null;
 
   // Keep hook order stable on every render to avoid runtime hook mismatch.
   const [filterJurusan, setFilterJurusan] = useState('Semua Kategori Kerjasama');
@@ -351,6 +352,16 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
       setAjukanModalOpen(true);
     }
   }, [isAjukanView]);
+
+  // Auto-buka review modal saat diarahkan dari halaman Tahapan (?review=ID)
+  useEffect(() => {
+    if (!reviewTargetId || pengajuanLoading || pengajuanData.length === 0) return;
+    const target = pengajuanData.find((p) => p.id === reviewTargetId);
+    if (target) {
+      openReview(target);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewTargetId, pengajuanLoading, pengajuanData]);
 
   const handleAddNegaraOption = async () => {
     const trimmed = negaraInput.trim();

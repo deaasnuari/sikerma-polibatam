@@ -64,6 +64,9 @@ export interface PengajuanItem {
   finalApprovedAt?: string | null;
   finalFileName?: string | null;
   finalFilePath?: string | null;
+  tahapanStage?: string | null;
+  tahapanGroup?: string | null;
+  tahapanRiwayat?: { stage: string; group: string; changedAt: string; changedBy?: string }[];
   isFromAdmin?: boolean;
 }
 
@@ -235,6 +238,9 @@ type ApiPengajuanRow = {
   final_approved_at?: string | null;
   final_file_name?: string | null;
   final_file_path?: string | null;
+  tahapan_stage?: string | null;
+  tahapan_group?: string | null;
+  tahapan_riwayat?: { stage: string; group: string; changed_at: string; changed_by?: string }[] | null;
   file_name?: string | null;
   file_attachments?: {
     name?: string;
@@ -442,6 +448,16 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     finalApprovedAt: row.final_approved_at || undefined,
     finalFileName: row.final_file_name || undefined,
     finalFilePath: row.final_file_path || undefined,
+    tahapanStage: row.tahapan_stage ?? null,
+    tahapanGroup: row.tahapan_group ?? null,
+    tahapanRiwayat: Array.isArray(row.tahapan_riwayat)
+      ? row.tahapan_riwayat.map((r) => ({
+          stage:     r.stage,
+          group:     r.group,
+          changedAt: r.changed_at,
+          changedBy: r.changed_by,
+        }))
+      : [],
   };
 }
 
@@ -605,12 +621,6 @@ export async function deletePengajuanItemApi(id: number): Promise<void> {
   });
 }
 
-function buildNomorPengajuan(prefix: 'ADM' | 'INT' | 'EXT'): string {
-  const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `PGJ-${prefix}-${stamp}-${random}`;
-}
 export function buildNomorPengajuanPreview(
   source: 'admin' | 'internal' | 'eksternal',
   unitName?: string,
@@ -636,7 +646,6 @@ export async function submitPengajuanApi(
   const prefix: 'ADM' | 'INT' | 'EXT' = source === 'admin' ? 'ADM' : source === 'eksternal' ? 'EXT' : 'INT';
 
   const payload = {
-    nomor_pengajuan: buildNomorPengajuan(prefix),
     nama_pengusul: data.namaPengusul || (source === 'eksternal' ? 'Mitra Eksternal' : 'Internal Polibatam'),
     email_pengusul: data.emailPengusul || null,
     whatsapp_pengusul: data.whatsappPengusul || null,

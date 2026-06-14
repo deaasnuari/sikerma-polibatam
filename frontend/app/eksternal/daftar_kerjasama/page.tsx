@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import type { PengajuanItem } from '../../../services/adminPengajuanService';
 import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
+import TahapanStepper from '@/components/TahapanStepper';
+import type { StageGroup } from '@/services/tahapanPengajuanService';
 import {
   getExternalPengajuanData,
   getExternalPengajuanUpdateEventName,
@@ -49,6 +51,8 @@ interface KerjasamaItem {
   reviewComment?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  tahapanStage?: string | null;
+  tahapanGroup?: string | null;
 }
 
 function toDisplayDate(value?: string): string {
@@ -95,6 +99,8 @@ function mapPengajuanToItem(item: PengajuanItem): KerjasamaItem {
     reviewComment: item.reviewComment,
     reviewedAt: item.reviewedAt,
     reviewedBy: item.reviewedBy,
+    tahapanStage: item.tahapanStage ?? null,
+    tahapanGroup: item.tahapanGroup ?? null,
   };
 }
 
@@ -618,6 +624,23 @@ export default function DaftarKerjasamaEksternalPage() {
                   </p>
                 )}
               </section>
+
+              {/* Progres Tahapan — dibaca dari data API */}
+              {detailItem.tahapanStage && (
+                <section>
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+                    Progres Tahapan
+                  </h3>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <TahapanStepper
+                      tahapan={{
+                        stage: detailItem.tahapanStage,
+                        group: (detailItem.tahapanGroup as StageGroup | null) ?? null,
+                      }}
+                    />
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         </div>

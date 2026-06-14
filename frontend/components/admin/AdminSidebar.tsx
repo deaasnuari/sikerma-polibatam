@@ -32,7 +32,12 @@ const PERPANJANGAN_HREF = '/admin/monitoring/perpanjangan';
 
 const defaultMenuItems: SidebarMenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
-  { icon: FileText, label: 'Data Pengajuan', href: '/admin/data_pengajuan' },
+  {
+    icon: FileText,
+    label: 'Data Pengajuan',
+    href: '/admin/data_pengajuan',
+    children: [{ label: 'Tahapan Pengajuan', href: '/admin/data_pengajuan/tahapan_pengajuan' }],
+  },
   { icon: RefreshCw, label: 'Rekap Data', href: '/admin/rekap_data' },
   {
     icon: BarChart3,

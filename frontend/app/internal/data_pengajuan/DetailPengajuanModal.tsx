@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip } from 'lucide-react';
+import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip, GitBranch } from 'lucide-react';
 import type { PengajuanItem, PengajuanStatus } from '@/services/adminPengajuanService';
 import { pengajuanDokumenBadge } from '@/services/adminPengajuanService';
+import TahapanStepper from '@/components/TahapanStepper';
+import type { StageGroup } from '@/services/tahapanPengajuanService';
 
 interface Props {
   item: PengajuanItem;
@@ -12,32 +13,26 @@ interface Props {
 }
 
 const statusConfig: Record<PengajuanStatus, { className: string; icon: React.ReactNode; label: string }> = {
-  Menunggu: {
-    className: 'bg-amber-100 text-amber-700',
-    icon: <Clock3 size={14} />,
-    label: 'Menunggu',
-  },
-  Diproses: {
-    className: 'bg-sky-100 text-sky-700',
-    icon: <Clock3 size={14} />,
-    label: 'Diproses',
-  },
-  Disetujui: {
-    className: 'bg-emerald-100 text-emerald-700',
-    icon: <CheckCircle2 size={14} />,
-    label: 'Disetujui',
-  },
-  Ditolak: {
-    className: 'bg-rose-100 text-rose-700',
-    icon: <XCircle size={14} />,
-    label: 'Ditolak',
-  },
+  Menunggu: { className: 'bg-amber-100 text-amber-700', icon: <Clock3 size={14} />, label: 'Menunggu' },
+  'Menunggu Review': { className: 'bg-amber-100 text-amber-700', icon: <Clock3 size={14} />, label: 'Menunggu Review' },
+  Diproses: { className: 'bg-sky-100 text-sky-700', icon: <Clock3 size={14} />, label: 'Diproses' },
+  Revisi: { className: 'bg-orange-100 text-orange-700', icon: <Clock3 size={14} />, label: 'Revisi' },
+  Disetujui: { className: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle2 size={14} />, label: 'Disetujui' },
+  'Disetujui Internal': { className: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle2 size={14} />, label: 'Disetujui Internal' },
+  'Disetujui Mitra': { className: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle2 size={14} />, label: 'Disetujui Mitra' },
+  'Final Approved': { className: 'bg-green-100 text-green-700', icon: <CheckCircle2 size={14} />, label: 'Final Approved' },
+  Ditolak: { className: 'bg-rose-100 text-rose-700', icon: <XCircle size={14} />, label: 'Ditolak' },
 };
 
 const reviewCopy: Record<PengajuanStatus, string> = {
   Menunggu: 'Pengajuan sudah masuk dan sedang menunggu review dari admin.',
+  'Menunggu Review': 'Pengajuan sedang menunggu review dari admin.',
   Diproses: 'Admin sedang memeriksa detail pengajuan kerja sama ini.',
+  Revisi: 'Pengajuan perlu direvisi sesuai catatan admin.',
   Disetujui: 'Pengajuan sudah disetujui admin dan siap ditindaklanjuti.',
+  'Disetujui Internal': 'Pengajuan telah disetujui oleh pihak internal.',
+  'Disetujui Mitra': 'Pengajuan telah disetujui oleh mitra.',
+  'Final Approved': 'Pengajuan telah mendapat persetujuan final.',
   Ditolak: 'Pengajuan belum disetujui admin. Silakan cek catatan review.',
 };
 
@@ -58,7 +53,6 @@ function buildWhatsAppUrl(value?: string | null): string | null {
 
 export default function DetailPengajuanModal({ item, onClose, scrollToReview }: Props) {
   const sc = statusConfig[item.statusPengajuan];
-  const fallbackTemplateUrl = templatePreviewUrlByJenis[item.jenisDokumen] || '';
   const fileEntries = item.fileAttachments?.length
     ? item.fileAttachments
     : (item.fileName || '')
@@ -223,6 +217,24 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
               </p>
             )}
           </section>
+
+          {/* Progres Tahapan — dibaca dari data API (item.tahapanStage) */}
+          {item.tahapanStage && (
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <GitBranch size={15} className="text-[#173B82]" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Progres Tahapan</h3>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <TahapanStepper
+                  tahapan={{
+                    stage: item.tahapanStage ?? null,
+                    group: (item.tahapanGroup as StageGroup | null) ?? null,
+                  }}
+                />
+              </div>
+            </section>
+          )}
         </div>
       </div>
 

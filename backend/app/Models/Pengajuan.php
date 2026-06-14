@@ -63,6 +63,9 @@ class Pengajuan extends Model
         'final_approved_at',
         'final_file_name',
         'final_file_path',
+        'tahapan_stage',
+        'tahapan_group',
+        'tahapan_riwayat',
     ];
 
     protected $casts = [
@@ -83,6 +86,7 @@ class Pengajuan extends Model
         'acc_internal_at' => 'datetime',
         'acc_mitra_at' => 'datetime',
         'final_approved_at' => 'datetime',
+        'tahapan_riwayat' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
