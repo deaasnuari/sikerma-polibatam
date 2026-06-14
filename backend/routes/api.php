@@ -58,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/carousel-images', [CarouselImageController::class, 'index']);
+Route::get('/public/unit-prodi', [MasterUnitProdiController::class, 'publicUnits']);
+Route::get('/public/kerjasama', [DokumenKerjasamaController::class, 'publicIndex']);
+Route::get('/public/stats', [DokumenKerjasamaController::class, 'publicStats']);
 Route::post('/admin/carousel-images', [CarouselImageController::class, 'store']);
 Route::patch('/admin/carousel-images/{carouselImage}', [CarouselImageController::class, 'update']);
 Route::delete('/admin/carousel-images/{carouselImage}', [CarouselImageController::class, 'destroy']);

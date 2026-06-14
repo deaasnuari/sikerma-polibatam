@@ -37,6 +37,25 @@ class MasterUnitProdiController extends Controller
     }
 
     /**
+     * Lightweight unit name list for the public landing page dropdown.
+     * Returns only active unit/prodi names — no auth, no heavy relationships.
+     */
+    public function publicUnits(): Response
+    {
+        $names = MasterUnitProdi::where('aktif', true)
+            ->orderBy('nama')
+            ->pluck('nama')
+            ->unique()
+            ->values();
+
+        return response([
+            'success' => true,
+            'data'    => $names,
+            'message' => 'Unit list retrieved successfully',
+        ]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response
