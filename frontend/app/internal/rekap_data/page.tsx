@@ -1,21 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, FileText, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import DetailKerjasamaModal from './DetailKerjasamaModal';
 import EditDokumenModal from './EditDokumenModal';
+import LaporanPelaksanaanModal, { type LaporanPelaksanaanData } from '@/components/LaporanPelaksanaanModal';
 
 import {
   deleteRekapDokumen,
   rekapJurusanOptions,
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
-import { getInternalRekapData } from '@/services/internalRekapDataService';
+import { fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
 
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
-import { generateNoDokumen } from '@/services/adminMonitoringService';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -28,6 +28,7 @@ interface KerjasamaItem {
   tanggalMulai: string;
   berlakuHingga: string;
   status: ApprovalStatus;
+  ruangLingkup: string[];
 }
 
 function mapRekapToItem(d: RekapDokumen): KerjasamaItem {
@@ -45,6 +46,7 @@ function mapRekapToItem(d: RekapDokumen): KerjasamaItem {
     tanggalMulai: d.tanggalMulai,
     berlakuHingga: d.berlakuHingga,
     status: statusMap[d.status] ?? 'Menunggu',
+    ruangLingkup: d.ruangLingkup ?? [],
   };
 }
 
@@ -82,6 +84,7 @@ export default function InternalRekapDataPage() {
 
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
   const [editItem, setEditItem] = useState<KerjasamaItem | null>(null);
+  const [laporanItem, setLaporanItem] = useState<LaporanPelaksanaanData | null>(null);
 
   const [masterJurusanOptions, setMasterJurusanOptions] = useState<string[]>([]);
 
@@ -118,53 +121,27 @@ export default function InternalRekapDataPage() {
   }, []);
 
   useEffect(() => {
-    const sync = () => {
-      const jurusanMaster = new Set(masterJurusanOptions);
-      const role = user?.role;
+    let mounted = true;
 
-      let filteredData = getInternalRekapData();
-
-      if (role === 'internal' || role === 'external' || role === 'pimpinan') {
-        filteredData = filteredData.filter((item: any) => {
-          if ('rolePengaju' in item) {
-            return item.rolePengaju === role;
-          }
-
-          // Fallback lama: internal = jurusan, external = tidak termasuk jurusan/unit
-          if (role === 'internal') {
-            return (
-              item.kategoriUnit === 'Jurusan' ||
-              jurusanMaster.has(item.unit) ||
-              rekapJurusanOptions.includes(item.unit)
-            );
-          }
-
-          if (role === 'external') {
-            return (
-              item.kategoriUnit !== 'Jurusan' &&
-              !jurusanMaster.has(item.unit) &&
-              !rekapJurusanOptions.includes(item.unit)
-            );
-          }
-
-          return true;
-        });
+    const sync = async () => {
+      try {
+        const apiData = await fetchRekapDokumenFromApi();
+        if (!mounted) return;
+        setData(apiData.map(mapRekapToItem));
+      } catch {
+        if (mounted) setData([]);
       }
-
-      setData((filteredData as any[]).map((it) => {
-        // filteredData dari rekap internal biasanya bertipe PengajuanItem/rekap model,
-        // bukan RekapDokumen persis. Jadi mapping pakai shape yang sudah ada.
-        const d = it as any;
-        return mapRekapToItem(d as RekapDokumen);
-      }));
-
     };
 
-    sync();
-    window.addEventListener('internal-rekap-data-updated', sync);
+    void sync();
+    const handleUpdate = () => { void sync(); };
+    window.addEventListener('rekap-data-updated', handleUpdate);
 
-    return () => window.removeEventListener('internal-rekap-data-updated', sync);
-  }, [user, masterJurusanOptions]);
+    return () => {
+      mounted = false;
+      window.removeEventListener('rekap-data-updated', handleUpdate);
+    };
+  }, []);
 
   function handleDelete(item: KerjasamaItem) {
     if (!window.confirm(`Yakin ingin menghapus dokumen ${item.noDokumen}?`)) return;
@@ -339,12 +316,7 @@ export default function InternalRekapDataPage() {
                     className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60"
                   >
                     <td className="px-4 py-3 text-xs text-gray-600">
-                      {generateNoDokumen({
-                        urutan:
-                          (currentPage - 1) * ITEMS_PER_PAGE + index + 1,
-                        jenis: row.jenis,
-                        tanggal: row.tanggalMulai,
-                      })}
+                      {row.noDokumen}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
@@ -373,6 +345,20 @@ export default function InternalRekapDataPage() {
                           title="Lihat detail"
                         >
                           <Eye size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Laporan Pelaksanaan"
+                          onClick={() => setLaporanItem({
+                            namaMitra:   row.namaMitra,
+                            noDokumen:   row.noDokumen,
+                            jenis:       row.jenis,
+                            ruangLingkup: row.ruangLingkup,
+                            unit:        row.unit,
+                          })}
+                          className="text-emerald-600 transition-colors hover:text-emerald-800"
+                        >
+                          <FileText size={16} />
                         </button>
                       </div>
                     </td>
@@ -430,6 +416,12 @@ export default function InternalRekapDataPage() {
           }}
         />
       )}
+
+      <LaporanPelaksanaanModal
+        isOpen={laporanItem !== null}
+        onClose={() => setLaporanItem(null)}
+        data={laporanItem}
+      />
     </div>
   );
 }
