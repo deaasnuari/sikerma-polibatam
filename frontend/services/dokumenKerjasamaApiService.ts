@@ -28,7 +28,7 @@ type ApiDokumenRow = {
   status_siklus?: 'active' | 'expiring' | 'archived' | null;
   ruang_lingkup_ids?: any[] | null;
   mitra?: { id: number; nama_mitra: string } | null;
-  unit_prodi?: { id: number; nama: string } | null;
+  unit_prodi?: { id: number; nama: string; kategori_unit?: string | null; jenis_node?: string | null } | null;
   file?: string | null;
   alasan_arsip?: string | null;
   // Snapshot data pengajuan (tersimpan saat disetujui, aman dari penghapusan pengajuan)
@@ -162,6 +162,11 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
         ? (row.ruang_lingkup_ids as any[]).map(String).filter(Boolean)
         : [];
 
+      const kategoriUnitRaw = row.unit_prodi?.kategori_unit?.toLowerCase() ?? '';
+      const kategoriUnit: 'Jurusan' | 'Unit' | undefined =
+        kategoriUnitRaw === 'jurusan' ? 'Jurusan' :
+        kategoriUnitRaw ? 'Unit' : undefined;
+
       return {
       id: row.id,
       sourcePengajuanId: row.sumber_pengajuan_id || undefined,
@@ -169,6 +174,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       namaMitra: namaMitra || '-',
       jenis: mapJenis(row.jenis_dokumen),
       unit: row.unit_prodi?.nama || '-',
+      kategoriUnit,
       tanggalMulai: toDisplayDate(tanggalMulaiRaw),
       berlakuHingga: toDisplayDate(row.tanggal_berakhir),
       tahun: (tanggalMulaiRaw || new Date().toISOString()).slice(0, 4),
