@@ -357,7 +357,7 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
   useEffect(() => {
     if (!reviewTargetId || pengajuanLoading || pengajuanData.length === 0) return;
     const target = pengajuanData.find((p) => p.id === reviewTargetId);
-    if (target) {
+    if (target && target.statusPengajuan === 'Menunggu Review') {
       openReview(target);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1664,6 +1664,7 @@ function addEditJurusanUnitOption() {
                     <Eye size={14} />
                     <span className="hidden xs:inline sm:inline">Detail</span>
                   </button>
+                  {item.statusPengajuan === 'Menunggu Review' && (
                   <button
                     type="button"
                     onClick={() => openReview(item)}
@@ -1672,6 +1673,7 @@ function addEditJurusanUnitOption() {
                     <MessageSquare size={14} />
                     <span className="hidden xs:inline sm:inline">Review</span>
                   </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => openEdit(item)}
