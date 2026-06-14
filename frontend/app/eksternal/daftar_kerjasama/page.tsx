@@ -20,6 +20,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import LaporanPelaksanaanModal, { type LaporanPelaksanaanData } from '@/components/LaporanPelaksanaanModal';
 import type { PengajuanItem } from '../../../services/adminPengajuanService';
 import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import TahapanStepper from '@/components/TahapanStepper';
@@ -155,6 +156,7 @@ const reviewCopy: Record<KerjasamaItem['status'], string> = {
 export default function DaftarKerjasamaEksternalPage() {
   const [data, setData] = useState<KerjasamaItem[]>([]);
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
+  const [laporanItem, setLaporanItem] = useState<LaporanPelaksanaanData | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterReview, setFilterReview] = useState<'Semua Review' | 'Belum Direview' | 'Sudah Direview'>('Semua Review');
@@ -462,14 +464,31 @@ export default function DaftarKerjasamaEksternalPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => setDetailItem(item)}
-                        className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900"
-                      >
-                        <Eye size={16} />
-                        <span className="underline underline-offset-2">Lihat Detail</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setDetailItem(item)}
+                          className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900"
+                        >
+                          <Eye size={16} />
+                          <span className="underline underline-offset-2">Lihat Detail</span>
+                        </button>
+                        <button
+                          type="button"
+                          title="Laporan Pelaksanaan"
+                          onClick={() => setLaporanItem({
+                            namaMitra:    item.namaMitra,
+                            noDokumen:    item.noDokumen,
+                            jenis:        item.jenis,
+                            ruangLingkup: item.ruangLingkup,
+                            unit:         item.unit,
+                          })}
+                          className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800"
+                        >
+                          <FileText size={16} />
+                          <span className="underline underline-offset-2 text-sm">Laporan</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -645,6 +664,12 @@ export default function DaftarKerjasamaEksternalPage() {
           </div>
         </div>
       )}
+
+      <LaporanPelaksanaanModal
+        isOpen={laporanItem !== null}
+        onClose={() => setLaporanItem(null)}
+        data={laporanItem}
+      />
     </div>
   );
 }
