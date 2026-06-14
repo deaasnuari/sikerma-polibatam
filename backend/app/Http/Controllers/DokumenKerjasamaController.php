@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class DokumenKerjasamaController extends Controller
 {
@@ -111,6 +112,154 @@ class DokumenKerjasamaController extends Controller
             'success' => true,
             'data' => $dokumen_kerjasama,
             'message' => 'Dokumen kerjasama retrieved successfully',
+        ]);
+    }
+
+    /**
+     * Public landing page stats — no auth.
+     * Returns total/wilayah counts + hero breakdown by mitra category.
+     */
+    public function publicStats(): Response
+    {
+        $total = DB::table('dokumen_kerjasama')->count();
+
+        $luarNegeri = DB::table('dokumen_kerjasama')
+            ->join('master_mitra', 'dokumen_kerjasama.mitra_id', '=', 'master_mitra.id')
+            ->where('master_mitra.negara', '!=', 'Indonesia')
+            ->whereNotNull('master_mitra.negara')
+            ->where('master_mitra.negara', '!=', '')
+            ->count();
+
+        // DUDI = Industri / Perusahaan category
+        $dudiNasional = DB::table('dokumen_kerjasama')
+            ->join('master_mitra', 'dokumen_kerjasama.mitra_id', '=', 'master_mitra.id')
+            ->where(function ($q) {
+                $q->where('master_mitra.kategori_mitra', 'LIKE', '%Industri%')
+                  ->orWhere('master_mitra.kategori_mitra', 'LIKE', '%Perusahaan%');
+            })
+            ->where(function ($q) {
+                $q->where('master_mitra.negara', 'Indonesia')
+                  ->orWhereNull('master_mitra.negara')
+                  ->orWhere('master_mitra.negara', '');
+            })
+            ->count();
+
+        $dudiInternasional = DB::table('dokumen_kerjasama')
+            ->join('master_mitra', 'dokumen_kerjasama.mitra_id', '=', 'master_mitra.id')
+            ->where(function ($q) {
+                $q->where('master_mitra.kategori_mitra', 'LIKE', '%Industri%')
+                  ->orWhere('master_mitra.kategori_mitra', 'LIKE', '%Perusahaan%');
+            })
+            ->where('master_mitra.negara', '!=', 'Indonesia')
+            ->whereNotNull('master_mitra.negara')
+            ->where('master_mitra.negara', '!=', '')
+            ->count();
+
+        // Instansi = everything that is not DUDI
+        $instansiNasional = DB::table('dokumen_kerjasama')
+            ->join('master_mitra', 'dokumen_kerjasama.mitra_id', '=', 'master_mitra.id')
+            ->where('master_mitra.kategori_mitra', 'NOT LIKE', '%Industri%')
+            ->where('master_mitra.kategori_mitra', 'NOT LIKE', '%Perusahaan%')
+            ->where(function ($q) {
+                $q->where('master_mitra.negara', 'Indonesia')
+                  ->orWhereNull('master_mitra.negara')
+                  ->orWhere('master_mitra.negara', '');
+            })
+            ->count();
+
+        $instansiInternasional = DB::table('dokumen_kerjasama')
+            ->join('master_mitra', 'dokumen_kerjasama.mitra_id', '=', 'master_mitra.id')
+            ->where('master_mitra.kategori_mitra', 'NOT LIKE', '%Industri%')
+            ->where('master_mitra.kategori_mitra', 'NOT LIKE', '%Perusahaan%')
+            ->where('master_mitra.negara', '!=', 'Indonesia')
+            ->whereNotNull('master_mitra.negara')
+            ->where('master_mitra.negara', '!=', '')
+            ->count();
+
+        return response([
+            'success' => true,
+            'data'    => [
+                'total'                  => $total,
+                'dalam_negeri'           => $total - $luarNegeri,
+                'luar_negeri'            => $luarNegeri,
+                'dudi_nasional'          => $dudiNasional,
+                'dudi_internasional'     => $dudiInternasional,
+                'instansi_nasional'      => $instansiNasional,
+                'instansi_internasional' => $instansiInternasional,
+            ],
+            'message' => 'Kerjasama stats retrieved successfully',
+        ]);
+    }
+
+    /**
+     * Public landing page – returns non-sensitive kerjasama data without authentication.
+     */
+    public function publicIndex(Request $request): Response
+    {
+        $perPage = min(max((int) $request->integer('per_page', 1000), 1), 1000);
+
+        $query = DokumenKerjasama::query()
+            ->with([
+                'mitra:id,nama_mitra,negara',
+                'unitProdi:id,nama',
+            ])
+            ->select('id', 'jenis_dokumen', 'snap_nama_mitra', 'mitra_id', 'unit_prodi_id', 'ruang_lingkup_ids', 'keterangan');
+
+        $ruangLingkupMap = DB::table('master_ruang_lingkup')
+            ->pluck('nama_ruang_lingkup', 'id')
+            ->all();
+
+        $data = $query->orderByDesc('updated_at')->paginate($perPage);
+
+        $items = $data->getCollection()->map(function (DokumenKerjasama $row) use ($ruangLingkupMap) {
+            $namaMitra = $row->mitra?->nama_mitra ?? $row->snap_nama_mitra;
+
+            if (!$namaMitra && $row->keterangan && str_contains((string) $row->keterangan, 'Mitra:')) {
+                if (preg_match('/Mitra:\s*(.*?)(?:\s*\|\s*Bidang:|$)/i', (string) $row->keterangan, $m)) {
+                    $namaMitra = trim($m[1]);
+                }
+            }
+
+            $namaMitra = $namaMitra ?: '-';
+
+            $unit   = $row->unitProdi?->nama ?? '-';
+            $negara = $row->mitra?->negara ?? null;
+            $wilayah = (!$negara || strtolower(trim($negara)) === 'indonesia')
+                ? 'Dalam Negeri'
+                : 'Luar Negeri';
+
+            $jenis = match (strtoupper((string) ($row->jenis_dokumen ?? ''))) {
+                'MOA'    => 'MoA',
+                'IA'     => 'IA',
+                default  => 'MoU',
+            };
+
+            $bidangIds = is_array($row->ruang_lingkup_ids) ? $row->ruang_lingkup_ids : [];
+            $bidang = implode(', ', array_filter(
+                array_map(fn ($id) => $ruangLingkupMap[$id] ?? null, $bidangIds)
+            ));
+            $bidang = $bidang ?: '-';
+
+            return [
+                'id'      => $row->id,
+                'nama'    => $namaMitra,
+                'bidang'  => $bidang,
+                'jenis'   => $jenis,
+                'unit'    => $unit,
+                'wilayah' => $wilayah,
+            ];
+        });
+
+        return response([
+            'success' => true,
+            'data' => [
+                'data'         => $items->values(),
+                'total'        => $data->total(),
+                'per_page'     => $data->perPage(),
+                'current_page' => $data->currentPage(),
+                'last_page'    => $data->lastPage(),
+            ],
+            'message' => 'Data kerjasama public retrieved successfully',
         ]);
     }
 
