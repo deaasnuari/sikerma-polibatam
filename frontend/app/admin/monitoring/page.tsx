@@ -1,5 +1,6 @@
 'use client';
 
+import * as XLSX from 'xlsx';
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Archive, Bell, CalendarClock, CheckCircle2, ChevronLeft, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
@@ -187,45 +188,34 @@ export default function MonitoringdanstatusPage() {
       <div className="flex flex-wrap gap-2 items-center mb-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500 bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#162c56]"
           onClick={() => {
-            // Export monitoringData to CSV
-            const csvRows = [
-              [
-                'Nama Mitra',
-                'No Dokumen',
-                'Jenis',
-                'Status',
-                'Tanggal Mulai',
-                'Tanggal Berakhir',
-                'Sisa Masa Berlaku',
-                'Email Mitra',
-                'WhatsApp',
-                'Ruang Lingkup'
-              ].join(','),
-              ...monitoringData.map(item => [
-                `"${item.namaMitra}"`,
-                `"${item.noDokumen}"`,
-                `"${item.jenis}"`,
-                `"${item.status}"`,
-                `"${item.tanggalMulai}"`,
-                `"${item.tanggalBerakhir}"`,
-                `"${item.sisaMasaBerlaku || ''}"`,
-                `"${item.emailMitra}"`,
-                `"${item.whatsappNumber}"`,
-                `"${item.ruangLingkup.join('; ')}"`
-              ].join(','))
+            const tabFileNameMap: Record<string, string> = {
+              'Semua': 'semua-status',
+              'Aktif': 'kerjasama-aktif',
+              'Akan Berakhir': 'akan-berakhir',
+              'Kadaluarsa': 'kadaluarsa',
+            };
+            const rows = [
+              ['Nama Mitra', 'No Dokumen', 'Jenis', 'Status', 'Tanggal Mulai', 'Tanggal Berakhir', 'Sisa Masa Berlaku', 'Email Mitra', 'WhatsApp', 'Ruang Lingkup'],
+              ...filtered.map(item => [
+                item.namaMitra,
+                item.noDokumen,
+                item.jenis,
+                item.status,
+                item.tanggalMulai,
+                item.tanggalBerakhir,
+                item.sisaMasaBerlaku || '',
+                item.emailMitra,
+                item.whatsappNumber,
+                item.ruangLingkup.join('; '),
+              ]),
             ];
-            const csvContent = csvRows.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'monitoring-kerjasama.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
+            const fileName = `monitoring-kerjasama-${tabFileNameMap[activeTab] ?? activeTab.toLowerCase().replace(/\s+/g, '-')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
           }}
         >
           Export Data
