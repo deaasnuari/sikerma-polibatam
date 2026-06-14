@@ -301,8 +301,11 @@ class DokumenKerjasamaController extends Controller
         $dokumen_kerjasama->loadMissing(['mitra:id,nama_mitra', 'unitProdi:id,nama', 'pengajuan:id,whatsapp_pengusul']);
 
         $nomorDokumen = $dokumen_kerjasama->nomor_dokumen ?: $dokumen_kerjasama->no_dokumen;
-        $namaMitra = $dokumen_kerjasama->mitra?->nama_mitra ?: $dokumen_kerjasama->nama_dokumen;
-        $nomorTelepon = $dokumen_kerjasama->pengajuan?->whatsapp_pengusul;
+        $namaMitra = $dokumen_kerjasama->mitra?->nama_mitra
+            ?: $dokumen_kerjasama->snap_nama_mitra
+            ?: $dokumen_kerjasama->nama_dokumen;
+        $nomorTelepon = $dokumen_kerjasama->pengajuan?->whatsapp_pengusul
+            ?: $dokumen_kerjasama->snap_whatsapp_pengusul;
         $unitNama = $dokumen_kerjasama->unitProdi?->nama;
         $lingkup = is_array($dokumen_kerjasama->ruang_lingkup_ids)
             ? implode(', ', array_map(static fn ($id) => (string) $id, $dokumen_kerjasama->ruang_lingkup_ids))

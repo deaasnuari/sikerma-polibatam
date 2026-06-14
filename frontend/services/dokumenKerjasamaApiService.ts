@@ -31,6 +31,11 @@ type ApiDokumenRow = {
   unit_prodi?: { id: number; nama: string } | null;
   file?: string | null;
   alasan_arsip?: string | null;
+  // Snapshot data pengajuan (tersimpan saat disetujui, aman dari penghapusan pengajuan)
+  snap_nama_mitra?: string | null;
+  snap_whatsapp_pengusul?: string | null;
+  snap_nama_pengusul?: string | null;
+  snap_email_pengusul?: string | null;
   pengajuan?: { id: number; nomor_pengajuan: string; nama_pengusul: string; whatsapp_pengusul?: string; nama_mitra?: string | null } | null;
   dokumen_files?: Array<{
     id: number;
@@ -86,11 +91,16 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
     
-    // Priority: mitra relation → pengajuan.nama_mitra → keterangan → legacy file name
+    // Priority: mitra relation → pengajuan.nama_mitra → snap_nama_mitra → keterangan → legacy file name
     let namaMitra = row.mitra?.nama_mitra;
 
     if (!namaMitra && row.pengajuan?.nama_mitra) {
       namaMitra = row.pengajuan.nama_mitra;
+    }
+
+    // Snapshot tersimpan saat pengajuan disetujui — tetap ada meski pengajuan dihapus
+    if (!namaMitra && row.snap_nama_mitra) {
+      namaMitra = row.snap_nama_mitra;
     }
 
     if (!namaMitra && row.keterangan && row.keterangan.includes('Mitra:')) {
@@ -163,7 +173,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       berlakuHingga: toDisplayDate(row.tanggal_berakhir),
       tahun: (tanggalMulaiRaw || new Date().toISOString()).slice(0, 4),
       status: mapStatus(row.status_siklus),
-      whatsappNumber: row.pengajuan?.whatsapp_pengusul || undefined,
+      whatsappNumber: row.pengajuan?.whatsapp_pengusul || row.snap_whatsapp_pengusul || undefined,
       dokumenTerkait,
       ruangLingkup,
       alasanArsip: row.alasan_arsip || null,

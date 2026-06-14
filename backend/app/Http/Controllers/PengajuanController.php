@@ -372,6 +372,12 @@ class PengajuanController extends Controller
             $primaryPath = 'pending-file';
         }
 
+        // Resolusi nama mitra: dari field teks pengajuan, atau fallback ke master_mitra.
+        $snapNamaMitra = trim((string) ($pengajuan->nama_mitra ?? ''));
+        if ($snapNamaMitra === '' && $pengajuan->mitra_id) {
+            $snapNamaMitra = (string) (DB::table('master_mitra')->where('id', $pengajuan->mitra_id)->value('nama_mitra') ?? '');
+        }
+
         $dokumenPayload = [
             'no_permohonan' => $nomorPengajuan,
             'nomor_dokumen' => $nomorDokumen,
@@ -386,6 +392,11 @@ class PengajuanController extends Controller
             'sumber_pengajuan_id' => $pengajuan->id,
             'unit_prodi_id' => $pengajuan->unit_prodi_id,
             'mitra_id' => $pengajuan->mitra_id,
+            // Snapshot data pengajuan — tetap tersimpan meski record pengajuan dihapus.
+            'snap_nama_mitra' => $snapNamaMitra !== '' ? $snapNamaMitra : null,
+            'snap_whatsapp_pengusul' => trim((string) ($pengajuan->whatsapp_pengusul ?? '')) ?: null,
+            'snap_nama_pengusul' => trim((string) ($pengajuan->nama_pengusul ?? '')) ?: null,
+            'snap_email_pengusul' => trim((string) ($pengajuan->email_pengusul ?? '')) ?: null,
             'dibuat_oleh_user_id' => $request->user()?->id,
             'file' => $primaryPath,
             'keterangan' => trim((string) ($pengajuan->deskripsi_pengajuan ?? '')),
