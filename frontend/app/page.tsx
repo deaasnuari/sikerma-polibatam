@@ -5,15 +5,9 @@ import Image from 'next/image';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
 import { getCarouselImages, type CarouselImageItem } from '@/services/carouselService';
+import { apiRequest } from '@/lib/api';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
-
-const heroStats = [
-  { value: '154', label: 'Dudi\nNasional' },
-  { value: '7',   label: 'Dudi\nInterasional' },
-  { value: '292', label: 'Instansi\nNasional' },
-  { value: '24',  label: 'Instansi\nInternasional' },
-];
 
 const tableData = [
   { nama: 'Koperasi Politeknik Negeri Batam', bidang: 'Pendidikan, layanan', unit: 'Manajemen dan Bisnis', wilayah: 'Dalam Negeri', jenis: 'MoU' },
@@ -114,7 +108,19 @@ export default function Home() {
   const [carouselImages, setCarouselImages] = useState<CarouselImageItem[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
 
-  const unitOptions = ['Semua Unit', ...new Set(tableData.map((row) => row.unit))];
+  // Daftar unit untuk dropdown — diambil dari master unit di database
+  const [unitOptions, setUnitOptions] = useState<string[]>(['Semua Unit']);
+
+  // Stat cards — diambil dari database
+  const [stats, setStats] = useState({
+    total: 478,
+    dalam_negeri: 447,
+    luar_negeri: 31,
+    dudi_nasional: 154,
+    dudi_internasional: 7,
+    instansi_nasional: 292,
+    instansi_internasional: 24,
+  });
 
   const carouselSlides = useMemo(() => {
     if (carouselImages.length > 0) {
@@ -150,6 +156,39 @@ export default function Home() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  // Fetch semua unit dari master database untuk mengisi dropdown "Semua Unit"
+  useEffect(() => {
+    let mounted = true;
+
+    apiRequest<{ success: boolean; data: string[] }>('/public/unit-prodi')
+      .then((res) => {
+        if (!mounted) return;
+        console.log('[UnitDropdown] API response:', res);
+        const names: string[] = Array.isArray(res.data) ? res.data : [];
+        console.log('[UnitDropdown] Unit count:', names.length, '| Units:', names);
+        if (names.length > 0) {
+          setUnitOptions(['Semua Unit', ...names]);
+        }
+      })
+      .catch((err: unknown) => {
+        console.error('[UnitDropdown] Gagal memuat unit dari database:', err);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    apiRequest<{ success: boolean; data: { total: number; dalam_negeri: number; luar_negeri: number; dudi_nasional: number; dudi_internasional: number; instansi_nasional: number; instansi_internasional: number } }>('/public/stats')
+      .then((res) => {
+        if (mounted && res.data) setStats(res.data);
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -252,14 +291,19 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {heroStats.map((stat) => (
+            {([
+              { key: 'dudi_nasional',          label: 'Dudi\nNasional' },
+              { key: 'dudi_internasional',      label: 'Dudi\nInternasional' },
+              { key: 'instansi_nasional',       label: 'Instansi\nNasional' },
+              { key: 'instansi_internasional',  label: 'Instansi\nInternasional' },
+            ] as const).map((item) => (
               <div
-                key={stat.label}
+                key={item.key}
                 className="rounded-2xl border border-white/10 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md"
               >
-                <p className="text-2xl font-bold md:text-3xl">{stat.value}</p>
+                <p className="text-2xl font-bold md:text-3xl">{stats[item.key]}</p>
                 <div className="my-2 h-1 w-10 rounded-full bg-[#57C9E8]" />
-                <p className="text-xs leading-snug text-slate-200 whitespace-pre-line">{stat.label}</p>
+                <p className="text-xs leading-snug text-slate-200 whitespace-pre-line">{item.label}</p>
               </div>
             ))}
           </div>
@@ -342,7 +386,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-600">Total Kerjasama</p>
-                <p className="text-2xl font-bold text-slate-900">478</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -354,7 +398,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-600">Kerjasama Dalam Negeri</p>
-                <p className="text-2xl font-bold text-slate-900">447</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.dalam_negeri}</p>
               </div>
             </div>
           </div>
@@ -366,7 +410,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-600">Kerjasama Luar Negeri</p>
-                <p className="text-2xl font-bold text-slate-900">31</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.luar_negeri}</p>
               </div>
             </div>
           </div>
