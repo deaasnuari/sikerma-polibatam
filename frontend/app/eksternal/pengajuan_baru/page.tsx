@@ -2,11 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2 } from 'lucide-react';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { submitExternalPengajuan } from '@/services/externalPengajuanService';
 import { getCachedMasterUnitProdiTree, getMasterUnitProdiTree, type MasterUnitProdi } from '@/services/masterUnitProdiService';
 import { getCachedMasterRuangLingkup, getMasterRuangLingkup, type MasterRuangLingkup } from '@/services/masterRuangLingkupService';
 import { getCachedMasterNegara, getMasterNegara, type MasterNegara } from '@/services/masterNegaraService';
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-2 text-sm">
+      <span className="shrink-0 text-slate-500">{label}</span>
+      <span className="text-right font-semibold text-slate-800">{value}</span>
+    </div>
+  );
+}
 
 type UploadedDokumenLike = File | { file: File; dataUrl?: string };
 
@@ -29,6 +39,11 @@ function normalizeUploadedDokumen(items: UploadedDokumenLike[]) {
 export default function PengajuanBaruEksternalPage() {
   const router = useRouter();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [submittedInfo, setSubmittedInfo] = useState<{
+    namaMitra: string;
+    jenisDokumen: string;
+    judulKerjasama: string;
+  } | null>(null);
   const [masterUnitProdiTree, setMasterUnitProdiTree] = useState<MasterUnitProdi[]>(() => getCachedMasterUnitProdiTree());
   const [masterRuangLingkupRows, setMasterRuangLingkupRows] = useState<MasterRuangLingkup[]>(() => getCachedMasterRuangLingkup());
   const [masterNegaraRows, setMasterNegaraRows] = useState<MasterNegara[]>(() => getCachedMasterNegara());
@@ -112,32 +127,59 @@ export default function PengajuanBaruEksternalPage() {
             })),
           });
 
+          setSubmittedInfo({
+            namaMitra: formData.namaMitra,
+            jenisDokumen: formData.jenisKerjasama,
+            judulKerjasama: formData.judulKerjasama,
+          });
           setIsSuccessModalOpen(true);
           return false;
         }}
       />
 
       {isSuccessModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
-            <p className="mt-2 text-sm text-slate-600">Pengajuan kerjasama berhasil disimpan untuk akun mitra ini.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="flex flex-col items-center px-6 pb-2 pt-8 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+                <CheckCircle2 size={36} className="text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
+              <p className="mt-2 text-sm text-slate-500">
+                Pengajuan kerjasama Anda telah berhasil dikirim dan sedang dalam proses review oleh tim kami.
+              </p>
+            </div>
 
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setIsSuccessModalOpen(false)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-              >
-                Tutup
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push('/eksternal/daftar_kerjasama')}
-                className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16305c]"
-              >
-                Lihat Daftar Kerjasama
-              </button>
+            {submittedInfo && (
+              <div className="mx-6 my-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <InfoRow label="Nama Mitra" value={submittedInfo.namaMitra} />
+                <InfoRow label="Jenis Dokumen" value={submittedInfo.jenisDokumen} />
+                {submittedInfo.judulKerjasama && (
+                  <InfoRow label="Judul Kerjasama" value={submittedInfo.judulKerjasama} />
+                )}
+              </div>
+            )}
+
+            <div className="rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+              <p className="mb-3 text-xs text-slate-500">
+                Langkah selanjutnya: tim humas/kerjasama akan memproses dokumen Anda dan menghubungi mitra bila diperlukan.
+              </p>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsSuccessModalOpen(false)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/eksternal/daftar_kerjasama')}
+                  className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16305c]"
+                >
+                  Lihat Daftar Kerjasama
+                </button>
+              </div>
             </div>
           </div>
         </div>
