@@ -14,6 +14,7 @@ import {
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
 import { fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
+import { fetchPengajuanDataFromApi, type PengajuanItem, type PengajuanStatus } from '@/services/adminPengajuanService';
 
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 
@@ -47,6 +48,26 @@ function mapRekapToItem(d: RekapDokumen): KerjasamaItem {
     berlakuHingga: d.berlakuHingga,
     status: statusMap[d.status] ?? 'Menunggu',
     ruangLingkup: d.ruangLingkup ?? [],
+  };
+}
+
+const APPROVED_STATUSES = new Set<PengajuanStatus>([
+  'Disetujui',
+  'Disetujui Internal',
+  'Disetujui Mitra',
+  'Final Approved',
+]);
+
+function mapApprovedPengajuanToItem(p: PengajuanItem): KerjasamaItem {
+  return {
+    noDokumen: p.nomorPengajuan || `PGJ-${p.id}`,
+    namaMitra: p.namaMitra,
+    jenis: (p.jenisDokumen || 'MoU') as Jenis,
+    unit: p.namaUnitProdi || '-',
+    tanggalMulai: p.tanggalMulai || '-',
+    berlakuHingga: p.tanggalBerakhir || '-',
+    status: 'Disetujui',
+    ruangLingkup: p.ruangLingkup ?? [],
   };
 }
 
@@ -125,9 +146,21 @@ export default function InternalRekapDataPage() {
 
     const sync = async () => {
       try {
-        const apiData = await fetchRekapDokumenFromApi();
+        const rekapData = await fetchRekapDokumenFromApi();
         if (!mounted) return;
-        setData(apiData.map(mapRekapToItem));
+
+        if (rekapData.length > 0) {
+          setData(rekapData.map(mapRekapToItem));
+          return;
+        }
+
+        // Fallback: tampilkan dari pengajuan yang sudah di-ACC jika monitoring belum terisi
+        const allPengajuan = await fetchPengajuanDataFromApi({ perPage: 500 });
+        if (!mounted) return;
+        const approvedInternal = allPengajuan.filter(
+          (item) => APPROVED_STATUSES.has(item.statusPengajuan) && item.kategoriPengajuan !== 'Eksternal',
+        );
+        setData(approvedInternal.map(mapApprovedPengajuanToItem));
       } catch {
         if (mounted) setData([]);
       }
