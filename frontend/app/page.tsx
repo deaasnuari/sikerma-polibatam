@@ -7,24 +7,9 @@ import AdminFooter from '@/components/admin/AdminFooter';
 import { getCarouselImages, type CarouselImageItem } from '@/services/carouselService';
 import { apiRequest } from '@/lib/api';
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const tableData = [
-  { nama: 'Koperasi Politeknik Negeri Batam', bidang: 'Pendidikan, layanan', unit: 'Manajemen dan Bisnis', wilayah: 'Dalam Negeri', jenis: 'MoU' },
-  { nama: 'PT. Batamindo Investment Cakrawala', bidang: 'Pendidikan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'MoA' },
-  { nama: 'Koperasi Polibatam', bidang: 'Pendidikan, layanan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'IA' },
-  { nama: 'PT. Yogya Presisi Thenikatama Industri', bidang: 'Magang, pendidikan, penelitian', unit: 'Teknik Mesin', wilayah: 'Dalam Negeri', jenis: 'MoA' },
-  { nama: 'PT. Fast Precision Manufacturing Indonesia', bidang: 'Magang, pendidikan, penelitian', unit: 'Teknik Elektro', wilayah: 'Dalam Negeri', jenis: 'MoU' },
-  { nama: 'City Glasgow College', bidang: 'Pendidikan', unit: 'Unit Kerjasama', wilayah: 'Luar Negeri', jenis: 'MoU' },
-  { nama: 'PT. Indina Industri Indonesia', bidang: 'Magang, pendidikan', unit: 'Teknik Informatika', wilayah: 'Dalam Negeri', jenis: 'IA' },
-  { nama: 'Perpustakaan Kantor Perwakilan Bank Indonesia Provinsi Kepulauan Riau', bidang: 'Magang, pendidikan, penelitian pengembangan kelembagaan', unit: 'Perpustakaan', wilayah: 'Dalam Negeri', jenis: 'MoA' },
-  { nama: 'Badan Informasi Geospasial', bidang: 'Penelitian, pengabdian kepada masyarakat, pengembangan kelembagaan', unit: 'Unit Kerjasama', wilayah: 'Dalam Negeri', jenis: 'MoU' },
-  { nama: 'Aerocampus Aquitaine', bidang: 'Pendidikan, penelitian', unit: 'Unit Kerjasama', wilayah: 'Luar Negeri', jenis: 'IA' },
-];
-
-const TOTAL_ENTRIES = 478;
-const TOTAL_PAGES   = 48;
-const PER_PAGE      = 10;
+type KerjasamaRow = { id: number; nama: string; bidang: string; jenis: string; unit: string; wilayah: string };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -107,6 +92,9 @@ export default function Home() {
   const [selectedUnit, setSelectedUnit] = useState('Semua Unit');
   const [carouselImages, setCarouselImages] = useState<CarouselImageItem[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [kerjasamaList, setKerjasamaList] = useState<KerjasamaRow[]>([]);
+  const [isLoadingTable, setIsLoadingTable] = useState(true);
+  const [perPage, setPerPage] = useState(10);
 
   // Daftar unit untuk dropdown — diambil dari master unit di database
   const [unitOptions, setUnitOptions] = useState<string[]>(['Semua Unit']);
@@ -192,6 +180,24 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    setIsLoadingTable(true);
+
+    apiRequest<{ success: boolean; data: { data: KerjasamaRow[]; total: number } }>('/public/kerjasama')
+      .then((res) => {
+        if (!mounted) return;
+        const rows = res.data?.data;
+        if (Array.isArray(rows)) setKerjasamaList(rows);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setIsLoadingTable(false);
+      });
+
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
     if (carouselSlides.length <= 1) {
       return;
     }
@@ -210,20 +216,26 @@ export default function Home() {
   }, [activeSlide, carouselSlides.length]);
 
   // ── Table logic ──────────────────────────────────────────────────────────────
-  const filtered = tableData.filter(
-    (r) =>
-      (r.nama.toLowerCase().includes(search.toLowerCase()) || r.bidang.toLowerCase().includes(search.toLowerCase())) &&
+  const filtered = useMemo(() =>
+    kerjasamaList.filter((r) =>
       (selectedWilayah === 'Semua Wilayah' || r.wilayah === selectedWilayah) &&
       (selectedJenisDokumen === 'Semua Jenis' || r.jenis === selectedJenisDokumen) &&
-      (selectedUnit === 'Semua Unit' || r.unit === selectedUnit),
+      (selectedUnit === 'Semua Unit' || r.unit === selectedUnit) &&
+      (search === '' ||
+        r.nama.toLowerCase().includes(search.toLowerCase()) ||
+        r.bidang.toLowerCase().includes(search.toLowerCase()))
+    ),
+    [kerjasamaList, selectedWilayah, selectedJenisDokumen, selectedUnit, search]
   );
 
-  const startIndex = (currentPage - 1) * PER_PAGE;
-  const endIndex   = Math.min(currentPage * PER_PAGE, TOTAL_ENTRIES);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex   = Math.min(currentPage * perPage, filtered.length);
+  const pagedItems = filtered.slice(startIndex, endIndex);
 
   const changePage = (delta: number) => {
     const next = currentPage + delta;
-    if (next < 1 || next > TOTAL_PAGES) return;
+    if (next < 1 || next > totalPages) return;
     setCurrentPage(next);
   };
 
@@ -487,10 +499,14 @@ export default function Home() {
 
           <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-3">
             <span className="text-sm text-slate-600">Show</span>
-            <select className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
+            <select
+              value={perPage}
+              onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
             </select>
 
             <div className="flex-1" />
@@ -569,8 +585,16 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((row, i) => (
-                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'}>
+                {isLoadingTable ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">Memuat data kerjasama...</td>
+                  </tr>
+                ) : pagedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">Tidak ada data yang sesuai.</td>
+                  </tr>
+                ) : pagedItems.map((row, i) => (
+                  <tr key={row.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'}>
                     <td className="px-4 py-3 align-top text-slate-600">{startIndex + i + 1}.</td>
                     <td className="px-4 py-3 align-top text-slate-700">{row.nama}</td>
                     <td className="px-4 py-3 align-top text-slate-600">{row.bidang}</td>
@@ -589,7 +613,7 @@ export default function Home() {
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-500">
-              Showing {startIndex + 1} to {endIndex} of {TOTAL_ENTRIES} entries
+              Showing {filtered.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filtered.length} entries
             </p>
 
             <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -601,35 +625,42 @@ export default function Home() {
                 Previous
               </button>
 
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setCurrentPage(n)}
-                  className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
-                    currentPage === n
-                      ? 'bg-[#173B82] text-white'
-                      : 'bg-white text-[#173B82] hover:bg-blue-50'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
+              {(() => {
+                const maxVisible = 5;
+                const start = Math.max(1, Math.min(currentPage - 2, totalPages - maxVisible + 1));
+                const pages = Array.from({ length: Math.min(maxVisible, totalPages) }, (_, i) => start + i);
+                return pages.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setCurrentPage(n)}
+                    className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
+                      currentPage === n ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ));
+              })()}
 
-              <button className="cursor-default border-r border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-[#173B82]">
-                ...
-              </button>
-              <button
-                onClick={() => setCurrentPage(48)}
-                className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
-                  currentPage === 48 ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
-                }`}
-              >
-                48
-              </button>
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <>
+                  <button className="cursor-default border-r border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-[#173B82]">
+                    ...
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
+                      currentPage === totalPages ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
 
               <button
                 onClick={() => changePage(1)}
-                disabled={currentPage === TOTAL_PAGES}
+                disabled={currentPage === totalPages}
                 className="px-3 py-1.5 text-sm text-[#173B82] hover:bg-blue-50 disabled:cursor-default disabled:bg-slate-100 disabled:text-slate-400"
               >
                 Next
