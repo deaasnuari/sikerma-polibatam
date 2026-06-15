@@ -30,6 +30,8 @@ import {
   markNotificationAsRead,
 } from '@/services/adminService';
 import { getMasterMitra } from '@/services/masterMitraService';
+import { fetchMonitoringDataFromApi, getMonitoringStats } from '@/services/adminMonitoringService';
+import { getPengajuanData, refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import type { AdminNotification } from '@/types/admin';
 import {
   deleteCarouselImage,
@@ -99,8 +101,8 @@ export default function AdminDashboard() {
   const [dashboardStats, setDashboardStats] = useState(getDashboardStats());
   const quickActions = getQuickActions();
   const [regionalDistribution, setRegionalDistribution] = useState(getRegionalDistribution());
-  const documentTypeDistribution = getDocumentTypeDistribution();
-  const popularSchemes = getPopularSchemes();
+  const [documentTypeDistribution, setDocumentTypeDistribution] = useState(getDocumentTypeDistribution());
+  const [popularSchemes, setPopularSchemes] = useState(getPopularSchemes());
   const [toast, setToast] = useState<ToastState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CarouselImageItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -165,6 +167,87 @@ export default function AdminDashboard() {
     };
 
     loadMitraDistribution();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadKerjasamaStats = async () => {
+      try {
+        const [pengajuanItems, monitoringItems] = await Promise.all([
+          refreshPengajuanDataFromApi(),
+          fetchMonitoringDataFromApi(),
+        ]);
+
+        if (!mounted) return;
+
+        // Total Kerjasama Aktif & Tidak Aktif dari monitoring
+        const monStats = getMonitoringStats(monitoringItems);
+        setDashboardStats((prev) =>
+          prev.map((stat) => {
+            if (stat.label === 'Total Kerjasama Aktif') {
+              return { ...stat, value: String(monStats.totalAktif + monStats.totalAkanBerakhir) };
+            }
+            if (stat.label === 'Total Kerjasama Tidak Aktif') {
+              return { ...stat, value: String(monStats.totalKadaluarsa) };
+            }
+            return stat;
+          })
+        );
+
+        // Distribusi Jenis Dokumen dari pengajuan yang sudah disetujui
+        const approvedStatuses = new Set(['Disetujui', 'Final Approved', 'Disetujui Internal', 'Disetujui Mitra']);
+        const approved = pengajuanItems.filter((item) => approvedStatuses.has(item.statusPengajuan));
+        const jenisCounts: Record<string, number> = {};
+        for (const item of approved) {
+          const key = item.jenisDokumen || 'Lainnya';
+          jenisCounts[key] = (jenisCounts[key] || 0) + 1;
+        }
+        const docColors: Record<string, string> = { MoU: '#10B981', MoA: '#F59E0B', IA: '#EF4444' };
+        const newDocDist = Object.entries(jenisCounts).map(([name, value]) => ({
+          name,
+          value,
+          fill: docColors[name] ?? '#6B7280',
+        }));
+        if (newDocDist.length > 0) setDocumentTypeDistribution(newDocDist);
+
+        // Top 5 Ruang Lingkup dari pengajuan 1 tahun terakhir
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const schemeCounts: Record<string, number> = {};
+        for (const item of pengajuanItems) {
+          if (item.diajukanPada) {
+            const raw = item.diajukanPada;
+            let parsed: Date;
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+              const [d, m, y] = raw.split('/').map(Number);
+              parsed = new Date(y, m - 1, d);
+            } else {
+              parsed = new Date(raw);
+            }
+            if (!isNaN(parsed.getTime()) && parsed < oneYearAgo) continue;
+          }
+          for (const scope of item.ruangLingkup ?? []) {
+            const trimmed = scope.trim();
+            if (trimmed) schemeCounts[trimmed] = (schemeCounts[trimmed] || 0) + 1;
+          }
+        }
+        const newPopular = Object.entries(schemeCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([name, value]) => ({ name, value }));
+        if (newPopular.length > 0) setPopularSchemes(newPopular);
+
+      } catch {
+        // Tetap tampilkan nilai default jika API belum tersedia.
+      }
+    };
+
+    loadKerjasamaStats();
 
     return () => {
       mounted = false;
