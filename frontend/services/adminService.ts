@@ -202,8 +202,20 @@ export function markNotificationsByHrefAsRead(href: string): AdminNotification[]
   return updatedNotifications;
 }
 
+export function markNotificationsByHrefPrefixAsRead(prefix: string): AdminNotification[] {
+  const updatedNotifications = readNotifications().map((notification) =>
+    notification.href?.startsWith(prefix) ? { ...notification, read: true } : notification
+  );
+  saveNotifications(updatedNotifications);
+  return updatedNotifications;
+}
+
 export function getUnreadCountByHref(href: string): number {
   return readNotifications().filter((n) => !n.read && n.href === href).length;
+}
+
+export function getUnreadCountByHrefPrefix(prefix: string): number {
+  return readNotifications().filter((n) => !n.read && !!n.href && n.href.startsWith(prefix)).length;
 }
 
 export function addAdminNotification(

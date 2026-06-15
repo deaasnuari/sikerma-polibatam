@@ -99,6 +99,11 @@ export function syncExternalPengajuanWithAdminData(): PengajuanItem[] {
       reviewedBy: fromAdmin.reviewedBy,
       tanggalMulai: fromAdmin.tanggalMulai ?? item.tanggalMulai,
       tanggalBerakhir: fromAdmin.tanggalBerakhir ?? item.tanggalBerakhir,
+      tahapanStage: fromAdmin.tahapanStage ?? item.tahapanStage,
+      tahapanGroup: fromAdmin.tahapanGroup ?? item.tahapanGroup,
+      finalFileName: fromAdmin.finalFileName ?? item.finalFileName,
+      finalFilePath: fromAdmin.finalFilePath ?? item.finalFilePath,
+      fileAttachments: fromAdmin.fileAttachments?.length ? fromAdmin.fileAttachments : item.fileAttachments,
     };
 
     const changed =
@@ -107,7 +112,11 @@ export function syncExternalPengajuanWithAdminData(): PengajuanItem[] {
       nextItem.reviewedAt !== item.reviewedAt ||
       nextItem.reviewedBy !== item.reviewedBy ||
       nextItem.tanggalMulai !== item.tanggalMulai ||
-      nextItem.tanggalBerakhir !== item.tanggalBerakhir;
+      nextItem.tanggalBerakhir !== item.tanggalBerakhir ||
+      nextItem.tahapanStage !== item.tahapanStage ||
+      nextItem.tahapanGroup !== item.tahapanGroup ||
+      nextItem.finalFileName !== item.finalFileName ||
+      nextItem.finalFilePath !== item.finalFilePath;
 
     if (changed) {
       hasChanges = true;

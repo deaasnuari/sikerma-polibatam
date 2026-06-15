@@ -30,22 +30,41 @@ export function submitInternalPengajuan(
 
 // Fungsi lain (statistik, update status, dsb) dapat di-copy sesuai kebutuhan
 
+const APPROVED_STATUSES = new Set<PengajuanStatus>([
+  'Disetujui',
+  'Disetujui Internal',
+  'Disetujui Mitra',
+  'Final Approved',
+]);
+
 /**
- * Ambil data pengajuan internal yang sudah disetujui admin,
- * dengan menyinkronkan status terbaru dari admin storage.
- * Menggabungkan data dari internal storage + admin storage (berdasarkan id yang sama).
+ * Ambil pengajuan internal yang sudah di-ACC admin.
+ * Membaca dari shared storage (pengajuanKerjasamaData) karena admin approval
+ * hanya memperbarui storage tersebut, bukan internal-only storage.
  */
 export function getInternalPengajuanDisetujui(): PengajuanItem[] {
   if (typeof window === 'undefined') return [];
 
-  // Internal HARUS bersumber dari storage internal sendiri.
-  // Jangan ambil dari admin storage agar internal/mitra tidak tercampur.
+  // Shared storage diperbarui saat admin ACC, sehingga status terbaru ada di sini.
+  const sharedData = getPengajuanData();
+  const fromShared = sharedData.filter(
+    (item) => APPROVED_STATUSES.has(item.statusPengajuan) && item.kategoriPengajuan !== 'Eksternal',
+  );
+
+  // Merge dengan internal-only storage (yang mungkin belum sinkron ke API).
   const internalData = getInternalPengajuanData();
+  const fromInternal = internalData.filter((item) => APPROVED_STATUSES.has(item.statusPengajuan));
 
-  // Filter yang disetujui internal saja
-  const fromInternal = internalData.filter((item) => item.statusPengajuan === 'Disetujui');
+  // Gabungkan, deduplikasi berdasarkan id — preferensi ke shared (status lebih update).
+  const seen = new Set<number | string>();
+  const merged: PengajuanItem[] = [];
+  for (const item of [...fromShared, ...fromInternal]) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      merged.push(item);
+    }
+  }
 
-
-  return fromInternal;
+  return merged;
 }
 
