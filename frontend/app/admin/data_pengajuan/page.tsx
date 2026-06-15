@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Search, Filter, Plus, Eye, MessageSquare, X, ThumbsUp, ThumbsDown, CalendarDays, ChevronLeft, ChevronRight, Pencil, Trash2, ExternalLink, Paperclip, Download, Upload, Bell } from 'lucide-react';
-import { addAdminNotification } from '@/services/adminService';
+import { addAdminNotification, markNotificationsByHrefPrefixAsRead } from '@/services/adminService';
 import AdminAjukanKerjasamaForm from './AjukanKerjasamaForm';
 import InternalAjukanKerjasamaForm from '@/app/internal/data_pengajuan/AjukanKerjasamaForm';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
@@ -352,6 +352,11 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
       setAjukanModalOpen(true);
     }
   }, [isAjukanView]);
+
+  // Tandai notifikasi data pengajuan sebagai sudah dibaca saat halaman ini dibuka
+  useEffect(() => {
+    markNotificationsByHrefPrefixAsRead('/admin/data_pengajuan');
+  }, []);
 
   // Auto-buka review modal saat diarahkan dari halaman Tahapan (?review=ID)
   useEffect(() => {
