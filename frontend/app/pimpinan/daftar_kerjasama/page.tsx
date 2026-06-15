@@ -1,139 +1,80 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search } from 'lucide-react';
-import { generateNoDokumen } from '@/services/adminMonitoringService';
+import {
+  fetchMonitoringDataFromApi,
+  getMonitoringData,
+  type Kerjasama,
+  type StatusKerjasama,
+} from '@/services/adminMonitoringService';
 
-interface KerjasamaItem {
-  id: number;
-  noDokumen: string;
-  namaMitra: string;
-  jenis: 'MoU' | 'MoA' | 'IA';
-  unit: string;
-  tanggalMulai: string;
-  berlakuHingga: string;
-  tahun: string;
-  status: 'Aktif' | 'Tidak Aktif';
-}
-
-const kerjasamaItems: KerjasamaItem[] = [
-  {
-    id: 1,
-    noDokumen: generateNoDokumen({ urutan: 1, jenis: 'MoU', tanggal: '20 Feb 2026' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Informatika',
-    tanggalMulai: '20 Feb 2026',
-    berlakuHingga: '20 Feb 2028',
-    tahun: '2026',
-    status: 'Tidak Aktif',
-  },
-  {
-    id: 2,
-    noDokumen: generateNoDokumen({ urutan: 2, jenis: 'MoA', tanggal: '27 Feb 2026' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    unit: 'Jurusan Teknik',
-    tanggalMulai: '27 Feb 2026',
-    berlakuHingga: '27 Feb 2028',
-    tahun: '2026',
-    status: 'Aktif',
-  },
-  {
-    id: 3,
-    noDokumen: generateNoDokumen({ urutan: 3, jenis: 'IA', tanggal: '26 Feb 2026' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'IA',
-    unit: 'Teknik Elektro',
-    tanggalMulai: '26 Feb 2026',
-    berlakuHingga: '26 Feb 2027',
-    tahun: '2026',
-    status: 'Tidak Aktif',
-  },
-  {
-    id: 4,
-    noDokumen: generateNoDokumen({ urutan: 4, jenis: 'MoU', tanggal: '25 Feb 2025' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Mesin',
-    tanggalMulai: '25 Feb 2025',
-    berlakuHingga: '25 Feb 2028',
-    tahun: '2025',
-    status: 'Tidak Aktif',
-  },
-  {
-    id: 5,
-    noDokumen: generateNoDokumen({ urutan: 5, jenis: 'MoA', tanggal: '24 Feb 2024' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoA',
-    unit: 'Teknik Industri',
-    tanggalMulai: '24 Feb 2024',
-    berlakuHingga: '24 Feb 2029',
-    tahun: '2025',
-    status: 'Aktif',
-  },
-  {
-    id: 6,
-    noDokumen: generateNoDokumen({ urutan: 6, jenis: 'IA', tanggal: '23 Feb 2024' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'IA',
-    unit: 'Jurusan Teknik',
-    tanggalMulai: '23 Feb 2024',
-    berlakuHingga: '23 Feb 2027',
-    tahun: '2024',
-    status: 'Aktif',
-  },
-  {
-    id: 7,
-    noDokumen: generateNoDokumen({ urutan: 7, jenis: 'MoU', tanggal: '21 Feb 2023' }),
-    namaMitra: 'PT Teknologi Maju Indonesia',
-    jenis: 'MoU',
-    unit: 'Teknik Elektro',
-    tanggalMulai: '21 Feb 2023',
-    berlakuHingga: '21 Feb 2026',
-    tahun: '2023',
-    status: 'Tidak Aktif',
-  },
-];
-
-const statusStyle: Record<KerjasamaItem['status'], string> = {
-  Aktif: 'bg-emerald-100 text-emerald-700',
-  'Tidak Aktif': 'bg-rose-100 text-rose-700',
+const statusStyle: Record<StatusKerjasama, string> = {
+  'Aktif': 'bg-emerald-100 text-emerald-700',
+  'Akan Berakhir': 'bg-amber-100 text-amber-700',
+  'Kadaluarsa': 'bg-rose-100 text-rose-700',
 };
 
+function getTahun(item: Kerjasama): string {
+  const d = item.tanggalMulai;
+  if (!d) return '-';
+  if (d.includes('/')) return d.split('/')[2] ?? '-';
+  const parsed = new Date(d);
+  return isNaN(parsed.getTime()) ? '-' : String(parsed.getFullYear());
+}
+
 export default function PimpinanDaftarKerjasamaPage() {
+  const [kerjasamaList, setKerjasamaList] = useState<Kerjasama[]>(() => getMonitoringData());
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
+  const [detailItem, setDetailItem] = useState<Kerjasama | null>(null);
   const currentYear = new Date().getFullYear();
   const [yearRangeStart, setYearRangeStart] = useState(currentYear - 4);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
+  useEffect(() => {
+    let mounted = true;
+    fetchMonitoringDataFromApi()
+      .then((data) => {
+        if (mounted) {
+          setKerjasamaList(data);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setIsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredItems = useMemo(() => {
     const keyword = search.toLowerCase().trim();
 
-    return kerjasamaItems.filter((item) => {
+    return kerjasamaList.filter((item) => {
       const matchesSearch =
         keyword === '' ||
         item.noDokumen.toLowerCase().includes(keyword) ||
         item.namaMitra.toLowerCase().includes(keyword) ||
-        item.unit.toLowerCase().includes(keyword);
+        item.ruangLingkup.some((r) => r.toLowerCase().includes(keyword));
 
       const matchesStatus = filterStatus === 'Semua Status' || item.status === filterStatus;
-      const matchesTahun = filterTahun === null || item.tahun === filterTahun;
+      const matchesTahun = filterTahun === null || getTahun(item) === filterTahun;
 
       return matchesSearch && matchesStatus && matchesTahun;
     });
-  }, [search, filterStatus, filterTahun]);
+  }, [kerjasamaList, search, filterStatus, filterTahun]);
 
   const handleExport = () => {
     const header = [
       'No. Dokumen',
       'Nama Mitra',
       'Jenis',
-      'Unit',
+      'Ruang Lingkup',
       'Tanggal Mulai',
       'Berlaku Hingga',
       'Tahun',
@@ -144,10 +85,10 @@ export default function PimpinanDaftarKerjasamaPage() {
       item.noDokumen,
       item.namaMitra,
       item.jenis,
-      item.unit,
+      item.ruangLingkup.join(', '),
       item.tanggalMulai,
-      item.berlakuHingga,
-      item.tahun,
+      item.tanggalBerakhir,
+      getTahun(item),
       item.status,
     ]);
 
@@ -155,7 +96,7 @@ export default function PimpinanDaftarKerjasamaPage() {
       .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
       .join('\n');
 
-    const blob = new Blob(['\ufeff', content], {
+    const blob = new Blob(['﻿', content], {
       type: 'application/vnd.ms-excel;charset=utf-8;',
     });
 
@@ -197,7 +138,7 @@ export default function PimpinanDaftarKerjasamaPage() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Cari berdasarkan nomor atau mitra"
+              placeholder="Cari nomor, mitra, atau ruang lingkup"
               className="input-field h-10 w-full pl-9 pr-3 text-sm text-slate-700"
             />
           </div>
@@ -215,7 +156,8 @@ export default function PimpinanDaftarKerjasamaPage() {
             >
               <option>Semua Status</option>
               <option>Aktif</option>
-              <option>Tidak Aktif</option>
+              <option>Akan Berakhir</option>
+              <option>Kadaluarsa</option>
             </select>
 
             <div className="relative">
@@ -300,7 +242,7 @@ export default function PimpinanDaftarKerjasamaPage() {
                 <th className="px-4 py-3">No. Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
-                <th className="px-4 py-3">Unit</th>
+                <th className="px-4 py-3">Ruang Lingkup</th>
                 <th className="px-4 py-3">Tanggal Mulai</th>
                 <th className="px-4 py-3">Berlaku Hingga</th>
                 <th className="px-4 py-3">Status</th>
@@ -308,7 +250,13 @@ export default function PimpinanDaftarKerjasamaPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                    Memuat data...
+                  </td>
+                </tr>
+              ) : filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
                     Tidak ada data kerjasama.
@@ -324,9 +272,22 @@ export default function PimpinanDaftarKerjasamaPage() {
                         {item.jenis}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{item.unit}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {item.ruangLingkup.slice(0, 2).map((r) => (
+                          <span key={r} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                            {r}
+                          </span>
+                        ))}
+                        {item.ruangLingkup.length > 2 && (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                            +{item.ruangLingkup.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3">{item.tanggalMulai}</td>
-                    <td className="px-4 py-3">{item.berlakuHingga}</td>
+                    <td className="px-4 py-3">{item.tanggalBerakhir}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle[item.status]}`}>
                         {item.status}
@@ -350,7 +311,9 @@ export default function PimpinanDaftarKerjasamaPage() {
         </div>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Menampilkan {filteredItems.length} dari {kerjasamaItems.length} data</p>
+          <p>
+            Menampilkan {filteredItems.length} dari {kerjasamaList.length} data
+          </p>
           <div className="flex items-center gap-2">
             <button type="button" className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 hover:bg-slate-50">
               Sebelumnya
@@ -369,7 +332,7 @@ export default function PimpinanDaftarKerjasamaPage() {
               <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-6">
                 <div>
                   <h2 className="text-xl font-bold text-[#102A43]">Detail Kerjasama</h2>
-                  <p className="mt-1 text-sm text-slate-500">Informasi lengkap dokumen kerjasama untuk role pimpinan</p>
+                  <p className="mt-1 text-sm text-slate-500">Informasi lengkap dokumen kerjasama (read-only)</p>
                 </div>
                 <button
                   type="button"
@@ -384,12 +347,29 @@ export default function PimpinanDaftarKerjasamaPage() {
                 <DetailItem label="No. Dokumen" value={detailItem.noDokumen} />
                 <DetailItem label="Nama Mitra" value={detailItem.namaMitra} />
                 <DetailItem label="Jenis Dokumen" value={detailItem.jenis} />
-                <DetailItem label="Unit" value={detailItem.unit} />
-                <DetailItem label="Tanggal Mulai" value={detailItem.tanggalMulai} />
-                <DetailItem label="Berlaku Hingga" value={detailItem.berlakuHingga} />
-                <DetailItem label="Tahun" value={detailItem.tahun} />
                 <DetailItem label="Status" value={detailItem.status} />
+                <DetailItem label="Tanggal Mulai" value={detailItem.tanggalMulai} />
+                <DetailItem label="Berlaku Hingga" value={detailItem.tanggalBerakhir} />
+                {detailItem.sisaMasaBerlaku && (
+                  <DetailItem label="Sisa Masa Berlaku" value={detailItem.sisaMasaBerlaku} />
+                )}
+                {detailItem.emailMitra && (
+                  <DetailItem label="Email Mitra" value={detailItem.emailMitra} />
+                )}
               </div>
+
+              {detailItem.ruangLingkup.length > 0 && (
+                <div className="px-6 pb-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Ruang Lingkup</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {detailItem.ruangLingkup.map((r) => (
+                      <span key={r} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end border-t border-slate-100 px-6 py-4">
                 <button
