@@ -3,7 +3,7 @@
 import * as XLSX from 'xlsx';
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Archive, Bell, CalendarClock, CheckCircle2, ChevronLeft, Eye, HandshakeIcon, Mail, MessageCircle, Phone, RefreshCw, Search, Trash2, X } from 'lucide-react';
-import LaporanKegiatanTemplateModal from './LaporanKegiatanTemplateModal';
+import LaporanPelaksanaanModal from '@/components/LaporanPelaksanaanModal';
 // import RenewalHistoryModal from './RenewalHistoryModal';
 import RenewalFullForm from './RenewalFullForm';
 import RenewalForm from './RenewalForm';
@@ -483,7 +483,7 @@ export default function MonitoringdanstatusPage() {
         })}
       </div>
 
-      <LaporanKegiatanTemplateModal
+      <LaporanPelaksanaanModal
         isOpen={selectedLaporan !== null}
         onClose={() => setSelectedLaporan(null)}
         data={selectedLaporan}
