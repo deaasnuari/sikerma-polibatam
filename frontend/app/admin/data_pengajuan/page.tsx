@@ -1664,7 +1664,6 @@ function addEditJurusanUnitOption() {
                     <Eye size={14} />
                     <span className="hidden xs:inline sm:inline">Detail</span>
                   </button>
-                  {item.statusPengajuan === 'Menunggu Review' && (
                   <button
                     type="button"
                     onClick={() => openReview(item)}
@@ -1673,7 +1672,6 @@ function addEditJurusanUnitOption() {
                     <MessageSquare size={14} />
                     <span className="hidden xs:inline sm:inline">Review</span>
                   </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => openEdit(item)}

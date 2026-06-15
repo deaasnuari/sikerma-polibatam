@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
-  ChevronDown,
+  Building2,
   Lock,
   Mail,
+  Shield,
+  Users,
+  UserCog,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -17,14 +20,33 @@ export default function LoginPage() {
   const [role, setRole] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
+  const [roleError, setRoleError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const roles = [
+    { value: 'admin', label: 'Admin', icon: Shield, desc: 'Administrator sistem' },
+    { value: 'pimpinan', label: 'Pimpinan', icon: UserCog, desc: 'Pimpinan institusi' },
+    { value: 'internal', label: 'Internal', icon: Users, desc: 'Civitas Polibatam' },
+    { value: 'external', label: 'Eksternal', icon: Building2, desc: 'Mitra eksternal' },
+  ];
 
   const router = useRouter();
   const { login } = useAuth();
 
+  const handleRoleSelect = (value: string) => {
+    setRole(value);
+    setRoleError(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!role) {
+      setRoleError(true);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -157,28 +179,46 @@ export default function LoginPage() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">
-                    Role Akses
+                    Role Akses <span className="font-normal text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="input-field h-10 w-full appearance-none rounded-xl px-4 text-sm text-slate-600"
-                      required
-                    >
-                      <option value="" disabled>
-                        Pilih Role
-                      </option>
-                      <option value="admin">Admin</option>
-                      <option value="pimpinan">Pimpinan</option>
-                      <option value="internal">Internal</option>
-                      <option value="external">Eksternal</option>
-                    </select>
-                    <ChevronDown
-                      size={18}
-                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    {roles.map(({ value, label, icon: Icon, desc }) => {
+                      const isSelected = role === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => handleRoleSelect(value)}
+                          className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all duration-150 ${
+                            isSelected
+                              ? 'border-[#173B82] bg-[#173B82] text-white shadow-md'
+                              : roleError
+                              ? 'border-red-300 bg-red-50 text-slate-700 hover:border-[#173B82] hover:bg-blue-50'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-[#173B82] hover:bg-blue-50'
+                          }`}
+                        >
+                          <Icon
+                            size={18}
+                            className={`shrink-0 ${isSelected ? 'text-white' : 'text-[#173B82]'}`}
+                          />
+                          <div className="min-w-0">
+                            <p className={`text-xs font-semibold leading-tight ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                              {label}
+                            </p>
+                            <p className={`truncate text-[10px] leading-tight ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                              {desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {roleError && (
+                    <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                      <AlertCircle size={14} className="shrink-0 text-red-500" />
+                      <p className="text-xs text-red-600">Pilih role akses terlebih dahulu sebelum masuk.</p>
+                    </div>
+                  )}
                 </div>
 
                 <button

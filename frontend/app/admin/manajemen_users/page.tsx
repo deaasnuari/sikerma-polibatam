@@ -13,6 +13,10 @@ import {
   GraduationCap,
   Building2,
   Handshake,
+  AlertCircle,
+  X,
+  RefreshCw,
+  ClockAlert,
 } from 'lucide-react';
 import {
   createAdminUser,
@@ -104,6 +108,9 @@ export default function ManajemenUserPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isFallback, setIsFallback] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
 
   // Form state shared by add & edit
   const emptyForm = { nama: '', email: '', role: '' as string, unitInstansi: '', status: 'Aktif' as string, phone: '', username: '', password: '' };
@@ -120,6 +127,7 @@ export default function ManajemenUserPage() {
         const result = await getAdminUsers();
         if (mounted) {
           setUsers(result);
+          setIsFallback(false);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Gagal memuat data user.';
@@ -129,15 +137,18 @@ export default function ManajemenUserPage() {
           if (isConnectivityError) {
             console.warn('Backend tidak dapat diakses, menggunakan data fallback lokal.');
             setUsers(fallbackUsers);
+            setIsFallback(true);
             setLoadError('');
           } else {
             setUsers([]);
+            setIsFallback(false);
             setLoadError(message);
           }
         }
       } finally {
         if (mounted) {
           setLoading(false);
+          setIsReloading(false);
         }
       }
     };
@@ -148,6 +159,28 @@ export default function ManajemenUserPage() {
       mounted = false;
     };
   }, []);
+
+  const handleReload = async () => {
+    setIsReloading(true);
+    setLoadError('');
+    try {
+      const result = await getAdminUsers();
+      setUsers(result);
+      setIsFallback(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal memuat data user.';
+      const isConnectivityError = /gagal terhubung|failed to fetch|network|load failed|fetch/i.test(message);
+      if (isConnectivityError) {
+        setUsers(fallbackUsers);
+        setIsFallback(true);
+      } else {
+        setLoadError(message);
+        setIsFallback(false);
+      }
+    } finally {
+      setIsReloading(false);
+    }
+  };
 
   const openAdd = () => {
     setForm(emptyForm);
@@ -243,14 +276,21 @@ export default function ManajemenUserPage() {
   const handleDelete = async (id: number) => {
     const item = users.find((u) => u.id === id);
     if (!item) return;
+
+    if (item.role === 'Admin' && users.filter((u) => u.role === 'Admin').length <= 1) {
+      setDeleteError('Tidak dapat menghapus admin terakhir');
+      return;
+    }
+
     if (!confirm(`Yakin ingin menghapus user "${item.nama}"?`)) return;
 
     try {
       setSubmitting(true);
+      setDeleteError('');
       await deleteAdminUser(id);
       setUsers((prev) => prev.filter((user) => user.id !== id));
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Gagal menghapus user.');
+      setDeleteError(error instanceof Error ? error.message : 'Gagal menghapus user.');
     } finally {
       setSubmitting(false);
     }
@@ -341,6 +381,41 @@ export default function ManajemenUserPage() {
       {loadError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {loadError}
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="shrink-0 text-red-500" />
+            <span className="font-medium">Gagal:</span>
+            <span>{deleteError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDeleteError('')}
+            className="shrink-0 rounded p-0.5 hover:bg-red-100"
+          >
+            <X size={14} className="text-red-500" />
+          </button>
+        </div>
+      )}
+
+      {isFallback && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-center gap-2.5 text-sm text-amber-800">
+            <ClockAlert size={16} className="shrink-0 text-amber-500" />
+            <span>Menampilkan <span className="font-semibold">data lokal (lama)</span> — server tidak dapat dijangkau saat ini.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleReload}
+            disabled={isReloading}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+          >
+            <RefreshCw size={13} className={isReloading ? 'animate-spin' : ''} />
+            {isReloading ? 'Memuat...' : 'Tinjau Data Terbaru'}
+          </button>
         </div>
       )}
 
