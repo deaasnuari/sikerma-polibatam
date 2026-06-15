@@ -17,7 +17,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import LaporanKegiatanTemplateModal from '@/app/admin/monitoring/LaporanKegiatanTemplateModal';
+import LaporanPelaksanaanModal from '@/components/LaporanPelaksanaanModal';
 import {
   getPengajuanData,
   refreshPengajuanDataFromApi,
@@ -206,6 +206,7 @@ export default function DetailStoryAktivitasPage() {
 
   const [sourceData, setSourceData] = useState<PengajuanItem[]>([]);
   const [hiddenStoryIds, setHiddenStoryIds] = useState<number[]>([]);
+  const [aktivitasRevision, setAktivitasRevision] = useState(0);
   const [showLaporanModal, setShowLaporanModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -213,7 +214,7 @@ export default function DetailStoryAktivitasPage() {
 
   const storyGroup = useMemo(
     () => findStoryAktivitasGroupByRouteParam(sourceData, routeId, hiddenStoryIds),
-    [sourceData, routeId, hiddenStoryIds]
+    [sourceData, routeId, hiddenStoryIds, aktivitasRevision]
   );
 
   const primaryPengajuanId = storyGroup?.pengajuan[0]?.id ?? 0;
@@ -230,11 +231,12 @@ export default function DetailStoryAktivitasPage() {
       setSourceData(getPengajuanData());
     };
 
-    const syncHidden = () => {
+    const syncStoryState = () => {
       if (!isMounted) {
         return;
       }
       setHiddenStoryIds(getHiddenStoryIds());
+      setAktivitasRevision((r) => r + 1);
     };
 
     void Promise.all([
@@ -246,16 +248,16 @@ export default function DetailStoryAktivitasPage() {
       })
       .finally(() => {
         syncData();
-        syncHidden();
+        syncStoryState();
       });
 
     window.addEventListener('pengajuan-data-updated', syncData);
-    window.addEventListener('story-data-updated', syncHidden);
+    window.addEventListener('story-data-updated', syncStoryState);
 
     return () => {
       isMounted = false;
       window.removeEventListener('pengajuan-data-updated', syncData);
-      window.removeEventListener('story-data-updated', syncHidden);
+      window.removeEventListener('story-data-updated', syncStoryState);
     };
   }, []);
 
@@ -773,7 +775,7 @@ export default function DetailStoryAktivitasPage() {
         )}
       </section>
 
-      <LaporanKegiatanTemplateModal
+      <LaporanPelaksanaanModal
         isOpen={showLaporanModal}
         onClose={() => setShowLaporanModal(false)}
         data={laporanData}
