@@ -8,7 +8,7 @@ import {
   BookOpen, Archive, Users, Handshake, ChevronLeft, ChevronRight, Bell,
   type LucideIcon,
 } from 'lucide-react';
-import { getUnreadCountByHref } from '@/services/adminService';
+import { getUnreadCountByHref, getUnreadCountByHrefPrefix } from '@/services/adminService';
 
 export interface SidebarMenuItem {
   icon: LucideIcon;
@@ -29,6 +29,7 @@ interface AdminSidebarProps {
 }
 
 const PERPANJANGAN_HREF = '/admin/monitoring/perpanjangan';
+const DATA_PENGAJUAN_HREF_PREFIX = '/admin/data_pengajuan';
 
 const defaultMenuItems: SidebarMenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
@@ -64,9 +65,13 @@ export default function AdminSidebar({
   const router = useRouter();
 
   const [perpanjanganBadge, setPerpanjanganBadge] = useState(0);
+  const [dataPengajuanBadge, setDataPengajuanBadge] = useState(0);
 
   useEffect(() => {
-    const sync = () => setPerpanjanganBadge(getUnreadCountByHref(PERPANJANGAN_HREF));
+    const sync = () => {
+      setPerpanjanganBadge(getUnreadCountByHref(PERPANJANGAN_HREF));
+      setDataPengajuanBadge(getUnreadCountByHrefPrefix(DATA_PENGAJUAN_HREF_PREFIX));
+    };
     sync();
     window.addEventListener('admin-notifications-updated', sync);
     return () => window.removeEventListener('admin-notifications-updated', sync);
@@ -169,6 +174,9 @@ export default function AdminSidebar({
             }
 
             const hasPerpanjanganBadge = item.children?.some((c) => c.href === PERPANJANGAN_HREF) && perpanjanganBadge > 0;
+            const hasDataPengajuanBadge = item.href === '/admin/data_pengajuan' && dataPengajuanBadge > 0;
+            const hasParentBadge = hasPerpanjanganBadge || hasDataPengajuanBadge;
+            const parentBadgeCount = hasPerpanjanganBadge ? perpanjanganBadge : dataPengajuanBadge;
 
             return (
               <div key={`${item.label}-${item.href}`} className="space-y-1">
@@ -184,15 +192,15 @@ export default function AdminSidebar({
                   <span className="relative flex-shrink-0">
                     <Icon size={14} />
                     {/* Dot indicator on collapsed parent when badge > 0 */}
-                    {!isOpen && hasPerpanjanganBadge && (
+                    {!isOpen && hasParentBadge && (
                       <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-1 ring-[#091222]" />
                     )}
                   </span>
                   {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
                   {/* Badge count on expanded parent when children not visible */}
-                  {isOpen && !showChildren && hasPerpanjanganBadge && (
+                  {isOpen && !showChildren && hasParentBadge && (
                     <span className="ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                      {perpanjanganBadge > 9 ? '9+' : perpanjanganBadge}
+                      {parentBadgeCount > 9 ? '9+' : parentBadgeCount}
                     </span>
                   )}
                 </Link>
