@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, LayoutDashboard, LogOut, SquarePen } from 'lucide-react';
+import { BookOpen, FileText, LayoutDashboard, LogOut, SquarePen } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
@@ -56,6 +56,11 @@ export default function EksternalLayout({ children }: { children: React.ReactNod
       label: 'Pengajuan Baru',
       href: '/eksternal/pengajuan_baru',
       icon: SquarePen,
+    },
+    {
+      label: 'Story & Aktivitas',
+      href: '/eksternal/story_aktivitas',
+      icon: BookOpen,
     },
   ];
 
