@@ -13,7 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import DetailStoryModal from './DetailStoryModal';
-import { type PengajuanItem } from '@/services/adminPengajuanService';
+import { type PengajuanItem, type PengajuanStatus, fetchPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import { refreshAktivitasDataFromApi } from '@/services/adminStoryAktivitasService';
 import { getInternalPengajuanDisetujui } from '@/services/internalPengajuanService';
 import { groupStoryAktivitasByMitra, type StoryAktivitasGroup } from '@/services/storyAktivitasGrouping';
@@ -134,6 +134,15 @@ const statusDotMap: Record<StatusKerjasama, string> = {
 const jenisOptions = ['Semua Jenis', 'MoA', 'MoU', 'IA'];
 const statusOptions = ['Semua Status', 'Aktif', 'Akan Berakhir', 'Kadaluarsa'];
 
+// ── Constants ──────────────────────────────────────────
+
+const APPROVED_STATUSES = new Set<PengajuanStatus>([
+  'Disetujui',
+  'Disetujui Internal',
+  'Disetujui Mitra',
+  'Final Approved',
+]);
+
 // ── Component ──────────────────────────────────────────
 
 export default function InternalStoryAktivitasPage() {
@@ -146,29 +155,39 @@ export default function InternalStoryAktivitasPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const sync = () => {
-      if (!isMounted) {
-        return;
+    const loadData = async () => {
+      if (!isMounted) return;
+      try {
+        const allItems = await fetchPengajuanDataFromApi({ perPage: 500 });
+        if (!isMounted) return;
+        const approved = allItems.filter(
+          (item) =>
+            APPROVED_STATUSES.has(item.statusPengajuan) &&
+            item.kategoriPengajuan !== 'Eksternal',
+        );
+        setKerjasamaData(groupStoryAktivitasByMitra(approved).map(mapStoryGroupToStory));
+      } catch {
+        // Fallback ke localStorage jika API tidak tersedia
+        const disetujui = getInternalPengajuanDisetujui();
+        if (isMounted) setKerjasamaData(groupStoryAktivitasByMitra(disetujui).map(mapStoryGroupToStory));
       }
-
-      const disetujui = getInternalPengajuanDisetujui();
-      setKerjasamaData(groupStoryAktivitasByMitra(disetujui).map(mapStoryGroupToStory));
     };
 
-    void refreshAktivitasDataFromApi()
-      .catch(() => {
-        // Fallback to cached aktivitas when API unavailable.
-      })
-      .finally(sync);
+    const syncHandler = () => { void loadData(); };
 
-    window.addEventListener('pengajuan-data-updated', sync);
-    window.addEventListener('story-data-updated', sync);
+    void refreshAktivitasDataFromApi()
+      .catch(() => {})
+      .finally(() => { void loadData(); });
+
+    window.addEventListener('pengajuan-data-updated', syncHandler);
+    window.addEventListener('story-data-updated', syncHandler);
 
     return () => {
       isMounted = false;
-      window.removeEventListener('pengajuan-data-updated', sync);
-      window.removeEventListener('story-data-updated', sync);
+      window.removeEventListener('pengajuan-data-updated', syncHandler);
+      window.removeEventListener('story-data-updated', syncHandler);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const allAktivitas = kerjasamaData.flatMap((k) => k.aktivitas);
