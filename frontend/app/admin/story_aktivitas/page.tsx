@@ -93,6 +93,7 @@ export default function StoryAktivitasPage() {
   const [search, setSearch] = useState('');
   const [hiddenStoryIds, setHiddenStoryIds] = useState<number[]>([]);
   const [sourceData, setSourceData] = useState<PengajuanItem[]>([]);
+  const [aktivitasRevision, setAktivitasRevision] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,12 +106,13 @@ export default function StoryAktivitasPage() {
       setSourceData(getPengajuanData());
     };
 
-    const syncHiddenStoryIds = () => {
+    const syncStoryState = () => {
       if (!isMounted) {
         return;
       }
 
       setHiddenStoryIds(getHiddenStoryIds());
+      setAktivitasRevision((r) => r + 1);
     };
 
     void Promise.all([
@@ -122,22 +124,22 @@ export default function StoryAktivitasPage() {
       })
       .finally(() => {
         syncData();
-        syncHiddenStoryIds();
+        syncStoryState();
       });
 
     window.addEventListener('pengajuan-data-updated', syncData);
-    window.addEventListener('story-data-updated', syncHiddenStoryIds);
+    window.addEventListener('story-data-updated', syncStoryState);
 
     return () => {
       isMounted = false;
       window.removeEventListener('pengajuan-data-updated', syncData);
-      window.removeEventListener('story-data-updated', syncHiddenStoryIds);
+      window.removeEventListener('story-data-updated', syncStoryState);
     };
   }, []);
 
   const groupedData = useMemo(
     () => groupStoryAktivitasByMitra(sourceData, hiddenStoryIds),
-    [sourceData, hiddenStoryIds]
+    [sourceData, hiddenStoryIds, aktivitasRevision]
   );
 
   const tahunOptions = useMemo(
@@ -395,6 +397,27 @@ export default function StoryAktivitasPage() {
                       </span>
                     ))}
                   </div>
+
+                  {(() => {
+                    const moaList = group.pengajuan.filter((p) => p.jenisDokumen === 'MoA');
+                    if (moaList.length === 0) return null;
+                    return (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Dokumen MoA</p>
+                        <div className="mt-2 space-y-1.5">
+                          {moaList.map((moa) => (
+                            <div key={moa.id} className="flex items-start gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
+                              <span className="mt-0.5 shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">MoA</span>
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold text-slate-800">{moa.nomorPengajuan}</p>
+                                <p className="truncate text-xs text-slate-500">{moa.judulPengajuan}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {group.ruangLingkup.map((scope) => (
