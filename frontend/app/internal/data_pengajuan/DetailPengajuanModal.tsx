@@ -1,6 +1,6 @@
 'use client';
 
-import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip, GitBranch } from 'lucide-react';
+import { X, FileText, User, Building2, CalendarDays, Tag, CheckCircle2, Clock3, XCircle, MessageSquareText, ExternalLink, Paperclip, GitBranch, ShieldCheck, Download } from 'lucide-react';
 import type { PengajuanItem, PengajuanStatus } from '@/services/adminPengajuanService';
 import { pengajuanDokumenBadge } from '@/services/adminPengajuanService';
 import TahapanStepper from '@/components/TahapanStepper';
@@ -59,7 +59,11 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         .split(',')
         .map((name) => name.trim())
         .filter(Boolean)
-        .map((name) => ({ name, url: '' }));
+        .map((name) => ({ name, url: '', isAcc: false }));
+
+  const finalFileUrl = item.finalFilePath
+    ? (item.finalFilePath.startsWith('http') ? item.finalFilePath : `http://127.0.0.1:8000/storage/${item.finalFilePath.replace(/^\/+/, '')}`)
+    : null;
 
   return (
     <div
@@ -156,42 +160,69 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
             </section>
           )}
 
-          {fileEntries.length > 0 && (
+          {/* Dokumen Pengajuan Awal */}
+          {fileEntries.filter((f) => !f.isAcc).length > 0 && (
             <section>
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
                 Dokumen Pendukung
               </h3>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <ul className="space-y-2 text-sm">
-                  {fileEntries.map((file, index) => (
-                    <li key={`${file.name}-${index}`}>
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                  <Paperclip size={13} />
+                  Dokumen Pengajuan Awal
+                </div>
+                <ul className="space-y-1.5">
+                  {fileEntries.filter((f) => !f.isAcc).map((file, index) => (
+                    <li key={`${file.name}-${index}`} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                      <Paperclip size={13} className="shrink-0 text-slate-400" />
                       {file.url ? (
                         <a
                           href={file.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           download={file.name}
-                          className="inline-flex items-center gap-1.5 text-blue-700 hover:underline"
+                          className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
                         >
-                          <Paperclip size={14} />
                           {file.name}
+                          <Download size={12} />
                         </a>
                       ) : (
-                        <span
-                          className="inline-flex items-center gap-1.5 text-slate-600"
-                          title="URL dokumen belum tersedia"
-                        >
-                          <Paperclip size={14} />
-                          {file.name}
-                        </span>
+                        <span className="truncate text-xs text-slate-600">{file.name}</span>
                       )}
-
                     </li>
                   ))}
                 </ul>
               </div>
             </section>
           )}
+
+          {/* Dokumen Final (Resmi) */}
+          <section>
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+              Dokumen Final
+            </h3>
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                <ShieldCheck size={14} />
+                Dokumen Final (Resmi)
+              </div>
+              {item.finalFileName && finalFileUrl ? (
+                <a
+                  href={finalFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={item.finalFileName}
+                  className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                >
+                  <Paperclip size={13} className="shrink-0 text-emerald-600" />
+                  <span className="truncate">{item.finalFileName}</span>
+                  <Download size={13} className="ml-auto shrink-0" />
+                </a>
+              ) : (
+                <p className="text-xs text-slate-500">Belum ada dokumen final yang diupload.</p>
+              )}
+            </div>
+          </section>
 
 
 
