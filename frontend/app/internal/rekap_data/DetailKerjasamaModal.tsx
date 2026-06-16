@@ -110,8 +110,8 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Detail Kerjasama</h2>
-              <p className="text-xs text-gray-500">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
+              <h2 className="text-[15px] font-bold text-gray-900">Detail Kerjasama</h2>
+              <p className="text-[10px] text-gray-500">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
             </div>
           </div>
 <button
@@ -142,7 +142,7 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
               document.body.removeChild(link);
               URL.revokeObjectURL(url);
             }}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-gray-600 transition-colors hover:text-gray-900"
           >
             <Download size={15} />
             Download
@@ -152,22 +152,22 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
         {/* Partner Info Bar */}
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1E376C] text-sm font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1E376C] text-[12px] font-bold text-white">
               P
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">{item.namaMitra}</p>
+              <p className="text-[12px] font-bold text-gray-900">{item.namaMitra}</p>
               <div className="mt-1 flex items-center gap-2">
-                <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${jenisBadgeMap[item.jenis]}`}>
+                <span className={`rounded px-2 py-0.5 text-[9.5px] font-bold ${jenisBadgeMap[item.jenis]}`}>
                   {item.jenis}
                 </span>
-                <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-medium text-gray-600">
+                <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[9.5px] font-medium text-gray-600">
                   {item.unit}
                 </span>
               </div>
             </div>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.className}`}>
+          <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusInfo.className}`}>
             {statusInfo.label}
           </span>
         </div>
@@ -180,7 +180,7 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-3 text-center text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 text-center text-[12px] font-medium transition-colors ${
                   activeTab === tab.key
                     ? 'border-b-2 border-[#1E376C] text-[#1E376C]'
                     : 'text-gray-400 hover:text-gray-600'
@@ -204,19 +204,19 @@ export default function DetailKerjasamaModal({ item, onClose }: DetailKerjasamaM
         {item.status === 'Menunggu' && (
           <div className="flex items-center justify-between gap-3 border-t border-amber-200 bg-amber-50 px-6 py-3">
             <div>
-              <p className="text-sm font-semibold text-amber-900">Pengajuan Menunggu Persetujuan</p>
-              <p className="text-xs text-amber-700">Tindakan diperlukan untuk melanjutkan proses kerjasama.</p>
+              <p className="text-[12px] font-semibold text-amber-900">Pengajuan Menunggu Persetujuan</p>
+              <p className="text-[10px] text-amber-700">Tindakan diperlukan untuk melanjutkan proses kerjasama.</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
               >
                 ✕ Tolak
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg bg-[#1E376C] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#2B4A93]"
+                className="inline-flex items-center gap-1 rounded-lg bg-[#1E376C] px-3 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[#2B4A93]"
               >
                 ✓ Setujui
               </button>
@@ -232,63 +232,63 @@ function TabInformasi({ item }: { item: KerjasamaItem }) {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-bold text-gray-900">Informasi Kerjasama</h3>
+        <h3 className="text-[12px] font-bold text-gray-900">Informasi Kerjasama</h3>
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-gray-500">Nomor Dokumen</p>
-            <p className="mt-0.5 text-sm font-semibold text-gray-900">{item.noDokumen}</p>
+            <p className="text-[10px] text-gray-500">Nomor Dokumen</p>
+            <p className="mt-0.5 text-[12px] font-semibold text-gray-900">{item.noDokumen}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Jenis Kerjasama</p>
-            <p className="mt-0.5 text-sm font-semibold text-gray-900">{item.jenis}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-gray-500">Tanggal Mulai</p>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <Calendar size={13} className="text-gray-400" />
-              <p className="text-sm font-semibold text-gray-900">{item.tanggalMulai}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Tanggal Berakhir</p>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <Calendar size={13} className="text-gray-400" />
-              <p className="text-sm font-semibold text-gray-900">{item.berlakuHingga}</p>
-            </div>
+            <p className="text-[10px] text-gray-500">Jenis Kerjasama</p>
+            <p className="mt-0.5 text-[12px] font-semibold text-gray-900">{item.jenis}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-gray-500">Unit Pelaksana</p>
-            <p className="mt-0.5 text-sm font-semibold text-gray-900">{item.unit}</p>
+            <p className="text-[10px] text-gray-500">Tanggal Mulai</p>
+            <div className="mt-0.5 flex items-center gap-1.5">
+              <Calendar size={13} className="text-gray-400" />
+              <p className="text-[12px] font-semibold text-gray-900">{item.tanggalMulai}</p>
+            </div>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Nilai Kerjasama</p>
-            <p className="mt-0.5 text-sm font-semibold text-blue-600">Rp. 500.000.000</p>
+            <p className="text-[10px] text-gray-500">Tanggal Berakhir</p>
+            <div className="mt-0.5 flex items-center gap-1.5">
+              <Calendar size={13} className="text-gray-400" />
+              <p className="text-[12px] font-semibold text-gray-900">{item.berlakuHingga}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] text-gray-500">Unit Pelaksana</p>
+            <p className="mt-0.5 text-[12px] font-semibold text-gray-900">{item.unit}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500">Nilai Kerjasama</p>
+            <p className="mt-0.5 text-[12px] font-semibold text-blue-600">Rp. 500.000.000</p>
           </div>
         </div>
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
         <div>
-          <p className="text-xs text-gray-500">Deskripsi</p>
-          <p className="mt-1 text-sm text-gray-700 leading-relaxed">
+          <p className="text-[10px] text-gray-500">Deskripsi</p>
+          <p className="mt-1 text-[12px] text-gray-700 leading-relaxed">
             Kerjasama dalam bentuk {jenisFullName[item.jenis]} untuk pengembangan teknologi informasi dan pelatihan mahasiswa di bidang software development.
           </p>
         </div>
 
         <div>
-          <p className="text-xs text-gray-500">Ruang Lingkup</p>
+          <p className="text-[10px] text-gray-500">Ruang Lingkup</p>
           <ul className="mt-1 space-y-1">
             {['Program magang mahasiswa', 'Pelatihan dan sertifikasi', 'Penelitian bersama', 'Sharing dan knowledge teknologi'].map((scope) => (
-              <li key={scope} className="flex items-center gap-2 text-sm text-gray-700">
+              <li key={scope} className="flex items-center gap-2 text-[12px] text-gray-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                 {scope}
               </li>
@@ -309,14 +309,14 @@ function TabDokumen({
 
     return (
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-gray-900">Dokumen Terkait</h3>
-        <div className="text-gray-500 text-sm">Belum ada dokumen terlampir.</div>
+        <h3 className="text-[12px] font-bold text-gray-900">Dokumen Terkait</h3>
+        <div className="text-gray-500 text-[12px]">Belum ada dokumen terlampir.</div>
       </div>
     );
   }
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-900">Dokumen Terkait</h3>
+      <h3 className="text-[12px] font-bold text-gray-900">Dokumen Terkait</h3>
       <div className="space-y-3">
         {dokumenTerkait.map((doc) => (
           <div key={doc.nama} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
@@ -325,8 +325,8 @@ function TabDokumen({
                 <FileText size={18} className="text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">{doc.nama}</p>
-                <p className="text-xs text-gray-500">{doc.ukuran} • {doc.tanggal}</p>
+                <p className="text-[12px] font-semibold text-gray-900">{doc.nama}</p>
+                <p className="text-[10px] text-gray-500">{doc.ukuran} • {doc.tanggal}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -334,7 +334,7 @@ function TabDokumen({
                 href={doc.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 transition-colors hover:text-blue-800 border border-blue-100 rounded px-2 py-1"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-blue-600 transition-colors hover:text-blue-800 border border-blue-100 rounded px-2 py-1"
                 style={{ textDecoration: 'none' }}
               >
                 Lihat
@@ -342,7 +342,7 @@ function TabDokumen({
               <a
                 href={doc.url}
                 download={doc.nama}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-gray-500 transition-colors hover:text-gray-800"
               >
                 <Download size={14} />
                 Download
@@ -358,17 +358,17 @@ function TabDokumen({
 function TabKontak() {
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-900">Kontak Mitra</h3>
+      <h3 className="text-[12px] font-bold text-gray-900">Kontak Mitra</h3>
 
       <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-5 space-y-5">
         {/* Person */}
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-600">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-[12px] font-bold text-gray-600">
             {dummyKontak.inisial}
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900">{dummyKontak.nama}</p>
-            <p className="text-xs text-gray-500">{dummyKontak.jabatan}</p>
+            <p className="text-[12px] font-bold text-gray-900">{dummyKontak.nama}</p>
+            <p className="text-[10px] text-gray-500">{dummyKontak.jabatan}</p>
           </div>
         </div>
 
@@ -380,8 +380,8 @@ function TabKontak() {
             <Mail size={15} className="text-orange-500" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Email</p>
-            <p className="text-sm font-medium text-gray-900">{dummyKontak.email}</p>
+            <p className="text-[10px] text-gray-500">Email</p>
+            <p className="text-[12px] font-medium text-gray-900">{dummyKontak.email}</p>
           </div>
         </div>
 
@@ -391,8 +391,8 @@ function TabKontak() {
             <Phone size={15} className="text-green-500" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Telepon</p>
-            <p className="text-sm font-medium text-gray-900">{dummyKontak.telepon}</p>
+            <p className="text-[10px] text-gray-500">Telepon</p>
+            <p className="text-[12px] font-medium text-gray-900">{dummyKontak.telepon}</p>
           </div>
         </div>
       </div>
@@ -403,7 +403,7 @@ function TabKontak() {
 function TabHistori() {
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-bold text-gray-900">Histori Perubahan</h3>
+      <h3 className="text-[12px] font-bold text-gray-900">Histori Perubahan</h3>
 
       <div className="space-y-0">
         {dummyHistori.map((h, index) => (
@@ -428,9 +428,9 @@ function TabHistori() {
 
             {/* Content */}
             <div className="pt-1">
-              <p className="text-sm font-semibold text-gray-900">{h.judul}</p>
-              <p className="text-xs text-gray-500">{h.oleh}</p>
-              <p className="text-xs text-gray-400">{h.tanggal}</p>
+              <p className="text-[12px] font-semibold text-gray-900">{h.judul}</p>
+              <p className="text-[10px] text-gray-500">{h.oleh}</p>
+              <p className="text-[10px] text-gray-400">{h.tanggal}</p>
             </div>
           </div>
         ))}
