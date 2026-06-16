@@ -284,14 +284,14 @@ export default function DaftarKerjasamaEksternalPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Daftar Kerjasama</h1>
-          <p className="text-sm text-slate-500">Kelola dan monitor semua kerjasama</p>
+          <h1 className="text-[17px] font-bold text-slate-900">Daftar Kerjasama</h1>
+          <p className="text-[12px] text-slate-500">Kelola dan monitor semua kerjasama</p>
         </div>
 
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-[12px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
         >
           <Download size={15} />
           Export
@@ -307,12 +307,12 @@ export default function DaftarKerjasamaEksternalPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Cari berdasarkan nomor atau mitra"
-              className="input-field h-10 w-full pl-9 pr-3 text-sm text-slate-700"
+              className="input-field h-10 w-full pl-9 pr-3 text-[12px] text-slate-700"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-600">
+            <span className="inline-flex items-center gap-1 text-[12px] font-medium text-slate-600">
               <Filter size={14} />
               Filter
             </span>
@@ -320,7 +320,7 @@ export default function DaftarKerjasamaEksternalPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="input-field h-10 px-3 text-sm text-slate-700"
+              className="input-field h-10 px-3 text-[12px] text-slate-700"
             >
               <option>Semua Status</option>
               <option>Menunggu</option>
@@ -332,7 +332,7 @@ export default function DaftarKerjasamaEksternalPage() {
             <select
               value={filterReview}
               onChange={(event) => setFilterReview(event.target.value as 'Semua Review' | 'Belum Direview' | 'Sudah Direview')}
-              className="input-field h-10 px-3 text-sm text-slate-700"
+              className="input-field h-10 px-3 text-[12px] text-slate-700"
             >
               <option>Semua Review</option>
               <option>Belum Direview</option>
@@ -343,7 +343,7 @@ export default function DaftarKerjasamaEksternalPage() {
               <button
                 type="button"
                 onClick={() => setYearPickerOpen((prev) => !prev)}
-                className="input-field inline-flex h-10 min-w-[150px] items-center justify-between gap-2 px-3 text-sm text-slate-700"
+                className="input-field inline-flex h-10 min-w-[150px] items-center justify-between gap-2 px-3 text-[12px] text-slate-700"
               >
                 <span>{filterTahun ?? 'Pilih Tahun'}</span>
                 <CalendarDays size={15} className="text-slate-500" />
@@ -359,7 +359,7 @@ export default function DaftarKerjasamaEksternalPage() {
                     >
                       <ChevronLeft size={16} />
                     </button>
-                    <p className="text-sm font-semibold text-slate-800">
+                    <p className="text-[12px] font-semibold text-slate-800">
                       {yearRangeStart} - {yearRangeStart + 11}
                     </p>
                     <button
@@ -383,7 +383,7 @@ export default function DaftarKerjasamaEksternalPage() {
                             setFilterTahun(String(year));
                             setYearPickerOpen(false);
                           }}
-                          className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                          className={`rounded-lg border px-3 py-2 text-[12px] font-medium transition-colors ${
                             isSelected
                               ? 'border-[#071B3C] bg-[#071B3C] text-white'
                               : 'border-slate-200 bg-white text-slate-700 hover:border-[#071B3C] hover:text-[#071B3C]'
@@ -396,14 +396,14 @@ export default function DaftarKerjasamaEksternalPage() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                    <p className="text-xs text-slate-500">Pilih tahun dokumen</p>
+                    <p className="text-[10px] text-slate-500">Pilih tahun dokumen</p>
                     <button
                       type="button"
                       onClick={() => {
                         setFilterTahun(null);
                         setYearPickerOpen(false);
                       }}
-                      className="text-xs font-semibold text-[#071B3C] hover:text-[#0d2b5b]"
+                      className="text-[10px] font-semibold text-[#071B3C] hover:text-[#0d2b5b]"
                     >
                       Semua Tahun
                     </button>
@@ -415,18 +415,18 @@ export default function DaftarKerjasamaEksternalPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-semibold text-slate-700">
             Belum Direview: {reviewStats.belumDireview}
           </span>
-          <span className="rounded-full bg-indigo-100 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+          <span className="rounded-full bg-indigo-100 px-3 py-1.5 text-[10px] font-semibold text-indigo-700">
             Sudah Direview: {reviewStats.sudahDireview}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[1080px] w-full border-collapse text-sm">
+          <table className="min-w-[1080px] w-full border-collapse text-[12px]">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <tr className="border-b border-slate-200 bg-slate-50 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                 <th className="px-4 py-3">No. Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
@@ -451,7 +451,7 @@ export default function DaftarKerjasamaEksternalPage() {
                     <td className="px-4 py-3 font-medium text-slate-800">{item.noDokumen}</td>
                     <td className="px-4 py-3">{item.namaMitra}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                      <span className="rounded-md bg-slate-100 px-2 py-1 text-[10.5px] font-semibold text-slate-700">
                         {item.jenis}
                       </span>
                     </td>
@@ -459,12 +459,12 @@ export default function DaftarKerjasamaEksternalPage() {
                     <td className="px-4 py-3">{item.tanggalMulai}</td>
                     <td className="px-4 py-3">{item.berlakuHingga}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyle[item.status]}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${statusStyle[item.status]}`}>
                         {item.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[item.reviewState]}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${reviewStateStyle[item.reviewState]}`}>
                         {item.reviewState}
                       </span>
                     </td>
@@ -491,7 +491,7 @@ export default function DaftarKerjasamaEksternalPage() {
                           className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800"
                         >
                           <FileText size={16} />
-                          <span className="underline underline-offset-2 text-sm">Laporan</span>
+                          <span className="underline underline-offset-2 text-[12px]">Laporan</span>
                         </button>
                       </div>
                     </td>
@@ -502,7 +502,7 @@ export default function DaftarKerjasamaEksternalPage() {
           </table>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-[10px] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>Menampilkan {filteredItems.length} dari {data.length} data</p>
           <div className="flex items-center gap-2">
             <button type="button" className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-600 hover:bg-slate-50">
@@ -528,9 +528,9 @@ export default function DaftarKerjasamaEksternalPage() {
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
               <div>
-                <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
-                <h2 className="text-xl font-bold text-slate-900">{detailItem.judulPengajuan}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
+                <h2 className="text-[17px] font-bold text-slate-900">{detailItem.judulPengajuan}</h2>
+                <p className="mt-0.5 text-[10px] text-slate-500">
                   {detailItem.diajukanPada} - {detailItem.namaPengusul}
                 </p>
               </div>
@@ -545,18 +545,18 @@ export default function DaftarKerjasamaEksternalPage() {
             <div className="space-y-5 px-6 py-5">
               <div className="flex items-center gap-3">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusDetailConfig[detailItem.status].className}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold ${statusDetailConfig[detailItem.status].className}`}
                 >
                   {statusDetailConfig[detailItem.status].icon}
                   {statusDetailConfig[detailItem.status].label}
                 </span>
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${jenisStyle[detailItem.jenis]}`}>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${jenisStyle[detailItem.jenis]}`}>
                   {detailItem.jenis}
                 </span>
               </div>
 
               <section>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Informasi Umum</h3>
+                <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">Informasi Umum</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow icon={<Building2 size={15} />} label="Mitra" value={detailItem.namaMitra} />
                   <InfoRow icon={<User size={15} />} label="Pengusul" value={detailItem.namaPengusul} />
@@ -568,22 +568,22 @@ export default function DaftarKerjasamaEksternalPage() {
               </section>
 
               <section>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Ruang Lingkup</h3>
+                <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">Ruang Lingkup</h3>
                 <div className="flex flex-wrap gap-2">
                   {detailItem.ruangLingkup.length > 0 ? (
                     detailItem.ruangLingkup.map((scope) => (
-                      <span key={`${detailItem.id}-${scope}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      <span key={`${detailItem.id}-${scope}`} className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-medium text-slate-700">
                         {scope}
                       </span>
                     ))
                   ) : (
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">-</span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-medium text-slate-500">-</span>
                   )}
                 </div>
               </section>
 
               <section>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Kontak</h3>
+                <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">Kontak</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow icon={<User size={15} />} label="Email Pengusul" value={detailItem.emailPengusul} />
                   <InfoRow icon={<User size={15} />} label="Whatsapp" value={detailItem.whatsappPengusul} />
@@ -593,9 +593,9 @@ export default function DaftarKerjasamaEksternalPage() {
               {/* Dokumen Pengajuan Awal */}
               {detailItem.fileAttachments.filter((f) => !f.isAcc).length > 0 && (
                 <section>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Dokumen Pendukung</h3>
+                  <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">Dokumen Pendukung</h3>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-600">
                       <Paperclip size={13} />
                       Dokumen Pengajuan Awal
                     </div>
@@ -609,13 +609,13 @@ export default function DaftarKerjasamaEksternalPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               download={file.name}
-                              className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
+                              className="truncate text-[10px] font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
                             >
                               {file.name}
                               <Download size={12} />
                             </a>
                           ) : (
-                            <span className="truncate text-xs text-slate-600">{file.name}</span>
+                            <span className="truncate text-[10px] text-slate-600">{file.name}</span>
                           )}
                         </li>
                       ))}
@@ -626,9 +626,9 @@ export default function DaftarKerjasamaEksternalPage() {
 
               {/* Dokumen Final (Resmi) */}
               <section>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Dokumen Final</h3>
+                <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">Dokumen Final</h3>
                 <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3">
-                  <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
                     <ShieldCheck size={14} />
                     Dokumen Final (Resmi)
                   </div>
@@ -638,39 +638,39 @@ export default function DaftarKerjasamaEksternalPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       download={detailItem.finalFileName}
-                      className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                      className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
                     >
                       <Paperclip size={13} className="shrink-0 text-emerald-600" />
                       <span className="truncate">{detailItem.finalFileName}</span>
                       <Download size={13} className="ml-auto shrink-0" />
                     </a>
                   ) : (
-                    <p className="text-xs text-slate-500">Belum ada dokumen final yang diupload oleh admin.</p>
+                    <p className="text-[10px] text-slate-500">Belum ada dokumen final yang diupload oleh admin.</p>
                   )}
                 </div>
               </section>
 
               <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-[#173B82]">
+                  <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-[#173B82]">
                     <MessageSquareText size={15} />
                     Hasil Review Admin
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reviewStateStyle[detailItem.reviewState]}`}
+                    className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${reviewStateStyle[detailItem.reviewState]}`}
                   >
                     {detailItem.reviewState}
                   </span>
                 </div>
 
                 {detailItem.reviewComment ? (
-                  <p className="text-sm text-slate-700">{detailItem.reviewComment}</p>
+                  <p className="text-[12px] text-slate-700">{detailItem.reviewComment}</p>
                 ) : (
-                  <p className="text-sm text-slate-700">{reviewCopy[detailItem.status]}</p>
+                  <p className="text-[12px] text-slate-700">{reviewCopy[detailItem.status]}</p>
                 )}
 
                 {(detailItem.reviewedAt || detailItem.reviewedBy) && (
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-[10px] text-slate-500">
                     Diperbarui oleh {detailItem.reviewedBy || 'Admin'}
                     {detailItem.reviewedAt ? ` pada ${toDisplayDate(detailItem.reviewedAt)}` : ''}
                   </p>
@@ -680,7 +680,7 @@ export default function DaftarKerjasamaEksternalPage() {
               {/* Progres Tahapan — dibaca dari data API */}
               {detailItem.tahapanStage && (
                 <section>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+                  <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
                     Progres Tahapan
                   </h3>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -720,8 +720,8 @@ function InfoRow({
     <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
       <span className="mt-0.5 text-slate-400">{icon}</span>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="mt-0.5 text-sm font-medium text-slate-800">{value || '-'}</p>
+        <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-0.5 text-[12px] font-medium text-slate-800">{value || '-'}</p>
       </div>
     </div>
   );
