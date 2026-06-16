@@ -49,7 +49,7 @@ type ToastState = {
 const AdminDashboardCharts = dynamic(() => import('./components/AdminDashboardCharts'), {
   ssr: false,
   loading: () => (
-    <div className="card p-6 text-sm text-gray-500">Memuat statistik...</div>
+    <div className="card p-6 text-xs text-gray-500">Memuat statistik...</div>
   ),
 });
 
@@ -378,23 +378,23 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 text-sm md:text-base mt-2">
-          Selamat datang di SIKERMA v2.0 - Sistem Informasi Kerjasama Politeknik Negeri Batam
+        <h1 className="text-lg md:text-xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500 text-[9px] mt-1">
+          Selamat datang di SIKERMA v2.0 — Sistem Informasi Kerjasama Politeknik Negeri Batam
         </p>
       </div>
 
-      <div className="card p-4 md:p-6">
-        <div className="flex items-center justify-between mb-4 gap-3">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className="card p-3 md:p-4">
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <h2 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             Notifikasi Terbaru
           </h2>
-          <Link href="/admin/notifikasi" className="text-sm text-[#173B82] hover:text-[#091222] font-medium">
+          <Link href="/admin/notifikasi" className="text-xs text-[#173B82] hover:text-[#091222] font-medium">
             Lihat Semua
           </Link>
         </div>
@@ -405,7 +405,7 @@ export default function AdminDashboard() {
               <button
                 key={notification.id}
                 onClick={() => handleOpenNotification(notification)}
-                className={`w-full text-left bg-white border-l-4 ${index === 0 ? 'border-green-500' : 'border-[#173B82]'} rounded-lg p-4 flex gap-3 hover:shadow-md transition-shadow cursor-pointer ${!notification.read ? 'bg-slate-50/70' : ''}`}
+                className={`w-full text-left bg-white border-l-4 ${index === 0 ? 'border-green-500' : 'border-[#173B82]'} rounded-lg p-3 flex gap-3 hover:shadow-md transition-shadow cursor-pointer ${!notification.read ? 'bg-slate-50/70' : ''}`}
               >
                 <div className={`w-6 h-6 ${index === 0 ? 'bg-green-100' : 'bg-slate-100'} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
                   <svg className={`w-4 h-4 ${index === 0 ? 'text-green-600' : 'text-[#173B82]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,11 +418,11 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{notification.title}</p>
-                    <span className="text-[11px] text-slate-400 whitespace-nowrap">{notification.createdAt}</span>
+                    <p className="text-xs font-semibold text-gray-900">{notification.title}</p>
+                    <span className="text-[9px] text-slate-400 whitespace-nowrap">{notification.createdAt}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">📌 dari: {notification.from}</p>
+                  <p className="text-xs text-gray-600 mt-1">{notification.message}</p>
+                  <p className="text-[9px] text-gray-500 mt-1">📌 dari: {notification.from}</p>
                 </div>
               </button>
             ))
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 md:gap-3">
         {dashboardStats.map((stat, idx) => {
           const IconComponent = statIcons[stat.iconKey];
           const href = getMitraStatHref(stat.label);
@@ -446,25 +446,25 @@ export default function AdminDashboard() {
               type="button"
               onClick={() => href && router.push(href)}
               disabled={!isClickable}
-              className={`${stat.color} rounded-lg p-3 md:p-4 text-center transition-all duration-200 ${isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-105' : 'cursor-default opacity-90'}`}
+              className={`${stat.color} rounded-lg p-3 text-center transition-all duration-200 ${isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-105' : 'cursor-default opacity-90'}`}
             >
-              <div className="flex justify-center mb-2">
-                <IconComponent size={24} className={stat.textColor} />
+              <div className="flex justify-center mb-1.5">
+                <IconComponent size={20} className={stat.textColor} />
               </div>
-              <p className={`text-xs md:text-sm font-medium ${stat.textColor}`}>{stat.label}</p>
-              <p className="text-lg md:text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              <p className={`text-[9px] font-medium ${stat.textColor}`}>{stat.label}</p>
+              <p className="text-xs md:text-base font-bold text-gray-900 mt-0.5">{stat.value}</p>
             </button>
           );
         })}
       </div>
 
-      <div className="card p-5 md:p-6">
-        <div className="mb-4">
-          <h2 className="text-lg md:text-xl font-bold text-gray-900">Quick Access</h2>
-          <p className="text-sm text-gray-600 mt-1">Akses cepat ke menu utama yang sering digunakan.</p>
+      <div className="card p-3 md:p-4">
+        <div className="mb-3">
+          <h2 className="text-[9px] md:text-xs font-bold text-gray-900">Quick Access</h2>
+          <p className="text-[9px] text-gray-500 mt-0.5">Akses cepat ke menu utama yang sering digunakan.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 md:gap-3">
           {quickActions.map((action, idx) => {
             const IconComponent = actionIcons[action.iconKey];
             const isPrimary = idx === 0;
@@ -473,18 +473,18 @@ export default function AdminDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className={`${action.color} border rounded-xl p-4 md:p-5 hover:shadow-md transition-all block`}
+                className={`${action.color} border rounded-lg p-3 md:p-4 hover:shadow-md transition-all block`}
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className={`w-11 h-11 rounded-lg flex items-center justify-center ${isPrimary ? 'bg-white/15' : 'bg-white'} border ${isPrimary ? 'border-white/20' : 'border-slate-200'}`}>
-                    <IconComponent size={22} className={isPrimary ? 'text-white' : 'text-[#173B82]'} />
+                <div className="flex items-start justify-between gap-2 mb-2.5">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isPrimary ? 'bg-white/15' : 'bg-white'} border ${isPrimary ? 'border-white/20' : 'border-slate-200'}`}>
+                    <IconComponent size={18} className={isPrimary ? 'text-white' : 'text-[#173B82]'} />
                   </div>
-                  <span className={`text-xs font-semibold ${isPrimary ? 'text-sky-100' : 'text-[#173B82]'}`}>Quick Access</span>
+                  <span className={`text-[9px] font-semibold ${isPrimary ? 'text-sky-100' : 'text-[#173B82]'}`}>Quick Access</span>
                 </div>
 
-                <h3 className={`text-sm md:text-base font-bold ${isPrimary ? 'text-white' : 'text-gray-900'}`}>{action.label}</h3>
-                <p className={`text-xs mt-1 ${isPrimary ? 'text-slate-200' : 'text-gray-600'}`}>{action.description}</p>
-                <p className={`text-xs font-semibold mt-3 ${isPrimary ? 'text-sky-100' : 'text-[#173B82]'}`}>Buka menu →</p>
+                <h3 className={`text-xs font-bold ${isPrimary ? 'text-white' : 'text-gray-900'}`}>{action.label}</h3>
+                <p className={`text-[9px] mt-0.5 ${isPrimary ? 'text-slate-200' : 'text-gray-500'}`}>{action.description}</p>
+                <p className={`text-[9px] font-semibold mt-2 ${isPrimary ? 'text-sky-100' : 'text-[#173B82]'}`}>Buka menu →</p>
               </Link>
             );
           })}
@@ -497,30 +497,30 @@ export default function AdminDashboard() {
         popularSchemes={popularSchemes}
       />
 
-      <div className="card p-5 md:p-6">
-        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="card p-3 md:p-4">
+        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">Kelola Carousel Landing Page</h2>
-            <p className="text-sm text-gray-600 mt-1">Upload maksimal 7 gambar. Perubahan akan otomatis tampil di menu Aktivitas landing page. <span className="text-slate-500">Drag kartu untuk mengatur urutan slide.</span></p>
+            <h2 className="text-[9px] md:text-xs font-bold text-gray-900">Kelola Carousel Landing Page</h2>
+            <p className="text-[9px] text-gray-500 mt-0.5">Upload maksimal 7 gambar. Perubahan akan otomatis tampil di menu Aktivitas. <span className="text-slate-400">Drag kartu untuk mengatur urutan slide.</span></p>
           </div>
-          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[9px] font-semibold text-slate-600">
             {carouselImages.length}/7 gambar aktif
           </span>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="grid gap-2.5 md:grid-cols-[1fr_auto] md:items-end">
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-slate-700">Judul Aktivitas (opsional)</span>
+            <span className="text-[9px] font-medium text-slate-700">Judul Aktivitas (opsional)</span>
             <input
               type="text"
               value={carouselTitle}
               onChange={(event) => setCarouselTitle(event.target.value)}
               placeholder="Contoh: Penandatanganan MoU Industri"
-              className="input-field h-10 px-3 text-sm text-gray-700"
+              className="input-field h-8 px-3 text-[9px] text-gray-700"
             />
           </label>
 
-          <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white transition-colors ${isUploadingCarousel ? 'bg-slate-400' : 'bg-[#173B82] hover:bg-[#091222]'}`}>
+          <label className={`inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[9px] font-semibold text-white transition-colors ${isUploadingCarousel ? 'bg-slate-400' : 'bg-[#173B82] hover:bg-[#091222]'}`}>
             <Upload size={15} />
             {isUploadingCarousel ? 'Uploading...' : 'Upload Gambar'}
             <input
@@ -533,11 +533,11 @@ export default function AdminDashboard() {
           </label>
         </div>
 
-        {carouselError && <p className="mt-3 text-sm text-red-600">{carouselError}</p>}
+        {carouselError && <p className="mt-3 text-xs text-red-600">{carouselError}</p>}
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {carouselImages.length === 0 ? (
-            <div className="col-span-full rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+            <div className="col-span-full rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500">
               Belum ada gambar carousel. Upload gambar pertama untuk menampilkan aktivitas di landing page.
             </div>
           ) : (
@@ -553,7 +553,7 @@ export default function AdminDashboard() {
               >
                 <div className="relative">
                   <img src={image.image_url} alt={image.title || 'Carousel'} className="h-40 w-full object-cover" />
-                  <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-900/55 px-2 py-0.5 text-[11px] font-bold text-white">
+                  <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-900/55 px-2 py-0.5 text-[9px] font-bold text-white">
                     #{index + 1}
                   </div>
                 </div>
@@ -566,8 +566,8 @@ export default function AdminDashboard() {
                       <GripVertical size={16} />
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">{image.title || 'Tanpa Judul'}</p>
-                      <p className="text-xs text-slate-500">Urutan: {image.sort_order}</p>
+                      <p className="truncate text-xs font-semibold text-slate-800">{image.title || 'Tanpa Judul'}</p>
+                      <p className="text-[9px] text-slate-500">Urutan: {image.sort_order}</p>
                     </div>
                   </div>
                   <button
@@ -612,10 +612,10 @@ export default function AdminDashboard() {
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-xs font-semibold text-slate-900">
                   {toast.type === 'success' ? 'Berhasil' : 'Terjadi Kesalahan'}
                 </p>
-                <p className="mt-0.5 text-sm text-slate-600">{toast.message}</p>
+                <p className="mt-0.5 text-xs text-slate-600">{toast.message}</p>
               </div>
 
               <button
@@ -648,8 +648,8 @@ export default function AdminDashboard() {
                     <AlertCircle size={18} />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Hapus Gambar Carousel</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">Aksi ini permanen dan tidak dapat dibatalkan.</p>
+                    <h3 className="text-xs font-bold text-slate-900">Hapus Gambar Carousel</h3>
+                    <p className="mt-0.5 text-[9px] text-slate-500">Aksi ini permanen dan tidak dapat dibatalkan.</p>
                   </div>
                 </div>
 
@@ -665,9 +665,9 @@ export default function AdminDashboard() {
             </div>
 
             <div className="px-5 py-4">
-              <p className="text-sm text-slate-600">Item yang akan dihapus:</p>
+              <p className="text-xs text-slate-600">Item yang akan dihapus:</p>
               <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                <p className="line-clamp-2 text-xs font-semibold text-slate-900">
                   {deleteTarget.title || 'Tanpa Judul'}
                 </p>
               </div>
@@ -678,7 +678,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={isDeleting}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Batal
               </button>
@@ -686,7 +686,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={confirmDeleteCarousel}
                 disabled={isDeleting}
-                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
