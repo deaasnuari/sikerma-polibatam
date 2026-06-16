@@ -11,7 +11,7 @@ import { getCachedMasterNegara, getMasterNegara, type MasterNegara } from '@/ser
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-2 text-sm">
+    <div className="flex items-start justify-between gap-2 text-[12px]">
       <span className="shrink-0 text-slate-500">{label}</span>
       <span className="text-right font-semibold text-slate-800">{value}</span>
     </div>
@@ -87,8 +87,8 @@ export default function PengajuanBaruEksternalPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Pengajuan Kerjasama</h2>
-        <p className="text-sm text-slate-500">Form pengajuan eksternal menggunakan tampilan dan alur yang sama seperti role admin.</p>
+        <h2 className="text-[17px] font-bold text-slate-900">Pengajuan Kerjasama</h2>
+        <p className="text-[12px] text-slate-500">Form pengajuan eksternal menggunakan tampilan dan alur yang sama seperti role admin.</p>
       </div>
 
       <InternalAjukanKerjasamaForm
@@ -144,8 +144,8 @@ export default function PengajuanBaruEksternalPage() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
                 <CheckCircle2 size={36} className="text-emerald-500" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
-              <p className="mt-2 text-sm text-slate-500">
+              <h3 className="text-[17px] font-bold text-slate-900">Pengajuan Berhasil Dikirim</h3>
+              <p className="mt-2 text-[12px] text-slate-500">
                 Pengajuan kerjasama Anda telah berhasil dikirim dan sedang dalam proses review oleh tim kami.
               </p>
             </div>
@@ -161,21 +161,21 @@ export default function PengajuanBaruEksternalPage() {
             )}
 
             <div className="rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-6 py-4">
-              <p className="mb-3 text-xs text-slate-500">
+              <p className="mb-3 text-[10px] text-slate-500">
                 Langkah selanjutnya: tim humas/kerjasama akan memproses dokumen Anda dan menghubungi mitra bila diperlukan.
               </p>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setIsSuccessModalOpen(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-100"
                 >
                   Tutup
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push('/eksternal/daftar_kerjasama')}
-                  className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16305c]"
+                  className="rounded-lg bg-[#1E376C] px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-[#16305c]"
                 >
                   Lihat Daftar Kerjasama
                 </button>
