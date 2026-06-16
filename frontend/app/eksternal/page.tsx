@@ -150,8 +150,8 @@ export default function EksternalPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard Mitra Eksternal</h1>
-        <p className="text-sm text-slate-500">Kelola kerjasama dengan Politeknik Negeri Batam</p>
+        <h1 className="text-[17px] font-bold text-slate-900">Dashboard Mitra Eksternal</h1>
+        <p className="text-[12px] text-slate-500">Kelola kerjasama dengan Politeknik Negeri Batam</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -159,14 +159,14 @@ export default function EksternalPage() {
           const Icon = item.icon;
 
           return (
-            <div key={item.title} className={`rounded-2xl border p-4 shadow-sm ${item.accent}`}>
+            <div key={item.title} className={`rounded-lg border p-3.5 shadow-sm ${item.accent}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.title}</p>
-                  <p className="mt-3 text-3xl font-bold text-slate-900">{item.value}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{item.title}</p>
+                  <p className="mt-1.5 text-[17px] font-bold text-slate-900">{item.value}</p>
                 </div>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-md ${item.iconStyle}`}>
-                  <Icon size={16} />
+                <div className={`flex h-7 w-7 items-center justify-center rounded-md ${item.iconStyle}`}>
+                  <Icon size={14} />
                 </div>
               </div>
             </div>
@@ -178,12 +178,12 @@ export default function EksternalPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Kerjasama Anda</h2>
-            <p className="text-sm text-slate-500">Daftar kerjasama dengan institusi</p>
+            <h2 className="text-[13.5px] font-bold text-slate-900">Kerjasama Anda</h2>
+            <p className="text-[12px] text-slate-500">Daftar kerjasama dengan institusi</p>
           </div>
           <Link
             href="/eksternal/daftar_kerjasama"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
           >
             Lihat Semua
           </Link>
@@ -196,19 +196,19 @@ export default function EksternalPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-slate-800">{item.title}</p>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${item.badgeClass}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[9.5px] font-bold ${item.badgeClass}`}>
                       {item.badge}
                     </span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10.5px] text-slate-500">
                     <span className="rounded-full border border-slate-200 px-2 py-0.5">{item.jenis}</span>
                     <span className="rounded-full border border-slate-200 px-2 py-0.5">{item.unit}</span>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">Tanggal Mulai: {item.mulai}</p>
-                  <p className="text-xs text-slate-500">Berlaku Hingga: {item.berakhir}</p>
+                  <p className="mt-2 text-[10px] text-slate-500">Tanggal Mulai: {item.mulai}</p>
+                  <p className="text-[10px] text-slate-500">Berlaku Hingga: {item.berakhir}</p>
                 </div>
 
-                <Link href="/eksternal/daftar_kerjasama" className="text-xs font-semibold text-slate-700 hover:text-slate-900">
+                <Link href="/eksternal/daftar_kerjasama" className="text-[10px] font-semibold text-slate-700 hover:text-slate-900">
                   Detail
                 </Link>
               </div>
@@ -221,12 +221,12 @@ export default function EksternalPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2 text-orange-600">
             <BriefcaseBusiness size={18} />
-            <p className="text-sm font-bold text-slate-900">Ajukan Kerjasama Baru</p>
+            <p className="text-[12px] font-bold text-slate-900">Ajukan Kerjasama Baru</p>
           </div>
-          <p className="mb-4 text-sm text-slate-500">Buat proposal kerjasama dengan institusi</p>
+          <p className="mb-4 text-[12px] text-slate-500">Buat proposal kerjasama dengan institusi</p>
           <Link
             href="/eksternal/pengajuan_baru"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-[12px] font-semibold text-white hover:bg-slate-800"
           >
             <Plus size={15} />
             Buat Pengajuan
@@ -236,10 +236,10 @@ export default function EksternalPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2 text-blue-600">
             <UserRound size={18} />
-            <p className="text-sm font-bold text-slate-900">Profil Mitra</p>
+            <p className="text-[12px] font-bold text-slate-900">Profil Mitra</p>
           </div>
-          <p className="text-sm text-slate-500">Lihat dan update informasi mitra</p>
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          <p className="text-[12px] text-slate-500">Lihat dan update informasi mitra</p>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] text-slate-600">
             {user?.name || 'Mitra Eksternal'} • {user?.email || '-'}
           </div>
         </div>
@@ -250,7 +250,7 @@ export default function EksternalPage() {
           <FolderOpen size={18} />
           <p className="font-bold">Ringkasan Akses Mitra</p>
         </div>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-[12px] text-slate-600">
           Area eksternal memakai navbar dan footer yang sama seperti admin, dengan sidebar khusus mitra eksternal dan warna portal yang berbeda.
         </p>
       </div>
