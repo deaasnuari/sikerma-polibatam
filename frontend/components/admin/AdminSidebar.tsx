@@ -118,32 +118,32 @@ export default function AdminSidebar({
 
       {/* Sidebar */}
       <aside className={`fixed md:relative top-0 left-0 h-full md:h-full ${backgroundClassName} text-gray-300 z-30 flex flex-col transition-all duration-300 rounded-lg shadow-md overflow-visible
-        ${isOpen ? 'w-40 md:w-36' : 'w-14'}
+        ${isOpen ? 'w-52 md:w-48' : 'w-16'}
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <button
           onClick={toggleSidebar}
-          className="absolute -right-2.5 top-2.5 z-40 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-[#091222] shadow-md transition hover:bg-slate-50 hover:text-[#173B82]"
+          className="absolute -right-3 top-3 z-40 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-[#091222] shadow-md transition hover:bg-slate-50 hover:text-[#173B82]"
           title={isOpen ? 'Tutup sidebar' : 'Buka sidebar'}
         >
           {isOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
         </button>
 
         {/* Logo */}
-        <div className="flex items-center justify-between p-2 md:p-2.5 border-b border-slate-700/60">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-slate-700/60">
           <div className="flex items-center gap-2 min-w-0">
-            <img src="/polibatam_logo.png" alt="Logo" className="w-6 h-6 object-contain flex-shrink-0" />
+            <img src="/polibatam_logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0" />
             {isOpen && (
-              <div className="text-xs font-bold truncate">
-                <p className="text-white text-xs leading-tight">{portalTitle}</p>
-                <p className="text-gray-400 text-[10px] leading-tight">{portalSubtitle}</p>
+              <div className="font-bold truncate">
+                <p className="text-white text-[10px] leading-tight">{portalTitle}</p>
+                <p className="text-gray-400 text-[11px] leading-tight">{portalSubtitle}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigasi */}
-        <nav className="flex-1 flex flex-col px-2 gap-1 overflow-y-auto py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="flex-1 flex flex-col px-1.5 gap-0.5 overflow-y-auto py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = item.onClick ? false : isActive(item.href);
@@ -152,7 +152,7 @@ export default function AdminSidebar({
               item.children?.length &&
               (pathname === item.href || pathname.startsWith(`${item.href}/`))
             );
-            const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2 px-2 justify-start' : 'justify-center px-1'} rounded-lg border-l-4 py-1.5 transition-all duration-200 text-sm ${
+            const sharedClassName = `flex w-full items-center ${isOpen ? 'gap-2.5 px-2.5 justify-start' : 'justify-center px-1'} rounded-lg border-l-[3px] py-2 transition-all duration-200 text-sm ${
               active
                 ? activeItemClassName
                 : 'border-l-transparent text-slate-300 hover:bg-white/5 hover:text-white'
@@ -167,8 +167,8 @@ export default function AdminSidebar({
                   title={!isOpen ? item.label : undefined}
                   className={sharedClassName}
                 >
-                  <Icon size={14} className="flex-shrink-0" />
-                  {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
+                  <Icon size={15} className="flex-shrink-0" />
+                  {isOpen && <span className="truncate text-[10px] font-medium">{item.label}</span>}
                 </button>
               );
             }
@@ -190,23 +190,23 @@ export default function AdminSidebar({
                   className={`${sharedClassName} relative`}
                 >
                   <span className="relative flex-shrink-0">
-                    <Icon size={14} />
+                    <Icon size={15} />
                     {/* Dot indicator on collapsed parent when badge > 0 */}
                     {!isOpen && hasParentBadge && (
                       <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-1 ring-[#091222]" />
                     )}
                   </span>
-                  {isOpen && <span className="truncate text-[11px] font-medium">{item.label}</span>}
+                  {isOpen && <span className="truncate text-[10px] font-medium">{item.label}</span>}
                   {/* Badge count on expanded parent when children not visible */}
                   {isOpen && !showChildren && hasParentBadge && (
-                    <span className="ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    <span className="ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                       {parentBadgeCount > 9 ? '9+' : parentBadgeCount}
                     </span>
                   )}
                 </Link>
 
                 {showChildren && (
-                  <div className="ml-7 space-y-1 border-l border-slate-600/60 pl-3">
+                  <div className="ml-7 space-y-0.5 border-l border-slate-600/60 pl-2.5">
                     {item.children?.map((child) => {
                       const childActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
                       const childBadge = child.href === PERPANJANGAN_HREF ? perpanjanganBadge : 0;
@@ -220,7 +220,7 @@ export default function AdminSidebar({
                           onMouseEnter={() => handlePrefetch(child.href)}
                           onFocus={() => handlePrefetch(child.href)}
                           onTouchStart={() => handlePrefetch(child.href)}
-                          className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-medium transition-colors ${
+                          className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-medium transition-colors ${
                             hasBell
                               ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
                               : childActive
@@ -230,13 +230,13 @@ export default function AdminSidebar({
                         >
                           {hasBell && (
                             <span className="relative flex-shrink-0">
-                              <Bell size={10} className="animate-[wiggle_1s_ease-in-out_infinite] text-amber-300" />
+                              <Bell size={11} className="animate-[wiggle_1s_ease-in-out_infinite] text-amber-300" />
                               <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
                             </span>
                           )}
                           <span className="flex-1 truncate">{child.label}</span>
                           {hasBell && (
-                            <span className="ml-auto inline-flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                            <span className="ml-auto inline-flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
                               {childBadge > 9 ? '9+' : childBadge}
                             </span>
                           )}
@@ -251,7 +251,7 @@ export default function AdminSidebar({
         </nav>
 
         {/* Footer */}
-        <div className="text-gray-500 text-center p-1 md:p-1.5 border-t border-slate-700/60 text-[10px]">
+        <div className="text-gray-500 text-center px-2 py-1.5 border-t border-slate-700/60 text-[11px]">
           {isOpen ? '© 2026 Politeknik Negeri Batam' : '©'}
         </div>
       </aside>
