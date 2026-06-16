@@ -167,12 +167,12 @@ export default function InternalDashboardPage() {
         {summaryCards.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.title} className={`rounded-2xl border p-4 shadow-sm ${item.accent}`}>
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide">{item.title}</p>
-                <Icon size={18} />
+            <div key={item.title} className={`rounded-lg border p-3.5 shadow-sm ${item.accent}`}>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide">{item.title}</p>
+                <Icon size={16} />
               </div>
-              <p className="text-3xl font-bold">{item.value}</p>
+              <p className="text-[17px] font-bold">{item.value}</p>
             </div>
           );
         })}
@@ -182,17 +182,17 @@ export default function InternalDashboardPage() {
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-slate-900">Kerjasama Terbaru</h2>
-              <p className="text-sm text-slate-500">Daftar kerja sama aktif di unit internal.</p>
+              <h2 className="text-[13.5px] font-bold text-slate-900">Kerjasama Terbaru</h2>
+              <p className="text-[12px] text-slate-500">Daftar kerja sama aktif di unit internal.</p>
             </div>
-            <Link href="/internal/rekap_data" className="text-sm font-semibold text-teal-700 hover:text-teal-800">
+            <Link href="/internal/rekap_data" className="text-[12px] font-semibold text-teal-700 hover:text-teal-800">
               Lihat Semua
             </Link>
           </div>
 
           <div className="space-y-3">
             {kerjasamaItems.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">Belum ada kerjasama yang disetujui.</p>
+              <p className="py-4 text-center text-[12px] text-slate-400">Belum ada kerjasama yang disetujui.</p>
             ) : (
               kerjasamaItems.map((item, idx) => (
                 <div
@@ -201,15 +201,15 @@ export default function InternalDashboardPage() {
                 >
                   <div>
                     <p className="font-semibold text-slate-800">{item.name}</p>
-                    <p className="text-xs text-slate-500">Jenis: {item.type}</p>
+                    <p className="text-[10px] text-slate-500">Jenis: {item.type}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge[item.status]}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${statusBadge[item.status]}`}>
                       {item.status}
                     </span>
                     <Link
                       href="/internal/rekap_data"
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       Detail
                       <ChevronRight size={14} />
@@ -223,18 +223,18 @@ export default function InternalDashboardPage() {
 
         <div className="space-y-4">
           <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900">Aksi Cepat</h2>
+            <h2 className="text-[13.5px] font-bold text-slate-900">Aksi Cepat</h2>
             <div className="mt-3 space-y-3">
               <Link
                 href="/internal/data_pengajuan?mode=ajukan"
-                className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                className="flex w-full items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-[12px] font-semibold text-white hover:bg-slate-800"
               >
                 Ajukan Kerjasama Baru
                 <ArrowRight size={16} />
               </Link>
               <Link
                 href="/internal/data_pengajuan"
-                className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-[12px] font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Lihat Pengajuan
                 <ArrowRight size={16} />
@@ -243,19 +243,19 @@ export default function InternalDashboardPage() {
           </div>
 
           <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-teal-900 p-4 text-white shadow-sm">
-            <p className="text-sm font-semibold">Ringkasan Kerjasama</p>
+            <p className="text-[12px] font-semibold">Ringkasan Kerjasama</p>
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-lg font-bold">{totalMitra}</p>
-                <p className="text-[11px] text-slate-300">Total Mitra</p>
+                <p className="text-[15px] font-bold">{totalMitra}</p>
+                <p className="text-[10.5px] text-slate-300">Total Mitra</p>
               </div>
               <div>
-                <p className="text-lg font-bold">{totalUnit}</p>
-                <p className="text-[11px] text-slate-300">Unit Terlibat</p>
+                <p className="text-[15px] font-bold">{totalUnit}</p>
+                <p className="text-[10.5px] text-slate-300">Unit Terlibat</p>
               </div>
               <div>
-                <p className="text-lg font-bold">{totalRuangLingkup}</p>
-                <p className="text-[11px] text-slate-300">Ruang Lingkup</p>
+                <p className="text-[15px] font-bold">{totalRuangLingkup}</p>
+                <p className="text-[10.5px] text-slate-300">Ruang Lingkup</p>
               </div>
             </div>
           </div>
@@ -264,13 +264,13 @@ export default function InternalDashboardPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">Statistik Status Kerjasama</h2>
-          <p className="mb-4 text-sm text-slate-500">Distribusi berdasarkan masa berlaku dokumen.</p>
+          <h2 className="text-[13.5px] font-bold text-slate-900">Statistik Status Kerjasama</h2>
+          <p className="mb-4 text-[12px] text-slate-500">Distribusi berdasarkan masa berlaku dokumen.</p>
 
           <div className="space-y-4">
             {unitStats.map((item) => (
               <div key={item.label}>
-                <div className="mb-1 flex items-center justify-between text-sm">
+                <div className="mb-1 flex items-center justify-between text-[12px]">
                   <span className="font-semibold text-slate-700">{item.label}</span>
                   <span className="text-slate-500">{item.value}</span>
                 </div>
@@ -286,16 +286,16 @@ export default function InternalDashboardPage() {
         </div>
 
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">Jenis Kerjasama</h2>
-          <p className="mb-4 text-sm text-slate-500">Distribusi berdasarkan jenis dokumen.</p>
+          <h2 className="text-[13.5px] font-bold text-slate-900">Jenis Kerjasama</h2>
+          <p className="mb-4 text-[12px] text-slate-500">Distribusi berdasarkan jenis dokumen.</p>
 
           <div className="space-y-3">
             {jenisKerjasama.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">Belum ada data.</p>
+              <p className="py-4 text-center text-[12px] text-slate-400">Belum ada data.</p>
             ) : (
               jenisKerjasama.map((item) => (
                 <div key={item.label}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
+                  <div className="mb-1 flex items-center justify-between text-[12px]">
                     <span className="font-semibold text-slate-700">{item.label}</span>
                     <span className="text-slate-500">{item.total}</span>
                   </div>
