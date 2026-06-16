@@ -205,13 +205,13 @@ export default function StoryAktivitasPage() {
   return (
     <div className="space-y-4 pb-8">
       <section>
-        <h1 className="text-4xl font-bold text-[#091222]">Story Aktivitas</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-[17px] font-bold text-[#091222]">Story Aktivitas</h1>
+        <p className="mt-0.5 text-[10px] text-slate-500">
           Daftar story kerja sama per mitra dengan riwayat aktivitas gabungan dari seluruh pengajuan.
         </p>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <button
           type="button"
           onClick={() => {
@@ -226,8 +226,8 @@ export default function StoryAktivitasPage() {
           <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
             <Building2 size={16} />
           </div>
-          <p className="text-xs text-slate-500">Total Mitra</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">{summary.totalMitra}</p>
+          <p className="text-[10px] text-slate-500">Total Mitra</p>
+          <p className="mt-1 text-[17px] font-bold text-slate-900">{summary.totalMitra}</p>
         </button>
 
         <button
@@ -243,8 +243,8 @@ export default function StoryAktivitasPage() {
           <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
             <FolderKanban size={16} />
           </div>
-          <p className="text-xs text-slate-500">Total Pengajuan</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">{summary.totalPengajuan}</p>
+          <p className="text-[10px] text-slate-500">Total Pengajuan</p>
+          <p className="mt-1 text-[17px] font-bold text-slate-900">{summary.totalPengajuan}</p>
         </button>
 
         <button
@@ -260,8 +260,8 @@ export default function StoryAktivitasPage() {
           <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
             <Activity size={16} />
           </div>
-          <p className="text-xs text-slate-500">Aktivitas Gabungan</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">{summary.totalAktivitas}</p>
+          <p className="text-[10px] text-slate-500">Aktivitas Gabungan</p>
+          <p className="mt-1 text-[17px] font-bold text-slate-900">{summary.totalAktivitas}</p>
         </button>
 
         <button
@@ -278,14 +278,14 @@ export default function StoryAktivitasPage() {
           <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
             <CalendarClock size={16} />
           </div>
-          <p className="text-xs text-slate-500">Akan Berakhir</p>
-          <p className="mt-1 text-xl font-bold text-slate-900">{summary.akanBerakhir}</p>
+          <p className="text-[10px] text-slate-500">Akan Berakhir</p>
+          <p className="mt-1 text-[17px] font-bold text-slate-900">{summary.akanBerakhir}</p>
         </button>
       </section>
 
       <section className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">
+          <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-700">
             <Filter size={14} />
             Filter
           </div>
@@ -294,7 +294,7 @@ export default function StoryAktivitasPage() {
             <select
               value={filterJenis}
               onChange={(event) => setFilterJenis(event.target.value)}
-              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-[10px] text-slate-700 outline-none transition focus:border-slate-400"
             >
               <option>Semua Jenis</option>
               <option>MoA</option>
@@ -308,7 +308,7 @@ export default function StoryAktivitasPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-[10px] text-slate-700 outline-none transition focus:border-slate-400"
             >
               <option>Semua Status</option>
               <option>Aktif</option>
@@ -322,7 +322,7 @@ export default function StoryAktivitasPage() {
             <select
               value={filterTahun}
               onChange={(event) => setFilterTahun(event.target.value)}
-              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+              className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-[10px] text-slate-700 outline-none transition focus:border-slate-400"
             >
               <option>Semua Tahun</option>
               {tahunOptions.map((tahun) => (
@@ -341,7 +341,7 @@ export default function StoryAktivitasPage() {
               onChange={(event) => setSearch(event.target.value)}
               type="text"
               placeholder="Cari mitra, nomor, judul pengajuan"
-              className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-700 outline-none transition focus:border-slate-400"
+              className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-[10px] text-slate-700 outline-none transition focus:border-slate-400"
             />
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function StoryAktivitasPage() {
 
       <section className="space-y-4">
         {filtered.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-[12px] text-slate-500">
             Data story aktivitas tidak ditemukan untuk filter saat ini.
           </div>
         )}
@@ -365,19 +365,19 @@ export default function StoryAktivitasPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-bold text-slate-900">{group.namaMitra}</h2>
-                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                      <h2 className="text-[15px] font-bold text-slate-900">{group.namaMitra}</h2>
+                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600">
                         {group.jenis}
                       </span>
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadge(group.status)}`}>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${statusBadge(group.status)}`}>
                         {group.status}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-[10px] text-slate-500">
                       Dokumen acuan: {group.nomorDokumen} • Berlaku hingga {group.berakhir}
                     </p>
                   </div>
-                  <div className="text-right text-xs text-slate-600">
+                  <div className="text-right text-[10px] text-slate-600">
                     <p className="font-semibold text-slate-900">{group.totalPengajuan} Pengajuan</p>
                     <p>{group.totalAktivitas} Aktivitas Gabungan</p>
                   </div>
@@ -386,12 +386,12 @@ export default function StoryAktivitasPage() {
 
               <div className="grid gap-3 p-4 lg:grid-cols-[1.3fr_1fr]">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Story Kerja Sama</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Story Kerja Sama</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {group.pengajuan.map((pengajuan) => (
                       <span
                         key={pengajuan.id}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] text-slate-700"
                       >
                         {pengajuan.nomorPengajuan}
                       </span>
@@ -403,14 +403,14 @@ export default function StoryAktivitasPage() {
                     if (moaList.length === 0) return null;
                     return (
                       <div className="mt-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Dokumen MoA</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Dokumen MoA</p>
                         <div className="mt-2 space-y-1.5">
                           {moaList.map((moa) => (
                             <div key={moa.id} className="flex items-start gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2">
-                              <span className="mt-0.5 shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">MoA</span>
+                              <span className="mt-0.5 shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[9.5px] font-semibold text-indigo-700">MoA</span>
                               <div className="min-w-0">
-                                <p className="truncate text-xs font-semibold text-slate-800">{moa.nomorPengajuan}</p>
-                                <p className="truncate text-xs text-slate-500">{moa.judulPengajuan}</p>
+                                <p className="truncate text-[10px] font-semibold text-slate-800">{moa.nomorPengajuan}</p>
+                                <p className="truncate text-[10px] text-slate-500">{moa.judulPengajuan}</p>
                               </div>
                             </div>
                           ))}
@@ -421,13 +421,13 @@ export default function StoryAktivitasPage() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {group.ruangLingkup.map((scope) => (
-                      <span key={scope} className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                      <span key={scope} className="rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-medium text-blue-700">
                         {scope}
                       </span>
                     ))}
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-600">
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] text-slate-600">
                     <span className="inline-flex items-center gap-1.5">
                       <Users size={14} className="text-slate-400" />
                       {group.jurusanTerlibat.length} Jurusan/Unit
@@ -440,9 +440,9 @@ export default function StoryAktivitasPage() {
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Preview Timeline Aktivitas</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Preview Timeline Aktivitas</p>
                   {timelinePreview.length === 0 ? (
-                    <p className="mt-2 text-xs text-slate-500">Belum ada aktivitas tercatat.</p>
+                    <p className="mt-2 text-[10px] text-slate-500">Belum ada aktivitas tercatat.</p>
                   ) : (
                     <ol className="mt-2 space-y-2">
                       {timelinePreview.map((item, index) => (
@@ -451,8 +451,8 @@ export default function StoryAktivitasPage() {
                             <span className={`block h-2.5 w-2.5 rounded-full ${timelineColor(item.status)}`} />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-slate-900">{item.judul}</p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-[10px] font-semibold text-slate-900">{item.judul}</p>
+                            <p className="text-[10px] text-slate-500">
                               {formatTimelineDate(item.tanggal)} • {item.jenisAktivitas}
                             </p>
                           </div>
@@ -466,7 +466,7 @@ export default function StoryAktivitasPage() {
               <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 p-3">
                 <button
                   onClick={() => router.push(`/admin/story_aktivitas/${group.key}`)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#183053]"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-1.5 text-[10px] font-medium text-white transition hover:bg-[#183053]"
                 >
                   <Eye size={14} />
                   Lihat Detail Story

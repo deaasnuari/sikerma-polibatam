@@ -407,13 +407,13 @@ export default function DetailStoryAktivitasPage() {
       <div className="space-y-5">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50"
         >
           <ArrowLeft size={16} />
           Kembali
         </button>
 
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-[12px] text-slate-500">
           Story aktivitas tidak ditemukan atau sudah disembunyikan.
         </div>
       </div>
@@ -423,25 +423,25 @@ export default function DetailStoryAktivitasPage() {
   const statusKerjasama = getKerjasamaStatus(storyGroup.pengajuan[0]?.tanggalBerakhir);
 
   return (
-    <div className="space-y-6 pb-8">
-      <section className="rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,_#2e5ca1,_#091222_65%)] p-6 text-white shadow-lg">
+    <div className="space-y-4 pb-6">
+      <section className="rounded-xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,_#2e5ca1,_#091222_65%)] p-5 text-white shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <button
               onClick={() => router.back()}
-              className="mb-4 inline-flex items-center gap-2 rounded-lg border border-blue-200/40 bg-blue-950/20 px-3 py-1.5 text-sm font-medium text-blue-50 transition hover:bg-blue-900/35"
+              className="mb-3 inline-flex items-center gap-2 rounded-lg border border-blue-200/40 bg-blue-950/20 px-3 py-1.5 text-[12px] font-medium text-blue-50 transition hover:bg-blue-900/35"
             >
               <ArrowLeft size={15} />
               Kembali
             </button>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Story Kerja Sama</p>
-            <h1 className="mt-2 text-2xl font-bold">{storyGroup.namaMitra}</h1>
-            <p className="mt-2 text-sm text-blue-100">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-200">Story Kerja Sama</p>
+            <h1 className="mt-1.5 text-[17px] font-bold">{storyGroup.namaMitra}</h1>
+            <p className="mt-1.5 text-[12px] text-blue-100">
               {storyGroup.totalPengajuan} pengajuan digabung menjadi satu timeline aktivitas.
             </p>
           </div>
 
-          <div className="space-y-2 rounded-xl border border-blue-300/30 bg-blue-950/25 px-4 py-3 text-sm">
+          <div className="space-y-2 rounded-xl border border-blue-300/30 bg-blue-950/25 px-4 py-3 text-[12px]">
             <p>
               Status: <span className="font-semibold">{statusKerjasama}</span>
             </p>
@@ -455,28 +455,28 @@ export default function DetailStoryAktivitasPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Total Aktivitas</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{stats.total}</p>
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-slate-500">Total Aktivitas</p>
+          <p className="mt-0.5 text-[17px] font-bold text-slate-900">{stats.total}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Selesai</p>
-          <p className="mt-1 text-3xl font-bold text-emerald-700">{stats.selesai}</p>
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-slate-500">Selesai</p>
+          <p className="mt-0.5 text-[17px] font-bold text-emerald-700">{stats.selesai}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Berlangsung</p>
-          <p className="mt-1 text-3xl font-bold text-blue-700">{stats.berlangsung}</p>
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-slate-500">Berlangsung</p>
+          <p className="mt-0.5 text-[17px] font-bold text-blue-700">{stats.berlangsung}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Direncanakan</p>
-          <p className="mt-1 text-3xl font-bold text-amber-700">{stats.direncanakan}</p>
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-slate-500">Direncanakan</p>
+          <p className="mt-0.5 text-[17px] font-bold text-amber-700">{stats.direncanakan}</p>
         </div>
       </section>
 
       <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900">Story Kerja Sama</h2>
+          <h2 className="text-[15px] font-bold text-slate-900">Story Kerja Sama</h2>
         </div>
 
         <div className="grid grid-cols-1 gap-3">
@@ -484,15 +484,15 @@ export default function DetailStoryAktivitasPage() {
             <article key={pengajuan.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{pengajuan.nomorPengajuan}</p>
-                  <h3 className="mt-1 text-sm font-bold text-slate-900">{pengajuan.judulPengajuan}</h3>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{pengajuan.nomorPengajuan}</p>
+                  <h3 className="mt-1 text-[12px] font-bold text-slate-900">{pengajuan.judulPengajuan}</h3>
                 </div>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600">
                   {pengajuan.jenisDokumen}
                 </span>
               </div>
 
-              <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+              <div className="mt-3 space-y-1.5 text-[10px] text-slate-600">
                 <p className="inline-flex items-center gap-1.5">
                   <Calendar size={12} className="text-slate-400" />
                   Diajukan: {formatDate(pengajuan.diajukanPada)}
@@ -517,7 +517,7 @@ export default function DetailStoryAktivitasPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {pengajuan.ruangLingkup.map((item) => (
-                  <span key={`${pengajuan.id}-${item}`} className="rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700">
+                  <span key={`${pengajuan.id}-${item}`} className="rounded-md bg-blue-50 px-2.5 py-1 text-[10.5px] font-medium text-blue-700">
                     {item}
                   </span>
                 ))}
@@ -529,11 +529,11 @@ export default function DetailStoryAktivitasPage() {
 
       <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900">Timeline Aktivitas Gabungan</h2>
+          <h2 className="text-[15px] font-bold text-slate-900">Timeline Aktivitas Gabungan</h2>
           <button
             onClick={handleCreate}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-2 text-sm font-medium text-white hover:bg-[#183053]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-2 text-[12px] font-medium text-white hover:bg-[#183053]"
           >
             <Plus size={14} />
             Tambah Aktivitas
@@ -543,12 +543,12 @@ export default function DetailStoryAktivitasPage() {
         {showForm && (
           <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-[12px] font-bold text-slate-900">
                 {editingRef ? 'Edit Aktivitas' : 'Tambah Aktivitas Baru'}
               </h3>
               <button
                 onClick={() => setShowLaporanModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-2 text-sm font-medium text-white hover:bg-[#183053]"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0e1d34] px-3 py-2 text-[12px] font-medium text-white hover:bg-[#183053]"
               >
                 <FileText size={14} />
                 Laporan Pelaksanaan
@@ -557,22 +557,22 @@ export default function DetailStoryAktivitasPage() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Judul Aktivitas</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Judul Aktivitas</label>
                 <input
                   value={formState.judul}
                   onChange={(event) => setFormState((prev) => ({ ...prev, judul: event.target.value }))}
                   type="text"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Jenis Aktivitas</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Jenis Aktivitas</label>
                 <div className="relative">
                   <select
                     value={formState.jenisAktivitas}
                     onChange={(event) => setFormState((prev) => ({ ...prev, jenisAktivitas: event.target.value }))}
-                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm text-slate-800 outline-none focus:border-slate-500"
+                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                   >
                     <option value="">Pilih jenis aktivitas</option>
                     {jenisAktivitasOptions.map((item) => (
@@ -586,28 +586,28 @@ export default function DetailStoryAktivitasPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Tanggal</label>
                 <input
                   value={formState.tanggal}
                   onChange={(event) => setFormState((prev) => ({ ...prev, tanggal: event.target.value }))}
                   type="date"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Jumlah Peserta</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Jumlah Peserta</label>
                 <input
                   value={formState.peserta}
                   onChange={(event) => setFormState((prev) => ({ ...prev, peserta: Number(event.target.value) || 0 }))}
                   type="number"
                   min={0}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Status</label>
                 <div className="relative">
                   <select
                     value={formState.status}
@@ -617,7 +617,7 @@ export default function DetailStoryAktivitasPage() {
                         status: event.target.value as AktivitasStatus,
                       }))
                     }
-                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm text-slate-800 outline-none focus:border-slate-500"
+                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                   >
                     <option value="direncanakan">Direncanakan</option>
                     <option value="berlangsung">Berlangsung</option>
@@ -628,7 +628,7 @@ export default function DetailStoryAktivitasPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sumber Pengajuan</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Sumber Pengajuan</label>
                 <div className="relative">
                   <select
                     value={formState.sourcePengajuanId}
@@ -639,7 +639,7 @@ export default function DetailStoryAktivitasPage() {
                       }))
                     }
                     disabled={editingRef !== null}
-                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm text-slate-800 outline-none focus:border-slate-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-[12px] text-slate-800 outline-none focus:border-slate-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                   >
                     {storyGroup.pengajuan.map((pengajuan) => (
                       <option key={pengajuan.id} value={pengajuan.id}>
@@ -652,33 +652,33 @@ export default function DetailStoryAktivitasPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">PIC Polibatam</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">PIC Polibatam</label>
                 <input
                   value={formState.picPolibatam}
                   onChange={(event) => setFormState((prev) => ({ ...prev, picPolibatam: event.target.value }))}
                   type="text"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">PIC Mitra</label>
+                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">PIC Mitra</label>
                 <input
                   value={formState.picMitra}
                   onChange={(event) => setFormState((prev) => ({ ...prev, picMitra: event.target.value }))}
                   type="text"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
                 />
               </div>
             </div>
 
             <div className="mt-4">
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Deskripsi</label>
+              <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Deskripsi</label>
               <textarea
                 value={formState.deskripsi}
                 onChange={(event) => setFormState((prev) => ({ ...prev, deskripsi: event.target.value }))}
                 rows={3}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-slate-500"
               />
             </div>
 
@@ -686,7 +686,7 @@ export default function DetailStoryAktivitasPage() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="rounded-lg bg-[#0e1d34] px-4 py-2 text-sm font-medium text-white hover:bg-[#183053]"
+                className="rounded-lg bg-[#0e1d34] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#183053]"
               >
                 {isSubmitting ? 'Menyimpan...' : editingRef ? 'Simpan Perubahan' : 'Simpan Aktivitas'}
               </button>
@@ -697,7 +697,7 @@ export default function DetailStoryAktivitasPage() {
                   setFormState(emptyForm(storyGroup.pengajuan[0]?.id ?? 0));
                 }}
                 disabled={isSubmitting}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-100"
               >
                 Batal
               </button>
@@ -706,7 +706,7 @@ export default function DetailStoryAktivitasPage() {
         )}
 
         {timelineItems.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-[12px] text-slate-500">
             Belum ada aktivitas. Tambahkan aktivitas pertama untuk mitra ini.
           </div>
         ) : (
@@ -720,17 +720,17 @@ export default function DetailStoryAktivitasPage() {
                 <article className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{item.judul}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="text-[12px] font-bold text-slate-900">{item.judul}</p>
+                      <p className="mt-1 text-[10px] text-slate-500">
                         {formatDate(item.tanggal)} • {item.jenisAktivitas} • {item.peserta} peserta
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-[10.5px] text-slate-400">
                         Sumber: {item.sourceNomorPengajuan} • {item.sourceJudulPengajuan}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass(item.status)}`}>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${statusClass(item.status)}`}>
                         {item.status}
                       </span>
                       <button
@@ -752,9 +752,9 @@ export default function DetailStoryAktivitasPage() {
                     </div>
                   </div>
 
-                  {item.deskripsi && <p className="mt-2 text-sm text-slate-600">{item.deskripsi}</p>}
+                  {item.deskripsi && <p className="mt-2 text-[12px] text-slate-600">{item.deskripsi}</p>}
 
-                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                  <div className="mt-3 flex flex-wrap gap-4 text-[10px] text-slate-500">
                     {item.picPolibatam && (
                       <span className="inline-flex items-center gap-1.5">
                         <CheckCircle2 size={12} className="text-slate-400" />
