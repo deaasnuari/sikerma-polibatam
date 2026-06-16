@@ -324,22 +324,22 @@ export default function MasterMitraPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="page-title">Data Kemitraan</h1>
-          <p className="page-subtitle mt-1">Kelola data referensi mitra kerja sama Polibatam</p>
+          <h1 className="text-[17px] font-bold text-gray-900">Data Kemitraan</h1>
+          <p className="text-[10px] text-gray-500 mt-0.5">Kelola data referensi mitra kerja sama Polibatam</p>
         </div>
 
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
-          <Plus size={16} />
+        <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
+          <Plus size={14} />
           Tambah Mitra
         </button>
       </div>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-[10px] text-red-700">{error}</div>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard icon={Building2} label="Total Mitra" value={summary.total} />
         <SummaryCard icon={Users} label="Mitra Aktif" value={summary.aktif} />
         <SummaryCard icon={Globe} label="Domestik" value={summary.domestik} />
@@ -354,12 +354,12 @@ export default function MasterMitraPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cari nama, kategori, negara, atau email..."
-            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-[12px]"
           />
         </div>
 
         <div className="relative min-w-[180px]">
-          <select value={filterKategori} onChange={(event) => setFilterKategori(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+          <select value={filterKategori} onChange={(event) => setFilterKategori(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
             <option>Semua Kategori</option>
             {kategoriOptions.map((option) => (
               <option key={option}>{option}</option>
@@ -369,7 +369,7 @@ export default function MasterMitraPage() {
         </div>
 
         <div className="relative min-w-[170px]">
-          <select value={filterWilayah} onChange={(event) => setFilterWilayah(event.target.value as (typeof wilayahOptions)[number])} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+          <select value={filterWilayah} onChange={(event) => setFilterWilayah(event.target.value as (typeof wilayahOptions)[number])} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
             {wilayahOptions.map((option) => (
               <option key={option}>{option}</option>
             ))}
@@ -378,7 +378,7 @@ export default function MasterMitraPage() {
         </div>
 
         <div className="relative min-w-[160px]">
-          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
             <option>Semua Status</option>
             <option>Aktif</option>
             <option>NonAktif</option>
@@ -389,7 +389,7 @@ export default function MasterMitraPage() {
 
       <div className="table-shell overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="table-head border-b border-gray-200">
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama Mitra</th>
@@ -418,9 +418,9 @@ export default function MasterMitraPage() {
                   <td className="px-4 py-3">
                     <div>
                       <p className="font-medium text-gray-900">{item.nama_mitra}</p>
-                      <p className="text-xs text-gray-500">{item.email_mitra || '-'}</p>
+                      <p className="text-[10px] text-gray-500">{item.email_mitra || '-'}</p>
                       {item.groupCount > 1 && (
-                        <p className="text-[11px] font-semibold text-[#173B82]">{item.groupCount} data kontak digabung</p>
+                        <p className="text-[10.5px] font-semibold text-[#173B82]">{item.groupCount} data kontak digabung</p>
                       )}
                     </div>
                   </td>
@@ -431,13 +431,13 @@ export default function MasterMitraPage() {
                       {item.kontakList.map((kontak, index) => (
                         <div key={`${item.primary.id}-kontak-${index}`}>
                           <p className="font-medium text-gray-800">{kontak.nama}</p>
-                          <p className="text-xs text-gray-500">{kontak.telepon}</p>
+                          <p className="text-[10px] text-gray-500">{kontak.telepon}</p>
                         </div>
                       ))}
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${item.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${item.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
                       {item.aktif ? 'Aktif' : 'NonAktif'}
                     </span>
                   </td>
@@ -460,24 +460,24 @@ export default function MasterMitraPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{editingRow ? 'Edit Master Mitra' : 'Tambah Master Mitra'}</h2>
-                <p className="text-sm text-gray-500">Lengkapi data mitra kerja sama secara terstruktur</p>
+                <h2 className="text-[15px] font-bold text-gray-900">{editingRow ? 'Edit Master Mitra' : 'Tambah Master Mitra'}</h2>
+                <p className="text-[12px] text-gray-500">Lengkapi data mitra kerja sama secara terstruktur</p>
               </div>
               <button onClick={closeModal} className="rounded-lg border border-gray-200 px-3 py-1.5 text-gray-500 transition hover:bg-gray-50">Tutup</button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Nama Mitra *">
-                <input value={form.nama_mitra} onChange={(event) => setForm((prev) => ({ ...prev, nama_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input value={form.nama_mitra} onChange={(event) => setForm((prev) => ({ ...prev, nama_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <Field label="Kategori Mitra">
                 <select
                   value={form.kategori_mitra}
                   onChange={(event) => setForm((prev) => ({ ...prev, kategori_mitra: event.target.value }))}
-                  className="input-field w-full px-4 py-2.5 text-sm"
+                  className="input-field w-full px-4 py-2.5 text-[12px]"
                 >
                   <option value="">Pilih kategori mitra</option>
                   {kategoriOptions.map((option) => (
@@ -488,49 +488,49 @@ export default function MasterMitraPage() {
                 </select>
               </Field>
               <Field label="Negara">
-                <input value={form.negara} onChange={(event) => setForm((prev) => ({ ...prev, negara: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
-                <p className="text-xs text-slate-500">Wilayah otomatis: {getWilayahLabel(form.negara)}</p>
+                <input value={form.negara} onChange={(event) => setForm((prev) => ({ ...prev, negara: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
+                <p className="text-[10px] text-slate-500">Wilayah otomatis: {getWilayahLabel(form.negara)}</p>
               </Field>
               <Field label="Website">
-                <input value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" placeholder="https://..." />
+                <input value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" placeholder="https://..." />
               </Field>
               <Field label="Email Mitra">
-                <input type="email" value={form.email_mitra} onChange={(event) => setForm((prev) => ({ ...prev, email_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input type="email" value={form.email_mitra} onChange={(event) => setForm((prev) => ({ ...prev, email_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <Field label="Telepon Mitra">
-                <input value={form.telepon_mitra} onChange={(event) => setForm((prev) => ({ ...prev, telepon_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input value={form.telepon_mitra} onChange={(event) => setForm((prev) => ({ ...prev, telepon_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <div className="md:col-span-2">
                 <Field label="Alamat">
-                  <textarea value={form.alamat} onChange={(event) => setForm((prev) => ({ ...prev, alamat: event.target.value }))} className="input-field min-h-24 w-full px-4 py-2.5 text-sm" />
+                  <textarea value={form.alamat} onChange={(event) => setForm((prev) => ({ ...prev, alamat: event.target.value }))} className="input-field min-h-24 w-full px-4 py-2.5 text-[12px]" />
                 </Field>
               </div>
 
               <div className="md:col-span-2 border-t border-gray-100 pt-4">
-                <p className="mb-3 text-sm font-semibold text-gray-700">Kontak Utama</p>
+                <p className="mb-3 text-[12px] font-semibold text-gray-700">Kontak Utama</p>
               </div>
               <Field label="Nama Kontak Utama">
-                <input value={form.nama_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, nama_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input value={form.nama_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, nama_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <Field label="Jabatan Kontak Utama">
-                <input value={form.jabatan_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, jabatan_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input value={form.jabatan_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, jabatan_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <Field label="Email Kontak Utama">
-                <input type="email" value={form.email_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, email_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input type="email" value={form.email_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, email_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
               <Field label="Telepon Kontak Utama">
-                <input value={form.telepon_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, telepon_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-sm" />
+                <input value={form.telepon_kontak_utama} onChange={(event) => setForm((prev) => ({ ...prev, telepon_kontak_utama: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
 
               <div className="md:col-span-2 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">Status aktif</p>
-                  <p className="text-xs text-gray-500">Tandai apakah mitra ini masih digunakan di sistem</p>
+                  <p className="text-[12px] font-semibold text-gray-800">Status aktif</p>
+                  <p className="text-[10px] text-gray-500">Tandai apakah mitra ini masih digunakan di sistem</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, aktif: !prev.aktif }))}
-                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${form.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-[12px] font-semibold ${form.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}
                 >
                   {form.aktif ? 'Aktif' : 'NonAktif'}
                 </button>
@@ -538,10 +538,10 @@ export default function MasterMitraPage() {
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
-              <button onClick={closeModal} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+              <button onClick={closeModal} className="rounded-lg border border-gray-200 px-4 py-2.5 text-[12px] font-medium text-gray-700 transition hover:bg-gray-50">
                 Batal
               </button>
-              <button onClick={handleSave} disabled={submitting} className="btn-primary px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60">
+              <button onClick={handleSave} disabled={submitting} className="btn-primary px-4 py-2.5 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-60">
                 {submitting ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
@@ -559,16 +559,16 @@ function SummaryCard({ icon: Icon, label, value }: { icon: LucideIcon; label: st
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100">
           <Icon size={18} className="text-sky-700" />
         </div>
-        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <p className="text-[12px] font-medium text-gray-500">{label}</p>
       </div>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <p className="text-[17px] font-bold text-gray-900">{value}</p>
     </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block space-y-1.5 text-sm font-medium text-gray-700">
+    <label className="block space-y-1.5 text-[12px] font-medium text-gray-700">
       <span>{label}</span>
       {children}
     </label>
