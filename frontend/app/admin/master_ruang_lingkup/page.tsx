@@ -174,36 +174,36 @@ export default function MasterRuangLingkupPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="page-title">Master Ruang Lingkup</h1>
-          <p className="page-subtitle mt-1">Kelola referensi ruang lingkup kerja sama</p>
+          <p className="page-subtitle mt-0.5">Kelola referensi ruang lingkup kerja sama</p>
         </div>
 
         <button
           onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#1E376C] bg-white px-3 py-2 text-[12px] font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
         >
-          <Plus size={16} />
+          <Plus size={15} />
           Referensi Kampus
         </button>
       </div>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">{error}</div>}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">{summary.total}</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Total</p>
+          <p className="mt-0.5 text-[17px] font-bold text-slate-900">{summary.total}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Aktif</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-700">{summary.aktif}</p>
+        <div className="card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Aktif</p>
+          <p className="mt-0.5 text-[17px] font-bold text-emerald-700">{summary.aktif}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Non Aktif</p>
-          <p className="mt-2 text-2xl font-bold text-slate-700">{summary.nonAktif}</p>
+        <div className="card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Non Aktif</p>
+          <p className="mt-0.5 text-[17px] font-bold text-slate-700">{summary.nonAktif}</p>
         </div>
       </div>
 
@@ -215,12 +215,12 @@ export default function MasterRuangLingkupPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cari nama ruang lingkup..."
-            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-[12px]"
           />
         </div>
 
         <div className="relative min-w-[160px]">
-          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium">
+          <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
             <option>Semua Status</option>
             <option>Aktif</option>
             <option>NonAktif</option>
@@ -231,7 +231,7 @@ export default function MasterRuangLingkupPage() {
 
       <div className="table-shell overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="table-head border-b border-gray-200">
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama Ruang Lingkup</th>
@@ -256,7 +256,7 @@ export default function MasterRuangLingkupPage() {
                 <tr key={item.id} className="border-b border-gray-100 transition hover:bg-gray-50/60">
                   <td className="px-4 py-3 font-medium text-gray-900">{item.nama_ruang_lingkup}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${item.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${item.aktif ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
                       {item.aktif ? 'Aktif' : 'NonAktif'}
                     </span>
                   </td>
@@ -279,30 +279,30 @@ export default function MasterRuangLingkupPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{editingRow ? 'Edit Ruang Lingkup' : 'Tambah Ruang Lingkup'}</h2>
-                <p className="text-sm text-gray-500">Lengkapi data master ruang lingkup kerja sama</p>
+                <h2 className="text-[15px] font-bold text-gray-900">{editingRow ? 'Edit Ruang Lingkup' : 'Tambah Ruang Lingkup'}</h2>
+                <p className="text-[12px] text-gray-500">Lengkapi data master ruang lingkup kerja sama</p>
               </div>
               <button onClick={closeModal} className="rounded-lg border border-gray-200 px-3 py-1.5 text-gray-500 transition hover:bg-gray-50">Tutup</button>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-[12px] font-medium text-gray-700">
                 Nama Ruang Lingkup *
                 {editingRow ? (
                   <input
                     value={form.nama_ruang_lingkup}
                     onChange={(event) => setForm((prev) => ({ ...prev, nama_ruang_lingkup: event.target.value }))}
-                    className="input-field mt-1.5 w-full px-4 py-2.5 text-sm"
+                    className="input-field mt-1.5 w-full px-4 py-2.5 text-[12px]"
                   />
                 ) : (
                   <>
                     <select
                       value={form.nama_ruang_lingkup}
                       onChange={(event) => setForm((prev) => ({ ...prev, nama_ruang_lingkup: event.target.value }))}
-                      className="input-field mt-1.5 w-full px-4 py-2.5 text-sm"
+                      className="input-field mt-1.5 w-full px-4 py-2.5 text-[12px]"
                       disabled={availableReferenceOptions.length === 0}
                     >
                       {availableReferenceOptions.length === 0 ? (
@@ -313,12 +313,12 @@ export default function MasterRuangLingkupPage() {
                         ))
                       )}
                     </select>
-                    <p className="mt-1 text-xs text-gray-500">Pilih dari daftar referensi kampus, tanpa input manual.</p>
+                    <p className="mt-1 text-[10px] text-gray-500">Pilih dari daftar referensi kampus, tanpa input manual.</p>
                   </>
                 )}
               </label>
 
-              <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+              <label className="inline-flex items-center gap-2 text-[12px] font-medium text-gray-700">
                 <input
                   type="checkbox"
                   checked={form.aktif}
@@ -330,10 +330,10 @@ export default function MasterRuangLingkupPage() {
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3">
-              <button onClick={closeModal} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50" disabled={submitting}>
+              <button onClick={closeModal} className="rounded-xl border border-gray-200 px-4 py-2 text-[12px] font-medium text-gray-600 transition hover:bg-gray-50" disabled={submitting}>
                 Batal
               </button>
-              <button onClick={handleSave} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold" disabled={submitting || (!editingRow && availableReferenceOptions.length === 0)}>
+              <button onClick={handleSave} className="btn-primary rounded-xl px-4 py-2 text-[12px] font-semibold" disabled={submitting || (!editingRow && availableReferenceOptions.length === 0)}>
                 {submitting ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
