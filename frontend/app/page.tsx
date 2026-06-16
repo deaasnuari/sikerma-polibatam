@@ -273,13 +273,13 @@ export default function Home() {
 
         <div className="relative mx-auto grid min-h-[600px] max-w-7xl gap-10 px-4 py-16 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
           <div>
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100 backdrop-blur-sm">
+            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold text-blue-100 backdrop-blur-sm">
               Portal Resmi Bagian Kerjasama
             </span>
-            <h1 className="mt-4 max-w-2xl text-3xl font-extrabold leading-tight text-white md:text-5xl">
+            <h1 className="mt-4 max-w-2xl text-[25px] font-extrabold leading-tight text-white md:text-[40px]">
               Bangun kolaborasi strategis bersama Politeknik Negeri Batam
             </h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-200 md:text-base">
+            <p className="mt-4 max-w-xl text-[11.5px] leading-6 text-slate-200 md:text-[13.5px]">
               Temukan informasi kerja sama, statistik kemitraan, dan daftar mitra aktif secara lebih cepat, rapi, dan terstruktur.
             </p>
 
@@ -289,13 +289,13 @@ export default function Home() {
               </a>
               <a
                 href="#kontak"
-                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
+                className="inline-flex min-h-[2.75rem] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-[11.5px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
               >
                 Hubungi Kami
               </a>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-200">
+            <div className="mt-6 flex flex-wrap gap-2 text-[10px] text-slate-200">
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">MoU &amp; MoA Aktif</span>
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Mitra Nasional &amp; Internasional</span>
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Data Terpusat</span>
@@ -313,9 +313,9 @@ export default function Home() {
                 key={item.key}
                 className="rounded-2xl border border-white/10 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md"
               >
-                <p className="text-2xl font-bold md:text-3xl">{stats[item.key]}</p>
+                <p className="text-[20px] font-bold md:text-[25px]">{stats[item.key]}</p>
                 <div className="my-2 h-1 w-10 rounded-full bg-[#57C9E8]" />
-                <p className="text-xs leading-snug text-slate-200 whitespace-pre-line">{item.label}</p>
+                <p className="text-[10px] leading-snug text-slate-200 whitespace-pre-line">{item.label}</p>
               </div>
             ))}
           </div>
@@ -327,10 +327,10 @@ export default function Home() {
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#173B82]">Aktivitas Kerjasama</p>
-              <h2 className="text-2xl font-bold text-slate-900">Dokumentasi Kegiatan Kolaborasi</h2>
+              <p className="text-[11.5px] font-semibold text-[#173B82]">Aktivitas Kerjasama</p>
+              <h2 className="text-[20px] font-bold text-slate-900">Dokumentasi Kegiatan Kolaborasi</h2>
             </div>
-            <p className="max-w-2xl text-sm text-slate-500">
+            <p className="max-w-2xl text-[11.5px] text-slate-500">
               Galeri ini otomatis mengikuti gambar terbaru yang diupload admin melalui dashboard.
             </p>
           </div>
@@ -350,7 +350,7 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/55 via-slate-900/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-                    <p className="text-sm font-semibold text-white sm:text-base">{slide.title}</p>
+                    <p className="text-[11.5px] font-semibold text-white sm:text-[13.5px]">{slide.title}</p>
                   </div>
                 </div>
               ))}
@@ -397,8 +397,8 @@ export default function Home() {
                 <DocEditIcon className="h-9 w-9" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-600">Total Kerjasama</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-[11.5px] font-semibold text-slate-600">Total Kerjasama</p>
+                <p className="text-[20px] font-bold text-slate-900">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -409,8 +409,8 @@ export default function Home() {
                 <DocIcon className="h-9 w-9" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-600">Kerjasama Dalam Negeri</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.dalam_negeri}</p>
+                <p className="text-[11.5px] font-semibold text-slate-600">Kerjasama Dalam Negeri</p>
+                <p className="text-[20px] font-bold text-slate-900">{stats.dalam_negeri}</p>
               </div>
             </div>
           </div>
@@ -421,8 +421,8 @@ export default function Home() {
                 <DocIcon className="h-9 w-9" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-600">Kerjasama Luar Negeri</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.luar_negeri}</p>
+                <p className="text-[11.5px] font-semibold text-slate-600">Kerjasama Luar Negeri</p>
+                <p className="text-[20px] font-bold text-slate-900">{stats.luar_negeri}</p>
               </div>
             </div>
           </div>
@@ -434,18 +434,18 @@ export default function Home() {
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#173B82]">Statistik Kerjasama</p>
-              <h2 className="text-2xl font-bold text-slate-900">Gambaran umum kolaborasi Polibatam</h2>
+              <p className="text-[11.5px] font-semibold text-[#173B82]">Statistik Kerjasama</p>
+              <h2 className="text-[20px] font-bold text-slate-900">Gambaran umum kolaborasi Polibatam</h2>
             </div>
-            <p className="max-w-2xl text-sm text-slate-500">
+            <p className="max-w-2xl text-[11.5px] text-slate-500">
               Ringkasan mitra dan dokumen kerja sama ditampilkan dalam visual yang lebih jelas agar mudah dipahami oleh pengunjung.
             </p>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5">
-              <h3 className="text-sm font-bold text-slate-800">Jenis Mitra &amp; Wilayah</h3>
-              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600">
+              <h3 className="text-[11.5px] font-bold text-slate-800">Jenis Mitra &amp; Wilayah</h3>
+              <div className="mt-3 flex flex-wrap gap-3 text-[10.5px] text-slate-600">
                 <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#FFB6C1]" /> Instansi Dalam Negeri</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#ADD8E6]" /> Instansi Luar Negeri</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#F5F5DC]" /> Dudi Dalam Negeri</span>
@@ -465,8 +465,8 @@ export default function Home() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5">
-              <h3 className="text-sm font-bold text-slate-800">Komposisi Dokumen Kerjasama</h3>
-              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600">
+              <h3 className="text-[11.5px] font-bold text-slate-800">Komposisi Dokumen Kerjasama</h3>
+              <div className="mt-3 flex flex-wrap gap-3 text-[10.5px] text-slate-600">
                 <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#ADD8E6]" /> MoU</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#F5F5DC]" /> MoA</span>
               </div>
@@ -489,20 +489,20 @@ export default function Home() {
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#173B82]">Informasi Kerjasama</p>
-              <h2 className="text-2xl font-bold text-slate-900">Daftar mitra dan bidang kerja sama</h2>
+              <p className="text-[11.5px] font-semibold text-[#173B82]">Informasi Kerjasama</p>
+              <h2 className="text-[20px] font-bold text-slate-900">Daftar mitra dan bidang kerja sama</h2>
             </div>
-            <p className="max-w-xl text-sm text-slate-500">
+            <p className="max-w-xl text-[11.5px] text-slate-500">
               Jelajahi daftar mitra kerja sama berdasarkan bidang dan unit pengaju dengan pencarian yang lebih mudah.
             </p>
           </div>
 
           <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-3">
-            <span className="text-sm text-slate-600">Show</span>
+            <span className="text-[11.5px] text-slate-600">Show</span>
             <select
               value={perPage}
               onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -511,8 +511,8 @@ export default function Home() {
 
             <div className="flex-1" />
 
-            <span className="text-sm text-slate-600">Entries</span>
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+            <span className="text-[11.5px] text-slate-600">Entries</span>
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-600">
               <span>Periode</span>
               <input
                 type="month"
@@ -527,7 +527,7 @@ export default function Home() {
                 setSelectedWilayah(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
             >
               <option>Semua Wilayah</option>
               <option>Dalam Negeri</option>
@@ -539,7 +539,7 @@ export default function Home() {
                 setSelectedJenisDokumen(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
             >
               <option>Semua Jenis</option>
               <option>MoU</option>
@@ -552,7 +552,7 @@ export default function Home() {
                 setSelectedUnit(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
             >
               {unitOptions.map((unit) => (
                 <option key={unit} value={unit}>
@@ -568,12 +568,12 @@ export default function Home() {
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 min-w-[150px]"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] outline-none focus:border-blue-400 min-w-[150px]"
             />
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-[11.5px]">
               <thead>
                 <tr className="bg-slate-50 text-slate-700">
                   <th className="w-10 px-4 py-3 text-left font-semibold">No</th>
@@ -587,11 +587,11 @@ export default function Home() {
               <tbody>
                 {isLoadingTable ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">Memuat data kerjasama...</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-[11.5px] text-slate-500">Memuat data kerjasama...</td>
                   </tr>
                 ) : pagedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">Tidak ada data yang sesuai.</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-[11.5px] text-slate-500">Tidak ada data yang sesuai.</td>
                   </tr>
                 ) : pagedItems.map((row, i) => (
                   <tr key={row.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'}>
@@ -612,7 +612,7 @@ export default function Home() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-[11.5px] text-slate-500">
               Showing {filtered.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filtered.length} entries
             </p>
 
@@ -620,7 +620,7 @@ export default function Home() {
               <button
                 onClick={() => changePage(-1)}
                 disabled={currentPage === 1}
-                className="border-r border-slate-200 px-3 py-1.5 text-sm text-slate-500 disabled:cursor-default disabled:bg-slate-100"
+                className="border-r border-slate-200 px-3 py-1.5 text-[11.5px] text-slate-500 disabled:cursor-default disabled:bg-slate-100"
               >
                 Previous
               </button>
@@ -633,7 +633,7 @@ export default function Home() {
                   <button
                     key={n}
                     onClick={() => setCurrentPage(n)}
-                    className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
+                    className={`border-r border-slate-200 px-3 py-1.5 text-[11.5px] font-medium ${
                       currentPage === n ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
                     }`}
                   >
@@ -644,12 +644,12 @@ export default function Home() {
 
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <>
-                  <button className="cursor-default border-r border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-[#173B82]">
+                  <button className="cursor-default border-r border-slate-200 bg-slate-100 px-3 py-1.5 text-[11.5px] text-[#173B82]">
                     ...
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
-                    className={`border-r border-slate-200 px-3 py-1.5 text-sm font-medium ${
+                    className={`border-r border-slate-200 px-3 py-1.5 text-[11.5px] font-medium ${
                       currentPage === totalPages ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
                     }`}
                   >
@@ -661,7 +661,7 @@ export default function Home() {
               <button
                 onClick={() => changePage(1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 text-sm text-[#173B82] hover:bg-blue-50 disabled:cursor-default disabled:bg-slate-100 disabled:text-slate-400"
+                className="px-3 py-1.5 text-[11.5px] text-[#173B82] hover:bg-blue-50 disabled:cursor-default disabled:bg-slate-100 disabled:text-slate-400"
               >
                 Next
               </button>
