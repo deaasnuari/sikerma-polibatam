@@ -202,55 +202,49 @@ export default function ArsipDokumenPage() {
   // ).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="page-title">
+        <h1 className="text-[17px] font-bold text-gray-900">
           Arsip Dokumen Kerjasama
         </h1>
-        <p className="page-subtitle mt-1">
+        <p className="text-[10px] text-gray-500 mt-0.5">
           Daftar dokumen kerjasama yang akan atau sudah kadaluarsa
         </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Total Arsip */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-50 border-l-4 border-gray-500 flex items-center justify-center shrink-0">
-            <Archive size={22} className="text-gray-500" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-slate-50 border-l-4 border-gray-500 flex items-center justify-center shrink-0">
+            <Archive size={18} className="text-gray-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Total Dokumen</p>
-            <p className="text-3xl font-bold text-gray-900">{totalArsip}</p>
+            <p className="text-[10px] text-gray-500 font-medium">Total Dokumen</p>
+            <p className="text-[17px] font-bold text-gray-900">{totalArsip}</p>
           </div>
         </div>
 
         {/* Akan Kadaluarsa */}
-        <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-50 border-l-4 border-orange-500 flex items-center justify-center shrink-0">
-            <AlertCircle size={22} className="text-orange-500" />
+        <div className="bg-white rounded-lg border border-orange-200 shadow-sm p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-orange-50 border-l-4 border-orange-500 flex items-center justify-center shrink-0">
+            <AlertCircle size={18} className="text-orange-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Akan Kadaluarsa
-            </p>
-            <p className="text-3xl font-bold text-orange-700">
-              {akanKadaluarsa}
-            </p>
+            <p className="text-[10px] text-gray-500 font-medium">Akan Kadaluarsa</p>
+            <p className="text-[17px] font-bold text-orange-700">{akanKadaluarsa}</p>
           </div>
         </div>
 
         {/* Sudah Kadaluarsa */}
-        <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-50 border-l-4 border-red-500 flex items-center justify-center shrink-0">
-            <Archive size={22} className="text-red-500" />
+        <div className="bg-white rounded-lg border border-red-200 shadow-sm p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-red-50 border-l-4 border-red-500 flex items-center justify-center shrink-0">
+            <Archive size={18} className="text-red-500" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Sudah Kadaluarsa
-            </p>
-            <p className="text-3xl font-bold text-red-700">{sudahKadaluarsa}</p>
+            <p className="text-[10px] text-gray-500 font-medium">Sudah Kadaluarsa</p>
+            <p className="text-[17px] font-bold text-red-700">{sudahKadaluarsa}</p>
           </div>
         </div>
       </div>
@@ -262,10 +256,10 @@ export default function ArsipDokumenPage() {
             <Info size={18} className="text-blue-600" />
           </div>
           <div>
-            <h3 className="font-bold text-blue-900 text-sm mb-2">
+            <h3 className="font-bold text-blue-900 text-[12px] mb-2">
               Panduan Arsip Dokumen
             </h3>
-            <ul className="text-sm text-blue-800 space-y-1.5 list-disc list-inside">
+            <ul className="text-[12px] text-blue-800 space-y-1.5 list-disc list-inside">
               <li>
                 <span className="font-semibold">Akan Kadaluarsa (⏰)</span>: Dokumen yang akan berakhir dalam 3 bulan ke depan
               </li>
@@ -287,7 +281,7 @@ export default function ArsipDokumenPage() {
       <div className="flex items-center gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('akan-kadaluarsa')}
-          className={`px-4 py-3 font-semibold text-sm border-b-2 transition ${
+          className={`px-4 py-3 font-semibold text-[12px] border-b-2 transition ${
             activeTab === 'akan-kadaluarsa'
               ? 'border-orange-500 text-orange-600'
               : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -297,7 +291,7 @@ export default function ArsipDokumenPage() {
         </button>
         <button
           onClick={() => setActiveTab('kadaluarsa')}
-          className={`px-4 py-3 font-semibold text-sm border-b-2 transition ${
+          className={`px-4 py-3 font-semibold text-[12px] border-b-2 transition ${
             activeTab === 'kadaluarsa'
               ? 'border-red-500 text-red-600'
               : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -319,12 +313,12 @@ export default function ArsipDokumenPage() {
             placeholder="Cari dokumen arsip..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-[12px]"
           />
         </div>
         <button
           onClick={handleExportExcel}
-          className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
+          className="btn-primary flex items-center gap-2 text-[12px] font-medium px-4 py-2.5"
         >
           <Download size={15} />
           Export Arsip
@@ -334,9 +328,9 @@ export default function ArsipDokumenPage() {
       {/* Table */}
       <div className="table-shell">
         <div className="overflow-x-auto">
-          <table className="min-w-[900px] w-full text-sm border-collapse">
+          <table className="min-w-[900px] w-full text-[12px] border-collapse">
             <thead>
-              <tr className="table-head border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+              <tr className="table-head border-b border-gray-200 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-600">
                 <th className="py-3 px-4 whitespace-nowrap">No. Dokumen</th>
                 <th className="py-3 px-4">Nama Mitra</th>
                 <th className="py-3 px-4 whitespace-nowrap">Jenis</th>
@@ -365,7 +359,7 @@ export default function ArsipDokumenPage() {
                       isKadaluarsa ? 'bg-red-50/40 hover:bg-red-50' : 'bg-orange-50/30 hover:bg-orange-50'
                     }`}
                   >
-                    <td className="py-3 px-4 font-medium text-gray-900 whitespace-nowrap text-xs">
+                    <td className="py-3 px-4 font-medium text-gray-900 whitespace-nowrap text-[10px]">
                       {item.noDokumen}
                     </td>
                     <td className="py-3 px-4 text-gray-700 max-w-[200px]">
@@ -374,22 +368,22 @@ export default function ArsipDokumenPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${jenisColor[item.jenis]}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${jenisColor[item.jenis]}`}>
                         {item.jenis}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap text-xs">{item.tanggalMulai}</td>
-                    <td className="py-3 px-4 whitespace-nowrap text-xs font-semibold">
+                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap text-[10px]">{item.tanggalMulai}</td>
+                    <td className="py-3 px-4 whitespace-nowrap text-[10px] font-semibold">
                       <span className={isKadaluarsa ? 'text-red-600' : 'text-orange-600'}>{item.berlakuHingga}</span>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         isKadaluarsa ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
                       }`}>
                         {isKadaluarsa ? '❌ Kadaluarsa' : '⏰ Akan Kadaluarsa'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs text-gray-600 max-w-[180px]">
+                    <td className="py-3 px-4 text-[10px] text-gray-600 max-w-[180px]">
                       <span className="block truncate" title={item.alasanArsip || '-'}>
                         {item.alasanArsip || '-'}
                       </span>
@@ -400,20 +394,20 @@ export default function ArsipDokumenPage() {
                           href={item.buktiPdf}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-[10px] font-medium whitespace-nowrap"
                         >
                           <FileText size={13} />
                           Lihat PDF
                         </a>
                       ) : (
-                        <span className="text-xs text-gray-400 italic">-</span>
+                        <span className="text-[10px] text-gray-400 italic">-</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handlePerpanjang(item)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
+                          className="inline-flex items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-2.5 py-1 text-[10.5px] font-semibold text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
                           title="Perpanjang di Monitoring"
                         >
                           <RefreshCw size={11} />
