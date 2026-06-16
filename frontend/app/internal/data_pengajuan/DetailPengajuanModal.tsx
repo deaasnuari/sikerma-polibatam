@@ -74,9 +74,9 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>
-            <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
-            <h2 className="text-xl font-bold text-slate-900">{item.judulPengajuan}</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <div className="mb-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Judul Pengajuan</div>
+            <h2 className="text-[17px] font-bold text-slate-900">{item.judulPengajuan}</h2>
+            <p className="mt-0.5 text-[10px] text-slate-500">
               {item.diajukanPada} · {item.namaPengusul}
             </p>
           </div>
@@ -93,18 +93,18 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
         <div className="space-y-5 px-6 py-5">
           {/* Status badge */}
           <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${sc.className}`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold ${sc.className}`}>
               {sc.icon}
               {sc.label}
             </span>
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-slate-100 text-slate-700'}`}>
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-slate-100 text-slate-700'}`}>
               {item.jenisDokumen}
             </span>
           </div>
 
           {/* Informasi Umum */}
           <section>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
               Informasi Umum
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -124,14 +124,14 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           {/* Ruang Lingkup */}
           {item.ruangLingkup.length > 0 && (
             <section>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
                 Ruang Lingkup
               </h3>
               <div className="flex flex-wrap gap-2">
                 {item.ruangLingkup.map((scope) => (
                   <span
                     key={scope}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                    className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-medium text-slate-700"
                   >
                     {scope}
                   </span>
@@ -143,7 +143,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           {/* Kontak / info tambahan */}
           {(item.emailPengusul || item.whatsappPengusul || item.mitraTelepon) && (
             <section>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
                 Kontak
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -163,11 +163,11 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
           {/* Dokumen Pengajuan Awal */}
           {fileEntries.filter((f) => !f.isAcc).length > 0 && (
             <section>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
                 Dokumen Pendukung
               </h3>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-600">
                   <Paperclip size={13} />
                   Dokumen Pengajuan Awal
                 </div>
@@ -181,13 +181,13 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                           target="_blank"
                           rel="noopener noreferrer"
                           download={file.name}
-                          className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
+                          className="truncate text-[10px] font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
                         >
                           {file.name}
                           <Download size={12} />
                         </a>
                       ) : (
-                        <span className="truncate text-xs text-slate-600">{file.name}</span>
+                        <span className="truncate text-[10px] text-slate-600">{file.name}</span>
                       )}
                     </li>
                   ))}
@@ -198,11 +198,11 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
 
           {/* Dokumen Final (Resmi) */}
           <section>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-400">
               Dokumen Final
             </h3>
             <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3">
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+              <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
                 <ShieldCheck size={14} />
                 Dokumen Final (Resmi)
               </div>
@@ -212,14 +212,14 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                   target="_blank"
                   rel="noopener noreferrer"
                   download={item.finalFileName}
-                  className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
                 >
                   <Paperclip size={13} className="shrink-0 text-emerald-600" />
                   <span className="truncate">{item.finalFileName}</span>
                   <Download size={13} className="ml-auto shrink-0" />
                 </a>
               ) : (
-                <p className="text-xs text-slate-500">Belum ada dokumen final yang diupload.</p>
+                <p className="text-[10px] text-slate-500">Belum ada dokumen final yang diupload.</p>
               )}
             </div>
           </section>
@@ -235,15 +235,15 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
                 : 'border-slate-200 bg-slate-50'
             }`}
           >
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#173B82]">
+            <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold text-[#173B82]">
               <MessageSquareText size={15} />
               Hasil Review Admin
             </div>
-            <p className="text-sm text-slate-700">
+            <p className="text-[12px] text-slate-700">
               {item.reviewComment || reviewCopy[item.statusPengajuan]}
             </p>
             {item.reviewedAt && (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-[10px] text-slate-500">
                 Diperbarui oleh {item.reviewedBy || 'Admin'} pada {item.reviewedAt}
               </p>
             )}
@@ -254,7 +254,7 @@ export default function DetailPengajuanModal({ item, onClose, scrollToReview }: 
             <section>
               <div className="mb-3 flex items-center gap-2">
                 <GitBranch size={15} className="text-[#173B82]" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Progres Tahapan</h3>
+                <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-400">Progres Tahapan</h3>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <TahapanStepper
@@ -287,8 +287,8 @@ function InfoRow({
     <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
       <span className="mt-0.5 text-slate-400">{icon}</span>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-        <div className="mt-0.5 text-sm font-medium text-slate-800">{value || '-'}</div>
+        <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+        <div className="mt-0.5 text-[12px] font-medium text-slate-800">{value || '-'}</div>
       </div>
     </div>
   );
