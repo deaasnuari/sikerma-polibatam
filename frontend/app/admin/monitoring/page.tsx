@@ -167,20 +167,20 @@ export default function MonitoringdanstatusPage() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Monitoring & Status Kerjasama</h1>
-        <p className="mt-1 text-sm text-gray-600">Pantau masa berlaku dokumen kerjasama dan status aktivitas</p>
+        <h1 className="text-[17px] font-bold text-gray-900">Monitoring & Status Kerjasama</h1>
+        <p className="mt-0.5 text-[10px] text-gray-500">Pantau masa berlaku dokumen kerjasama dan status aktivitas</p>
       </div>
 
       {/* Alert Banner */}
-      <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-        <AlertCircle size={20} className="mt-0.5 shrink-0 text-red-500" />
+      <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
         <div>
-          <p className="font-bold text-gray-900">Peringatan Monitoring</p>
-          <ul className="mt-1 space-y-0.5 text-sm text-gray-700">
+          <p className="text-[12px] font-bold text-gray-900">Peringatan Monitoring</p>
+          <ul className="mt-0.5 space-y-0.5 text-[10px] text-gray-700">
             <li>• {totalAkanBerakhir} dokumen akan berakhir dalam waktu kurang dari 3 bulan</li>
             <li>• {totalKadaluarsa} dokumen sudah melewati masa berlaku</li>
           </ul>
-          <p className="mt-2 text-sm text-gray-700">Segera lakukan perpanjangan atau hubungi mitra untuk tindak lanjut.</p>
+          <p className="mt-1.5 text-[10px] text-gray-700">Segera lakukan perpanjangan atau hubungi mitra untuk tindak lanjut.</p>
         </div>
       </div>
 
@@ -188,7 +188,7 @@ export default function MonitoringdanstatusPage() {
       <div className="flex flex-wrap gap-2 items-center mb-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#162c56]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] bg-[#1E376C] px-3 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[#162c56]"
           onClick={() => {
             const tabFileNameMap: Record<string, string> = {
               'Semua': 'semua-status',
@@ -221,76 +221,76 @@ export default function MonitoringdanstatusPage() {
           Export Data
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <button
           type="button"
           onClick={() => setActiveTab('Aktif')}
-          className={`flex items-center gap-4 rounded-xl border-2 bg-white p-4 text-left shadow-sm transition-colors ${
+          className={`flex items-center gap-3 rounded-lg border-2 bg-white p-3 text-left shadow-sm transition-colors ${
             activeTab === 'Aktif' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-blue-400 hover:bg-blue-50/50'
           }`}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
-            <HandshakeIcon size={22} className="text-blue-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+            <HandshakeIcon size={18} className="text-blue-600" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Kerjasama Aktif</p>
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <p className="text-[10px] font-semibold text-gray-700">Kerjasama Aktif</p>
+              <span className="h-2 w-2 rounded-full bg-green-500" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{totalAktif}</p>
-            <p className="text-xs text-gray-500">Masa berlaku &gt; 3 bulan</p>
+            <p className="mt-0.5 text-[17px] font-bold text-gray-900">{totalAktif}</p>
+            <p className="text-[10.5px] text-gray-500">Masa berlaku &gt; 3 bulan</p>
           </div>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('Akan Berakhir')}
-          className={`flex items-center gap-4 rounded-xl border-2 bg-white p-4 text-left shadow-sm transition-colors ${
+          className={`flex items-center gap-3 rounded-lg border-2 bg-white p-3 text-left shadow-sm transition-colors ${
             activeTab === 'Akan Berakhir' ? 'border-orange-500 ring-2 ring-orange-100' : 'border-orange-400 hover:bg-orange-50/50'
           }`}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100">
-            <CalendarClock size={22} className="text-orange-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+            <CalendarClock size={18} className="text-orange-500" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Akan Berakhir</p>
-              <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
+              <p className="text-[10px] font-semibold text-gray-700">Akan Berakhir</p>
+              <span className="h-2 w-2 rounded-full bg-orange-400" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{totalAkanBerakhir}</p>
-            <p className="text-xs text-gray-500">perlu perhatian segera</p>
+            <p className="mt-0.5 text-[17px] font-bold text-gray-900">{totalAkanBerakhir}</p>
+            <p className="text-[10.5px] text-gray-500">perlu perhatian segera</p>
           </div>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('Kadaluarsa')}
-          className={`flex items-center gap-4 rounded-xl border-2 bg-white p-4 text-left shadow-sm transition-colors ${
+          className={`flex items-center gap-3 rounded-lg border-2 bg-white p-3 text-left shadow-sm transition-colors ${
             activeTab === 'Kadaluarsa' ? 'border-red-500 ring-2 ring-red-100' : 'border-red-400 hover:bg-red-50/50'
           }`}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100">
-            <Archive size={22} className="text-red-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
+            <Archive size={18} className="text-red-500" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Kadaluarsa</p>
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              <p className="text-[10px] font-semibold text-gray-700">Kadaluarsa</p>
+              <span className="h-2 w-2 rounded-full bg-red-500" />
             </div>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{totalKadaluarsa}</p>
-            <p className="text-xs text-gray-500">sudah berakhir</p>
+            <p className="mt-0.5 text-[17px] font-bold text-gray-900">{totalKadaluarsa}</p>
+            <p className="text-[10.5px] text-gray-500">sudah berakhir</p>
           </div>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-t-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+            className={`rounded-t-lg px-3 py-2 text-[10px] font-semibold transition-colors ${
               activeTab === tab.key
                 ? 'border-b-2 border-[#1E376C] bg-[#EEF2FF] text-[#1E376C]'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
@@ -316,14 +316,14 @@ export default function MonitoringdanstatusPage() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Cari mitra, nomor dokumen, jenis, atau ruang lingkup"
-            className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-[#1E376C]"
+            className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-[12px] outline-none transition-colors focus:border-[#1E376C]"
           />
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#162c56]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1E376C] px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[#162c56]"
           >
             <Search size={14} />
             Cari
@@ -335,7 +335,7 @@ export default function MonitoringdanstatusPage() {
               setSearchInput('');
               setSearchKeyword('');
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:bg-gray-100"
           >
             <X size={14} />
             Reset
@@ -344,7 +344,7 @@ export default function MonitoringdanstatusPage() {
       </form>
 
       {searchKeyword.trim() !== '' && (
-        <p className="text-sm text-gray-600">
+        <p className="text-[12px] text-gray-600">
           Hasil pencarian untuk <span className="font-semibold">&quot;{searchKeyword}&quot;</span>: {filtered.length} record ditemukan.
         </p>
       )}
@@ -365,23 +365,23 @@ export default function MonitoringdanstatusPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-col gap-0.5 md:gap-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-base font-extrabold text-gray-900 md:text-lg">{item.namaMitra}</p>
-                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${monitoringJenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
+                      <p className="text-[13.5px] font-extrabold text-gray-900 md:text-[15px]">{item.namaMitra}</p>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${monitoringJenisBadgeMap[item.jenis]}`}>{item.jenis}</span>
                     </div>
                     {item.judul && (
-                      <p className="text-sm font-semibold text-blue-900 whitespace-pre-line break-words">{item.judul}</p>
+                      <p className="text-[12px] font-semibold text-blue-900 whitespace-pre-line break-words">{item.judul}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold">
                     <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
                     <span className={cfg.labelColor}>{cfg.label}</span>
                   </div>
                 </div>
 
                 {/* Meta info */}
-                <p className="mt-1 text-xs text-gray-400">No. Dokumen: {item.noDokumen}</p>
+                <p className="mt-1 text-[10px] text-gray-400">No. Dokumen: {item.noDokumen}</p>
 
-                <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500 md:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] text-gray-500 md:grid-cols-4">
                   <div>
                     <p className="font-medium text-gray-600">Tanggal Mulai</p>
                     <p>{item.tanggalMulai}</p>
@@ -411,9 +411,9 @@ export default function MonitoringdanstatusPage() {
 
                 {/* Ruang Lingkup */}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-medium text-gray-500">Ruang Lingkup:</p>
+                  <p className="text-[10px] font-medium text-gray-500">Ruang Lingkup:</p>
                   {item.ruangLingkup.map((tag) => (
-                    <span key={tag} className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    <span key={tag} className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
                       {tag}
                     </span>
                   ))}
@@ -424,7 +424,7 @@ export default function MonitoringdanstatusPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedLaporan(item)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] px-3 py-1.5 text-xs font-semibold text-[#1E376C] transition-colors hover:bg-[#EEF2FF]"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#1E376C] px-3 py-1.5 text-[10px] font-semibold text-[#1E376C] transition-colors hover:bg-[#EEF2FF]"
                   >
                     <Eye size={13} />
                     Tambah Laporan Pelaksanaan
@@ -435,7 +435,7 @@ export default function MonitoringdanstatusPage() {
                       <button
                         type="button"
                         onClick={() => setRenewalChoiceModal({ open: true, kerjasamaId: item.id })}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 px-3 py-1.5 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 px-3 py-1.5 text-[10px] font-semibold text-green-700 transition-colors hover:bg-green-50"
                       >
                         <RefreshCw size={13} />
                         Perpanjang Kerjasama
@@ -446,7 +446,7 @@ export default function MonitoringdanstatusPage() {
                         onClick={() => {
                           window.open(createWhatsAppLink(item), '_blank');
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-500 bg-green-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-600"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-green-500 bg-green-500 px-3 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-green-600"
                       >
                         <MessageCircle size={13} />
                         Hubungi Mitra
@@ -454,7 +454,7 @@ export default function MonitoringdanstatusPage() {
                       <button
                         type="button"
                         onClick={() => setNotificationModal({ open: true, kerjasamaId: item.id })}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500 px-3 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500 px-3 py-1.5 text-[10px] font-semibold text-blue-600 transition-colors hover:bg-blue-50"
                       >
                         <Mail size={13} />
                         Riwayat Email
@@ -462,7 +462,7 @@ export default function MonitoringdanstatusPage() {
                       <button
                         type="button"
                         onClick={() => setNonactiveModal({ open: true, kerjasamaId: item.id })}
-                        className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-100"
+                        className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-100"
                       >
                         Nonaktifkan
                       </button>
@@ -471,7 +471,7 @@ export default function MonitoringdanstatusPage() {
                   <button
                     type="button"
                     onClick={() => handleDeleteMonitoring(item)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-[10px] font-semibold text-rose-600 transition-colors hover:bg-rose-50"
                   >
                     <Trash2 size={13} />
                     Hapus
@@ -493,8 +493,8 @@ export default function MonitoringdanstatusPage() {
       {renewalChoiceModal.open && selectedRenewalItem && (
         <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-900/40 px-2 py-8">
           <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
-            <h2 className="text-lg font-bold text-[#1E376C]">Perpanjangan Kerjasama</h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <h2 className="text-[15px] font-bold text-[#1E376C]">Perpanjangan Kerjasama</h2>
+            <p className="mt-2 text-[12px] text-gray-600">
               Untuk <span className="font-semibold">{selectedRenewalItem.namaMitra}</span> ({selectedRenewalItem.noDokumen}) apakah anda ingin perpanjang kerjasama?
             </p>
 
@@ -505,7 +505,7 @@ export default function MonitoringdanstatusPage() {
                   setRenewalChoiceModal({ open: false, kerjasamaId: null });
                   setRenewalModal({ open: true, kerjasamaId: selectedRenewalItem.id });
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[12px] font-semibold text-green-700 hover:bg-green-100"
               >
                 <RefreshCw size={16} />
                 Perpanjang
@@ -517,7 +517,7 @@ export default function MonitoringdanstatusPage() {
                   setRenewalChoiceModal({ open: false, kerjasamaId: null });
                   setNonactiveModal({ open: true, kerjasamaId: selectedRenewalItem.id });
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-[12px] font-semibold text-gray-700 hover:bg-gray-50"
               >
                 <Archive size={16} />
                 Tidak Perpanjang
@@ -527,7 +527,7 @@ export default function MonitoringdanstatusPage() {
             <button
               type="button"
               onClick={() => setRenewalChoiceModal({ open: false, kerjasamaId: null })}
-              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
             >
               Batal
             </button>
@@ -540,7 +540,7 @@ export default function MonitoringdanstatusPage() {
 
           <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl p-0 flex flex-col" style={{ maxHeight: 'calc(100vh - 9rem)' }}>
             <div className="overflow-auto p-4" style={{ maxHeight: 'calc(100vh - 11rem)' }}>
-            <h2 className="text-lg font-bold text-[#1E376C] mb-2">Form Perpanjangan Kerjasama</h2>
+            <h2 className="text-[15px] font-bold text-[#1E376C] mb-2">Form Perpanjangan Kerjasama</h2>
             {/* Form lengkap selalu tampil di atas */}
             <RenewalFullForm
               initialData={{
@@ -637,7 +637,7 @@ export default function MonitoringdanstatusPage() {
             <button
               type="button"
               onClick={() => { setRenewalModal({ open: false, kerjasamaId: null }); }}
-              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              className="mt-4 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
             >
               Tutup
             </button>
@@ -703,8 +703,8 @@ export default function MonitoringdanstatusPage() {
               <CheckCircle2 size={18} className="text-green-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-gray-900">Perpanjangan Berhasil Diajukan!</p>
-              <p className="mt-0.5 text-xs text-gray-600 leading-snug">
+              <p className="text-[12px] font-bold text-gray-900">Perpanjangan Berhasil Diajukan!</p>
+              <p className="mt-0.5 text-[10px] text-gray-600 leading-snug">
                 Jangan lupa cek{' '}
                 <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700">
                   <Bell size={11} />
@@ -715,14 +715,14 @@ export default function MonitoringdanstatusPage() {
               <div className="mt-2.5 flex items-center gap-2">
                 <a
                   href="/admin/monitoring/perpanjangan"
-                  className="inline-flex items-center gap-1 rounded-lg bg-[#1E376C] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#1E376C] px-3 py-1.5 text-[10.5px] font-semibold text-white hover:bg-[#2B4A93] transition-colors"
                 >
                   Lihat Sekarang
                 </a>
                 <button
                   type="button"
                   onClick={() => setPerpanjanganHint(false)}
-                  className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
+                  className="text-[10.5px] font-medium text-gray-500 hover:text-gray-700"
                 >
                   Tutup
                 </button>

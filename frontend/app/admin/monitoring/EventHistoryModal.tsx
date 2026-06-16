@@ -86,8 +86,8 @@ export default function EventHistoryModal({
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-[#1E376C] to-[#173B82] rounded-t-2xl px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-white">📖 Riwayat Event Kerjasama</h2>
-            <p className="text-sm text-blue-100 mt-1">{namaMitra} - {noDokumen}</p>
+            <h2 className="text-[15px] font-bold text-white">📖 Riwayat Event Kerjasama</h2>
+            <p className="text-[12px] text-blue-100 mt-1">{namaMitra} - {noDokumen}</p>
           </div>
           <button
             type="button"
@@ -99,20 +99,20 @@ export default function EventHistoryModal({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-3">
+        <div className="overflow-y-auto flex-1 p-4 space-y-2.5">
           {events.length === 0 ? (
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-6 py-8 text-center">
               <FileText size={32} className="mx-auto mb-3 text-gray-300" />
-              <p className="text-sm font-medium text-gray-600">Belum ada event/aktivitas untuk kerjasama ini</p>
+              <p className="text-[12px] font-medium text-gray-600">Belum ada event/aktivitas untuk kerjasama ini</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-semibold text-gray-700">Total {events.length} event</p>
+                <p className="text-[12px] font-semibold text-gray-700">Total {events.length} event</p>
                 <button
                   type="button"
                   onClick={handleExportCSV}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                 >
                   <Download size={14} />
                   Export CSV
@@ -129,11 +129,11 @@ export default function EventHistoryModal({
                     onClick={() => setExpandedEventId(expandedEventId === event.id ? null : event.id)}
                   >
                     <div className="flex items-start gap-3 flex-1">
-                      <span className="text-2xl">{getEventIcon(event.eventType)}</span>
+                      <span className="text-[20px]">{getEventIcon(event.eventType)}</span>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">{event.title}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{event.description}</p>
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
+                        <p className="text-[10px] text-gray-600 mt-0.5">{event.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] text-gray-500">
                           <span className="inline-flex items-center gap-1">
                             <Calendar size={12} />
                             {event.createdAt}
@@ -158,7 +158,7 @@ export default function EventHistoryModal({
                   {/* Expanded Details */}
                   {expandedEventId === event.id && event.details && (
                     <div className="mt-3 pt-3 border-t border-current border-opacity-10">
-                      <div className="grid grid-cols-1 gap-2 text-xs">
+                      <div className="grid grid-cols-1 gap-2 text-[10px]">
                         {Object.entries(event.details).map(([key, value]) => (
                           <div key={key} className="flex items-start gap-2">
                             <span className="font-semibold text-gray-700 min-w-max">{key}:</span>
@@ -179,7 +179,7 @@ export default function EventHistoryModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-100"
           >
             Tutup
           </button>
