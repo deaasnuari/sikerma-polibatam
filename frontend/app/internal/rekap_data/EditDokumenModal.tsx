@@ -114,8 +114,8 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
             <div className="flex items-center gap-3">
               <Pencil size={20} className="text-white" />
               <div>
-                <h2 className="text-lg font-bold text-white">Edit Dokumen</h2>
-                <p className="text-xs text-blue-200">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
+                <h2 className="text-[15px] font-bold text-white">Edit Dokumen</h2>
+                <p className="text-[10px] text-blue-200">{generateNoDokumen({ urutan: 1, jenis: item.jenis, tanggal: item.tanggalMulai })}</p>
               </div>
             </div>
             <button
@@ -133,20 +133,20 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
           {/* Row 1: Nomor Dokumen & Jenis Dokumen */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Nomor Dokumen</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Nomor Dokumen</label>
               <input
                 type="text"
                 value={form.nomorDokumen}
                 onChange={(e) => handleChange('nomorDokumen', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Jenis Dokumen</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Jenis Dokumen</label>
               <select
                 value={form.jenisDokumen}
                 onChange={(e) => handleChange('jenisDokumen', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               >
                 <option value="MoU">MoU</option>
                 <option value="MoA">MoA</option>
@@ -158,20 +158,20 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
           {/* Row 2: Nama Mitra & Status */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Nama Mitra</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Nama Mitra</label>
               <input
                 type="text"
                 value={form.namaMitra}
                 onChange={(e) => handleChange('namaMitra', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Status</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Status</label>
               <select
                 value={form.status}
                 onChange={(e) => handleChange('status', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               >
                 <option value="Aktif">Aktif</option>
                 <option value="Akan Berakhir">Akan Berakhir</option>
@@ -183,61 +183,61 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
           {/* Row 3: Tanggal Mulai & Tanggal Berakhir */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Tanggal Mulai</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Tanggal Mulai</label>
               <input
                 type="date"
                 value={form.tanggalMulai}
                 onChange={(e) => handleChange('tanggalMulai', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Tanggal Berakhir</label>
+              <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Tanggal Berakhir</label>
               <input
                 type="date"
                 value={form.tanggalBerakhir}
                 onChange={(e) => handleChange('tanggalBerakhir', e.target.value)}
-                className="input-field h-10 w-full px-3 text-sm text-gray-700"
+                className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
               />
             </div>
           </div>
 
           {/* Row 4: Email Mitra */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Email Mitra</label>
+            <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Email Mitra</label>
             <input
               type="email"
               value={form.emailMitra}
               onChange={(e) => handleChange('emailMitra', e.target.value)}
-              className="input-field h-10 w-full px-3 text-sm text-gray-700"
+              className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
             />
           </div>
 
           {/* Row 5: Alamat Mitra */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Alamat Mitra</label>
+            <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Alamat Mitra</label>
             <textarea
               rows={3}
               value={form.alamatMitra}
               onChange={(e) => handleChange('alamatMitra', e.target.value)}
-              className="input-field w-full px-3 py-2 text-sm text-gray-700 resize-y"
+              className="input-field w-full px-3 py-2 text-[12px] text-gray-700 resize-y"
             />
           </div>
 
           {/* Row 6: Upload Dokumen */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Upload Dokumen (PDF, max 10MB)</label>
+            <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Upload Dokumen (PDF, max 10MB)</label>
             <input
               type="file"
               onChange={handleFileChange}
-              className="input-field w-full px-3 py-2 text-sm text-gray-700"
+              className="input-field w-full px-3 py-2 text-[12px] text-gray-700"
             />
             {form.dokumenTerkait && form.dokumenTerkait.length > 0 && (
               <ul className="mt-2 space-y-2">
                 {form.dokumenTerkait.map((doc, idx) => (
                   <li key={doc.nama} className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 bg-gray-50">
-                    <span className="text-xs font-medium text-gray-700">{doc.nama} ({doc.ukuran})</span>
-                    <button type="button" onClick={() => handleDeleteDoc(idx)} className="ml-2 text-red-500 hover:text-red-700 text-xs">Hapus</button>
+                    <span className="text-[10px] font-medium text-gray-700">{doc.nama} ({doc.ukuran})</span>
+                    <button type="button" onClick={() => handleDeleteDoc(idx)} className="ml-2 text-red-500 hover:text-red-700 text-[10px]">Hapus</button>
                   </li>
                 ))}
               </ul>
@@ -250,14 +250,14 @@ export default function EditDokumenModal({ item, onClose, onSave }: EditDokumenM
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
           >
             Batal
           </button>
           <button
             type="button"
             onClick={() => onSave(form)}
-            className="btn-primary px-5 py-2 text-sm font-semibold"
+            className="btn-primary px-5 py-2 text-[12px] font-semibold"
           >
             Simpan Perubahan
           </button>
