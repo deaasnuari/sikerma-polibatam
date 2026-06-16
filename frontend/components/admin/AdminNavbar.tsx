@@ -42,7 +42,7 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const roleLabelMap: Record<string, string> = {
-    admin: 'Admin/Humas',
+    admin: 'Admin/Kerjasama',
     pimpinan: 'Pimpinan',
     internal: 'Internal',
     external: 'Eksternal',
@@ -131,7 +131,7 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
         isPublic ? 'border-b border-slate-200' : 'rounded-lg border border-slate-200'
       }`}
     >
-      <div className="px-2.5 py-1.5 md:py-2 flex justify-between items-center">
+      <div className="px-3 py-1 flex justify-between items-center">
         <div className="flex items-center gap-2 flex-1">
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex items-center justify-center flex-shrink-0">
@@ -147,8 +147,8 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
               />
             </div>
             <div className="min-w-0 hidden sm:block">
-              <p className="text-[#091222] font-extrabold text-xs leading-tight tracking-wide">SIKERMA POLIBATAM</p>
-              <p className="text-gray-600 text-[9px] leading-tight">Sistem Informasi Kerjasama</p>
+              <p className="text-[#091222] font-extrabold text-[11px] leading-tight tracking-wide">SIKERMA POLIBATAM</p>
+              <p className="text-gray-500 text-[9px] leading-tight">Sistem Informasi Kerjasama</p>
             </div>
           </div>
         </div>
@@ -263,10 +263,10 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
 
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                  <div className="bg-slate-50 px-3 py-2.5 border-b border-slate-200">
                     <div className="flex justify-between items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Bell size={18} className="text-[#173B82]" />
+                      <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+                        <Bell size={14} className="text-[#173B82]" />
                         Notifikasi Terbaru
                       </h3>
                       <button
@@ -301,7 +301,7 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                         <div key={notif.id} className="relative group">
                           <button
                             onClick={() => handleOpenNotification(notif)}
-                            className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}
+                            className={`w-full text-left px-3 py-2.5 border-b border-slate-100 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-slate-50' : ''}`}
                           >
                             <div className="flex gap-3">
                               <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-[#173B82]' : 'bg-slate-300'}`}></div>
@@ -341,16 +341,16 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
                   <p className="text-xs font-medium text-gray-900">{userDisplayName}</p>
                   <p className="text-[10px] text-gray-600">{userRoleLabel}</p>
                 </div>
-                <div className="w-7 h-7 bg-[#091222] border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#173B82] transition-all">
-                  <User size={14} />
+                <div className="w-6 h-6 bg-[#091222] border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#173B82] transition-all">
+                  <User size={13} />
                 </div>
               </button>
 
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-xl py-0 z-50 overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-100">
-                    <p className="text-sm font-semibold text-gray-900">{user?.email}</p>
-                    <p className="text-xs text-gray-600">{userRoleLabel}</p>
+                  <div className="bg-slate-50 px-3 py-2.5 border-b border-slate-100">
+                    <p className="text-xs font-semibold text-gray-900">{user?.email}</p>
+                    <p className="text-[11px] text-gray-600">{userRoleLabel}</p>
                   </div>
                   <div className="p-2">
                     <button
@@ -370,9 +370,9 @@ export default function AdminNavbar({ toggleSidebar, isPublic = false }: AdminNa
 
       <div className="w-full overflow-hidden leading-none">
         <svg
-          viewBox="0 0 1200 12"
+          viewBox="0 0 1200 8"
           preserveAspectRatio="none"
-          className="block h-2 w-full"
+          className="block h-1 w-full"
           aria-hidden="true"
         >
           <rect width="1200" height="12" fill="var(--color-primary)" />
