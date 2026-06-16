@@ -109,8 +109,8 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{item.judulPengajuan}</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-[17px] font-bold text-slate-900">{item.judulPengajuan}</h2>
+            <p className="mt-0.5 text-[10px] text-slate-500">
               {item.diajukanPada} · {item.namaPengusul}
             </p>
           </div>
@@ -123,37 +123,37 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4">
           <div className="mb-4 flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${sc.className}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold ${sc.className}`}>
               {sc.icon}
               {sc.label}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700">
+            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold bg-slate-100 text-slate-700">
               <FileText size={13} />
               {item.jenisDokumen}
             </span>
           </div>
 
-          <div className="mb-2 text-xs text-slate-500">Pengusul: {item.namaPengusul}</div>
-          <div className="mb-2 text-xs text-slate-500">Mitra: {item.namaMitra}</div>
-          <div className="mb-2 text-xs text-slate-500">Jurusan/Unit: {item.namaUnitProdi}</div>
-          <div className="mb-2 text-xs text-slate-500">Ruang Lingkup: {item.ruangLingkup?.join(', ') || '-'}</div>
-          <div className="mb-2 text-xs text-slate-500">Review: {item.reviewComment || reviewCopy[item.statusPengajuan]}</div>
-          <div className="mb-2 text-xs text-slate-500">Catatan Revisi: {item.catatanRevisi || '-'}</div>
-          <div className="mb-2 text-xs text-slate-500">ACC Internal: {item.accInternalAt || '-'}</div>
-          <div className="mb-2 text-xs text-slate-500">ACC Mitra: {item.accMitraAt || '-'}</div>
-          <div className="mb-2 text-xs text-slate-500">Final Approved At: {item.finalApprovedAt || '-'}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Pengusul: {item.namaPengusul}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Mitra: {item.namaMitra}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Jurusan/Unit: {item.namaUnitProdi}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Ruang Lingkup: {item.ruangLingkup?.join(', ') || '-'}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Review: {item.reviewComment || reviewCopy[item.statusPengajuan]}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Catatan Revisi: {item.catatanRevisi || '-'}</div>
+          <div className="mb-2 text-[10px] text-slate-500">ACC Internal: {item.accInternalAt || '-'}</div>
+          <div className="mb-2 text-[10px] text-slate-500">ACC Mitra: {item.accMitraAt || '-'}</div>
+          <div className="mb-2 text-[10px] text-slate-500">Final Approved At: {item.finalApprovedAt || '-'}</div>
 
           <div className="mt-4 rounded-lg border border-slate-200 p-3">
-            <p className="text-xs font-semibold text-slate-700 mb-2">Kontak PIC</p>
-            <p className="text-xs text-slate-600 mb-2">WhatsApp PIC: {item.whatsappPengusul || '-'}</p>
+            <p className="text-[10px] font-semibold text-slate-700 mb-2">Kontak PIC</p>
+            <p className="text-[10px] text-slate-600 mb-2">WhatsApp PIC: {item.whatsappPengusul || '-'}</p>
             {picWaUrl && (
               <a
                 href={picWaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100"
+                className="inline-flex items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-[10px] font-semibold text-green-700 hover:bg-green-100"
               >
                 Hubungi PIC via WhatsApp
                 <ExternalLink size={12} />
@@ -166,7 +166,7 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
             const originalFiles = fileEntries.filter((f) => !f.isAcc);
             return originalFiles.length > 0 ? (
               <div className="mt-4">
-                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-700">
                   <Paperclip size={13} />
                   Dokumen Pengajuan Awal
                 </div>
@@ -180,13 +180,13 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
                           target="_blank"
                           rel="noopener noreferrer"
                           download={file.name}
-                          className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
+                          className="truncate text-[10px] font-medium text-blue-600 underline hover:text-blue-800 flex items-center gap-1"
                         >
                           {file.name}
                           <Download size={12} />
                         </a>
                       ) : (
-                        <span className="truncate text-xs text-slate-600">{file.name}</span>
+                        <span className="truncate text-[10px] text-slate-600">{file.name}</span>
                       )}
                     </div>
                   ))}
@@ -197,7 +197,7 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
 
           {/* Dokumen Final — ditampilkan terpisah dan menonjol */}
           <div className="mt-4 rounded-lg border border-emerald-300 bg-emerald-50 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
               <ShieldCheck size={14} />
               Dokumen Final (Resmi)
             </div>
@@ -207,14 +207,14 @@ export default function DetailPengajuanModal({ item, onClose }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 download={item.finalFileName}
-                className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
               >
                 <Paperclip size={13} className="shrink-0 text-emerald-600" />
                 <span className="truncate">{item.finalFileName}</span>
                 <Download size={13} className="ml-auto shrink-0" />
               </a>
             ) : (
-              <p className="text-xs text-slate-500">Belum ada dokumen final yang diupload.</p>
+              <p className="text-[10px] text-slate-500">Belum ada dokumen final yang diupload.</p>
             )}
           </div>
 
