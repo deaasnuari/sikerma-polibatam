@@ -283,16 +283,16 @@ export default function RekapDataPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="page-title">Data Kerjasama</h1>
-          <p className="page-subtitle mt-1">Daftar seluruh dokumen kerjasama yang terdaftar di sistem</p>
+          <p className="page-subtitle mt-0.5">Daftar seluruh dokumen kerjasama yang terdaftar di sistem</p>
         </div>
         <button
           type="button"
           onClick={() => setIsTambahModalOpen(true)}
-          className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm"
+          className="btn-primary inline-flex items-center justify-center gap-2 px-3 py-2 text-[12px] font-semibold shadow-sm"
         >
           <Plus size={16} />
           Tambah Dokumen
@@ -314,7 +314,7 @@ export default function RekapDataPage() {
       <section className="toolbar-shell p-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-800">
+            <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gray-800">
               <Filter size={15} />
               Filter:
             </span>
@@ -322,7 +322,7 @@ export default function RekapDataPage() {
             <select
               value={filterJenis}
               onChange={(event) => setFilterJenis(event.target.value)}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {jenisOptions.map((option) => (
                 <option key={option} value={option}>
@@ -334,7 +334,7 @@ export default function RekapDataPage() {
             <select
               value={filterUnit}
               onChange={(event) => setFilterUnit(event.target.value)}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {unitOptions.map((option) => (
                 <option key={option} value={option}>
@@ -346,7 +346,7 @@ export default function RekapDataPage() {
             <select
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {statusOptions.map((option) => (
                 <option key={option} value={option}>
@@ -359,7 +359,7 @@ export default function RekapDataPage() {
               <button
                 type="button"
                 onClick={() => setYearPickerOpen((prev) => !prev)}
-                className="input-field inline-flex min-w-[150px] items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 transition-colors"
+                className="input-field inline-flex min-w-[150px] items-center justify-between gap-2 px-3 py-2 text-[12px] text-gray-700 transition-colors"
               >
                 <span>{filterTahun ?? 'Pilih Tahun'}</span>
                 <CalendarDays size={16} className="text-gray-500" />
@@ -375,7 +375,7 @@ export default function RekapDataPage() {
                     >
                       <ChevronLeft size={16} />
                     </button>
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p className="text-[12px] font-semibold text-gray-800">
                       {yearRangeStart} - {yearRangeStart + 11}
                     </p>
                     <button
@@ -400,7 +400,7 @@ export default function RekapDataPage() {
                             setFilterTahun(String(year));
                             setYearPickerOpen(false);
                           }}
-                          className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                          className={`rounded-lg border px-3 py-2 text-[12px] font-medium transition-colors ${
                             isSelected
                               ? 'border-[#1E376C] bg-[#1E376C] text-white'
                               : hasData
@@ -415,14 +415,14 @@ export default function RekapDataPage() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-                    <p className="text-xs text-gray-500">Pilih tahun untuk menampilkan data tahunan</p>
+                    <p className="text-[10px] text-gray-500">Pilih tahun untuk menampilkan data tahunan</p>
                     <button
                       type="button"
                       onClick={() => {
                         setFilterTahun(null);
                         setYearPickerOpen(false);
                       }}
-                      className="text-xs font-semibold text-[#1E376C] transition-colors hover:text-[#2B4A93]"
+                      className="text-[10px] font-semibold text-[#1E376C] transition-colors hover:text-[#2B4A93]"
                     >
                       Semua Tahun
                     </button>
@@ -440,14 +440,14 @@ export default function RekapDataPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Cari berdasarkan nama mitra"
-                className="input-field h-10 w-full pl-10 pr-3 text-sm text-gray-700 placeholder:text-gray-400"
+                className="input-field h-10 w-full pl-10 pr-3 text-[12px] text-gray-700 placeholder:text-gray-400"
               />
             </label>
 
             <button
               type="button"
               onClick={handleExportExcel}
-              className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-sm font-semibold"
+              className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-[12px] font-semibold"
             >
               <Upload size={14} />
               Export Excel
@@ -460,7 +460,7 @@ export default function RekapDataPage() {
         <div className="overflow-x-auto">
           <table className="min-w-[980px] w-full border-collapse">
             <thead>
-              <tr className="table-head border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-700">
+              <tr className="table-head border-b border-gray-200 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-700">
                 <th className="px-4 py-3">No.Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
@@ -474,7 +474,7 @@ export default function RekapDataPage() {
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr key="empty">
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-10 text-center text-[12px] text-gray-500">
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
@@ -482,18 +482,18 @@ export default function RekapDataPage() {
                 filteredRows.map((row, index) => (
                   <tr
                     key={`${row.noDokumen}-${row.namaMitra}-${row.tanggalMulai}-${index}`}
-                    className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60"
+                    className="border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50/60"
                   >
-                    <td className="px-4 py-3 text-xs text-gray-600">{row.noDokumen}</td>
+                    <td className="px-4 py-3 text-[10px] text-gray-600">{row.noDokumen}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${rekapJenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${rekapJenisBadgeMap[row.jenis]}`}>{row.jenis}</span>
                     </td>
                     <td className="px-4 py-3">{row.unit}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.tanggalMulai}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.berlakuHingga}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${rekapStatusBadgeMap[row.status]}`}>{row.status}</span>
+                      <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ${rekapStatusBadgeMap[row.status]}`}>{row.status}</span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
@@ -551,16 +551,16 @@ export default function RekapDataPage() {
             <div className="flex-shrink-0 flex items-start justify-between gap-4 border-b border-gray-100 bg-gradient-to-r from-[#1E376C] to-[#2B4A93] px-6 pt-5 pb-5 rounded-t-2xl">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${jenisBadge[detailItem.jenis] || 'bg-white/20 text-white'}`}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${jenisBadge[detailItem.jenis] || 'bg-white/20 text-white'}`}>
                     {detailItem.jenis}
                   </span>
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${sb.bg} ${sb.text}`}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${sb.bg} ${sb.text}`}>
                     {sb.icon}
                     {detailItem.status}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-white leading-tight">{detailItem.namaMitra}</h2>
-                <p className="text-xs text-blue-200 mt-0.5">{detailItem.noDokumen}</p>
+                <h2 className="text-[15px] font-bold text-white leading-tight">{detailItem.namaMitra}</h2>
+                <p className="text-[10px] text-blue-200 mt-0.5">{detailItem.noDokumen}</p>
               </div>
               <button
                 type="button"
@@ -579,15 +579,15 @@ export default function RekapDataPage() {
                 <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                   <Hash size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
                   <div>
-                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">No. Dokumen</p>
-                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.noDokumen}</p>
+                    <p className="text-[10.5px] font-medium text-gray-500 uppercase tracking-wide">No. Dokumen</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-gray-800">{detailItem.noDokumen}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                   <FileText size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
                   <div>
-                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Jenis Dokumen</p>
-                    <span className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadge[detailItem.jenis] || 'bg-gray-200 text-gray-700'}`}>
+                    <p className="text-[10.5px] font-medium text-gray-500 uppercase tracking-wide">Jenis Dokumen</p>
+                    <span className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold ${jenisBadge[detailItem.jenis] || 'bg-gray-200 text-gray-700'}`}>
                       {detailItem.jenis}
                     </span>
                   </div>
@@ -595,17 +595,17 @@ export default function RekapDataPage() {
                 <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                   <Building2 size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
                   <div>
-                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Nama Mitra</p>
-                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.namaMitra}</p>
+                    <p className="text-[10.5px] font-medium text-gray-500 uppercase tracking-wide">Nama Mitra</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-gray-800">{detailItem.namaMitra}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                   <User size={15} className="mt-0.5 shrink-0 text-[#1E376C]" />
                   <div>
-                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Jurusan / Unit</p>
-                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{detailItem.unit}</p>
+                    <p className="text-[10.5px] font-medium text-gray-500 uppercase tracking-wide">Jurusan / Unit</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-gray-800">{detailItem.unit}</p>
                     {detailItem.kategoriUnit && (
-                      <p className="text-[11px] text-gray-500">{detailItem.kategoriUnit}</p>
+                      <p className="text-[10.5px] text-gray-500">{detailItem.kategoriUnit}</p>
                     )}
                   </div>
                 </div>
@@ -615,28 +615,28 @@ export default function RekapDataPage() {
               <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarDays size={14} className="text-[#1E376C]" />
-                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Periode Kerjasama</p>
+                  <p className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">Periode Kerjasama</p>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="grid grid-cols-3 gap-3 text-[12px]">
                   <div>
-                    <p className="text-[11px] text-gray-500">Tanggal Mulai</p>
+                    <p className="text-[10.5px] text-gray-500">Tanggal Mulai</p>
                     <p className="font-semibold text-gray-800">{detailItem.tanggalMulai || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500">Berlaku Hingga</p>
+                    <p className="text-[10.5px] text-gray-500">Berlaku Hingga</p>
                     <p className="font-semibold text-gray-800">{detailItem.berlakuHingga || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500">Tahun</p>
+                    <p className="text-[10.5px] text-gray-500">Tahun</p>
                     <p className="font-semibold text-gray-800">{detailItem.tahun || '-'}</p>
                   </div>
                 </div>
                 {detailItem.ruangLingkup && detailItem.ruangLingkup.length > 0 && (
                   <div className="mt-3 border-t border-gray-200 pt-3">
-                    <p className="text-[11px] text-gray-500 mb-1">Ruang Lingkup</p>
+                    <p className="text-[10.5px] text-gray-500 mb-1">Ruang Lingkup</p>
                     <div className="flex flex-wrap gap-1.5">
                       {detailItem.ruangLingkup.map((rl, i) => (
-                        <span key={i} className="rounded-full bg-[#1E376C]/10 px-2.5 py-0.5 text-[11px] font-medium text-[#1E376C]">
+                        <span key={i} className="rounded-full bg-[#1E376C]/10 px-2.5 py-0.5 text-[10.5px] font-medium text-[#1E376C]">
                           {rl}
                         </span>
                       ))}
@@ -650,12 +650,12 @@ export default function RekapDataPage() {
                 <div className="flex items-start gap-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
                   <Phone size={15} className="mt-0.5 shrink-0 text-green-600" />
                   <div>
-                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">WhatsApp</p>
+                    <p className="text-[10.5px] font-medium text-gray-500 uppercase tracking-wide">WhatsApp</p>
                     <a
                       href={`https://wa.me/${detailItem.whatsappNumber.replace(/[^\d]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold text-green-700 underline hover:text-green-800"
+                      className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-green-700 underline hover:text-green-800"
                     >
                       {detailItem.whatsappNumber}
                     </a>
@@ -667,7 +667,7 @@ export default function RekapDataPage() {
               <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
                 <div className="flex items-center gap-2 mb-3">
                   <Paperclip size={14} className="text-[#1E376C]" />
-                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Dokumen Kerjasama</p>
+                  <p className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">Dokumen Kerjasama</p>
                 </div>
                 {detailItem.dokumenTerkait?.length ? (
                   <div className="space-y-2">
@@ -678,14 +678,14 @@ export default function RekapDataPage() {
                             <FileText size={14} className="text-[#1E376C]" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold text-gray-800">{doc.nama}</p>
-                            <p className="text-[11px] text-gray-400">{doc.ukuran} · {doc.tanggal}</p>
+                            <p className="truncate text-[10px] font-semibold text-gray-800">{doc.nama}</p>
+                            <p className="text-[10.5px] text-gray-400">{doc.ukuran} · {doc.tanggal}</p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => { void downloadDokumen(doc.url, doc.nama); }}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1E376C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1E376C] px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-[#2B4A93] transition-colors"
                         >
                           <Download size={12} />
                           Unduh
@@ -694,7 +694,7 @@ export default function RekapDataPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Belum ada dokumen yang diunggah.</p>
+                  <p className="text-[12px] text-gray-500">Belum ada dokumen yang diunggah.</p>
                 )}
               </div>
 
@@ -703,40 +703,40 @@ export default function RekapDataPage() {
                 <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3">
                   <div className="flex items-center gap-2 mb-3">
                     <RefreshCw size={14} className="text-green-700" />
-                    <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">Riwayat Perpanjangan</p>
+                    <p className="text-[10px] font-semibold text-green-800 uppercase tracking-wide">Riwayat Perpanjangan</p>
                   </div>
                   <div className="space-y-2">
                     {renewalHistory.map((r) => (
                       <div key={r.id} className="rounded-lg border border-green-200 bg-white px-3 py-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-800">
+                            <p className="text-[10px] font-semibold text-gray-800">
                               Periode: {r.tanggalMulaiBaru} — {r.tanggalBerakhirBaru}
                             </p>
                             {r.ruangLingkup && r.ruangLingkup.length > 0 && (
-                              <p className="mt-0.5 text-[11px] text-gray-600">Ruang Lingkup: {r.ruangLingkup.join(', ')}</p>
+                              <p className="mt-0.5 text-[10.5px] text-gray-600">Ruang Lingkup: {r.ruangLingkup.join(', ')}</p>
                             )}
                             {r.catatan && (
-                              <p className="mt-0.5 text-[11px] text-gray-500 leading-snug">{r.catatan}</p>
+                              <p className="mt-0.5 text-[10.5px] text-gray-500 leading-snug">{r.catatan}</p>
                             )}
                             {r.buktiPerpanjanganUrl && (
                               <a
                                 href={r.buktiPerpanjanganUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline"
+                                className="mt-1 inline-flex items-center gap-1 text-[10.5px] font-semibold text-blue-600 hover:underline"
                               >
                                 <FileText size={11} />
                                 Lihat Dokumen
                               </a>
                             )}
                           </div>
-                          <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+                          <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[9.5px] font-semibold text-green-700">
                             Disetujui
                           </span>
                         </div>
                         {r.decidedAt && (
-                          <p className="mt-1 text-[10px] text-gray-400">Disetujui {r.decidedAt}{r.decidedBy ? ` oleh ${r.decidedBy}` : ''}</p>
+                          <p className="mt-1 text-[9.5px] text-gray-400">Disetujui {r.decidedAt}{r.decidedBy ? ` oleh ${r.decidedBy}` : ''}</p>
                         )}
                       </div>
                     ))}
@@ -753,7 +753,7 @@ export default function RekapDataPage() {
                       setDetailItem(null);
                       router.push(`/admin/story_aktivitas/${detailItem.sourcePengajuanId}`);
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93] transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#1E376C] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#2B4A93] transition-colors"
                   >
                     <Activity size={15} />
                     Lihat Story Aktivitas
@@ -866,8 +866,8 @@ export default function RekapDataPage() {
       {deleteCandidate && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
-            <p className="mt-2 text-sm text-gray-600">
+            <h3 className="text-[15px] font-bold text-gray-900">Konfirmasi Hapus</h3>
+            <p className="mt-2 text-[12px] text-gray-600">
               Yakin ingin menghapus dokumen <span className="font-semibold text-gray-900">{deleteCandidate.noDokumen}</span>?
               Tindakan ini tidak dapat dibatalkan.
             </p>
@@ -875,14 +875,14 @@ export default function RekapDataPage() {
               <button
                 type="button"
                 onClick={() => setDeleteCandidate(null)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-[12px] font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                className="rounded-lg bg-red-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-red-700"
               >
                 Hapus
               </button>
@@ -894,13 +894,13 @@ export default function RekapDataPage() {
       {feedbackModal && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-[#1E376C]">{feedbackModal.title}</h3>
-            <p className="mt-2 text-sm text-gray-600">{feedbackModal.message}</p>
+            <h3 className="text-[15px] font-bold text-[#1E376C]">{feedbackModal.title}</h3>
+            <p className="mt-2 text-[12px] text-gray-600">{feedbackModal.message}</p>
             <div className="mt-5 flex justify-end">
               <button
                 type="button"
                 onClick={() => setFeedbackModal(null)}
-                className="rounded-lg bg-[#1E376C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2B4A93]"
+                className="rounded-lg bg-[#1E376C] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#2B4A93]"
               >
                 Tutup
               </button>
@@ -925,10 +925,10 @@ function StatCard({
   valueClassName: string;
 }) {
   return (
-    <div className="stat-card p-4">
-      <p className="text-xs text-gray-500">{title}</p>
-      <p className={`mt-1 text-2xl font-bold ${valueClassName}`}>{value}</p>
-      <p className="mt-1 text-xs text-gray-400">{caption}</p>
+    <div className="stat-card p-3">
+      <p className="text-[10px] text-gray-500">{title}</p>
+      <p className={`mt-0.5 text-[17px] font-bold ${valueClassName}`}>{value}</p>
+      <p className="mt-0.5 text-[10px] text-gray-400">{caption}</p>
     </div>
   );
 }
