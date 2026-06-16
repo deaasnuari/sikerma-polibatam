@@ -155,6 +155,12 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        if (! $user) {
+            return response()->json([
+                'message' => 'Akun tidak ditemukan atau telah dihapus.',
+            ], 401);
+        }
+
         return response()->json([
             'user' => $this->toUserPayload($user),
         ]);

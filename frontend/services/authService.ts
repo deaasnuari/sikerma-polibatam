@@ -169,6 +169,21 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
   return matchedDemoUser;
 }
 
+export async function verifyCurrentUser(): Promise<'valid' | 'deleted' | 'offline'> {
+  const stored = getStoredUser();
+  if (!stored?.accessToken) return 'valid';
+
+  try {
+    await apiRequest<{ user: unknown }>('/me');
+    return 'valid';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    const isNetwork = /gagal terhubung|failed to fetch|network|load failed|fetch/i.test(message);
+    if (isNetwork) return 'offline';
+    return 'deleted';
+  }
+}
+
 export async function logoutUser(): Promise<void> {
   try {
     await apiRequest<{ message: string }>('/logout', {

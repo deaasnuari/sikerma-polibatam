@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   Lock,
   Mail,
   Shield,
+  UserPlus,
   Users,
   UserCog,
 } from 'lucide-react';
@@ -22,6 +23,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [roleError, setRoleError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
+
+  const searchParams = useSearchParams();
 
   const roles = [
     { value: 'admin', label: 'Admin', icon: Shield, desc: 'Administrator sistem' },
@@ -33,14 +37,22 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
+  useEffect(() => {
+    if (searchParams.get('reason') === 'deleted') {
+      setAccountDeleted(true);
+    }
+  }, [searchParams]);
+
   const handleRoleSelect = (value: string) => {
     setRole(value);
     setRoleError(false);
+    setAccountDeleted(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setAccountDeleted(false);
 
     if (!role) {
       setRoleError(true);
@@ -63,7 +75,13 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Login gagal. Silakan coba lagi.';
-      setError(message);
+
+      const isNotFound = /tidak terdaftar/i.test(message);
+      if (role === 'external' && isNotFound) {
+        setAccountDeleted(true);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +155,29 @@ export default function LoginPage() {
                 <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
                   <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
                   <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {accountDeleted && (
+                <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-700">Akun tidak dapat diakses</p>
+                      <p className="mt-0.5 text-xs text-red-600">
+                        Akun mitra dengan email ini tidak ditemukan. Kemungkinan akun telah dihapus oleh admin.
+                        Silakan buat akun baru untuk melanjutkan.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/register')}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e4db7]"
+                  >
+                    <UserPlus size={15} />
+                    Buat Akun Baru
+                  </button>
                 </div>
               )}
 

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { clearStoredUser, getStoredUser, loginUser, logoutUser, persistUser } from '@/services/authService';
+import { useRouter } from 'next/navigation';
+import { clearStoredUser, getStoredUser, loginUser, logoutUser, persistUser, verifyCurrentUser } from '@/services/authService';
 import type { AuthUser } from '@/types/auth';
 
 interface AuthContextType {
@@ -17,13 +18,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const storedUser = getStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
+    if (!storedUser) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    verifyCurrentUser().then((status) => {
+      if (status === 'deleted') {
+        clearStoredUser();
+        setUser(null);
+        router.replace('/login?reason=deleted');
+      } else {
+        setUser(storedUser);
+      }
+    }).finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
   const login = async (email: string, password: string, role?: string) => {
