@@ -71,7 +71,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+          className="inline-flex items-center gap-2 text-[12px] font-medium text-gray-600 transition-colors hover:text-gray-900"
         >
           <ArrowLeft size={16} />
           Kembali ke Daftar
@@ -83,44 +83,44 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
         {/* Name + Status */}
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{story.namaMitra}</h2>
-            <p className="mt-0.5 text-xs text-gray-500">No. Dokumen: {story.noDokumen}</p>
+            <h2 className="text-[17px] font-bold text-gray-900">{story.namaMitra}</h2>
+            <p className="mt-0.5 text-[10px] text-gray-500">No. Dokumen: {story.noDokumen}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${statusDotMap[story.status]}`} />
-            <span className={`text-sm font-semibold ${statusTextMap[story.status]}`}>{story.status}</span>
+            <span className={`text-[12px] font-semibold ${statusTextMap[story.status]}`}>{story.status}</span>
           </div>
         </div>
 
         {/* Info Row */}
         <div className="grid grid-cols-2 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-4">
           <div>
-            <p className="text-[11px] text-gray-500">Jenis Dokumen</p>
-            <span className={`mt-1 inline-block rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[story.jenis]}`}>
+            <p className="text-[10.5px] text-gray-500">Jenis Dokumen</p>
+            <span className={`mt-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-bold ${jenisBadgeMap[story.jenis]}`}>
               {story.jenis}
             </span>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Kategori Mitra</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.kategoriMitra}</p>
+            <p className="text-[10.5px] text-gray-500">Kategori Mitra</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.kategoriMitra}</p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Tanggal Mulai</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.tanggalMulai}</p>
+            <p className="text-[10.5px] text-gray-500">Tanggal Mulai</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.tanggalMulai}</p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Tanggal Berakhir</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.tanggalBerakhir}</p>
+            <p className="text-[10.5px] text-gray-500">Tanggal Berakhir</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.tanggalBerakhir}</p>
           </div>
         </div>
 
         {/* Mitra Info + Masa Berlaku */}
         <div className="grid grid-cols-1 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-2">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-800">
+            <p className="text-[10px] font-semibold text-gray-800">
               <span className="mr-1">📄</span> Informasi Mitra
             </p>
-            <div className="space-y-1.5 text-sm text-gray-600">
+            <div className="space-y-1.5 text-[12px] text-gray-600">
               <p className="flex items-center gap-2">
                 <MapPin size={13} className="text-gray-400" />
                 {story.alamat}
@@ -136,41 +136,41 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-800">
+            <p className="text-[10px] font-semibold text-gray-800">
               <span className="mr-1">📋</span> Status Masa Berlaku
             </p>
-            <p className="mt-1 text-xs text-gray-500">Sisa Waktu:</p>
-            <p className="mt-0.5 text-2xl font-bold text-[#F28C00]">{story.sisaWaktu}</p>
+            <p className="mt-1 text-[10px] text-gray-500">Sisa Waktu:</p>
+            <p className="mt-0.5 text-[17px] font-bold text-[#F28C00]">{story.sisaWaktu}</p>
           </div>
         </div>
 
         {/* Ruang Lingkup + Jurusan */}
         <div className="grid grid-cols-1 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold text-gray-800">Ruang Lingkup Kerjasama</p>
+            <p className="text-[10px] font-semibold text-gray-800">Ruang Lingkup Kerjasama</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {story.ruangLingkup.length > 0 ? (
                 story.ruangLingkup.map((r) => (
-                  <span key={r} className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">
+                  <span key={r} className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[10px] font-medium text-orange-700">
                     {r}
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-gray-400">-</span>
+                <span className="text-[10px] text-gray-400">-</span>
               )}
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-800">Jurusan Terlibat</p>
+            <p className="text-[10px] font-semibold text-gray-800">Jurusan Terlibat</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {story.jurusanTerlibat.length > 0 ? (
                 story.jurusanTerlibat.map((j) => (
-                  <span key={j} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700">
+                  <span key={j} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-medium text-cyan-700">
                     {j}
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-gray-400">-</span>
+                <span className="text-[10px] text-gray-400">-</span>
               )}
             </div>
           </div>
@@ -187,13 +187,13 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
 
       {/* Story & Aktivitas */}
       <div>
-        <h3 className="mb-4 text-base font-bold text-gray-900">
+        <h3 className="mb-4 text-[13.5px] font-bold text-gray-900">
           <span className="mr-1">📖</span> Story Kerjasama & Aktivitas
         </h3>
 
         <div className="space-y-4">
           {story.aktivitas.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-sm text-gray-500">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-[12px] text-gray-500">
               Belum ada aktivitas tercatat untuk kerjasama ini.
             </div>
           ) : (
@@ -207,12 +207,12 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                     </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-bold text-gray-900">{a.judul}</p>
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.className}`}>
+                        <p className="text-[12px] font-bold text-gray-900">{a.judul}</p>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${badge.className}`}>
                           {badge.label}
                         </span>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
+                      <div className="mt-0.5 flex items-center gap-3 text-[10px] text-gray-500">
                         <span className="inline-flex items-center gap-1">
                           <Calendar size={11} />
                           {a.tanggal}
@@ -222,8 +222,8 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                           {a.peserta} peserta
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-gray-600 leading-relaxed">{a.deskripsi}</p>
-                      <div className="mt-2 space-y-0.5 text-xs text-gray-500">
+                      <p className="mt-2 text-[12px] text-gray-600 leading-relaxed">{a.deskripsi}</p>
+                      <div className="mt-2 space-y-0.5 text-[10px] text-gray-500">
                         <p>PIC Polibatam: {a.picPolibatam}</p>
                         {a.picMitra && <p>PIC Mitra: {a.picMitra}</p>}
                       </div>
@@ -251,12 +251,12 @@ function MiniStat({
   value: number;
 }) {
   return (
-    <div className="stat-card flex items-center gap-3 p-4">
+    <div className="stat-card flex items-center gap-3 p-3.5">
       <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="mt-0.5 text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-[10px] text-gray-500">{label}</p>
+        <p className="mt-0.5 text-[17px] font-bold text-gray-900">{value}</p>
       </div>
-      <div className={`ml-auto flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+      <div className={`ml-auto flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
         {icon}
       </div>
     </div>

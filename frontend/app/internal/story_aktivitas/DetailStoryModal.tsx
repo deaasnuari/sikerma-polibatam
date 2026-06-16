@@ -89,7 +89,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+          className="inline-flex items-center gap-2 text-[12px] font-medium text-gray-600 transition-colors hover:text-gray-900"
         >
           <ArrowLeft size={16} />
           Kembali
@@ -98,7 +98,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
           {/* Tombol Edit Dokumen dihilangkan untuk internal */}
           <button
             type="button"
-            className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
+            className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-semibold"
           >
             <Download size={14} />
             Download
@@ -111,44 +111,44 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
         {/* Name + Status */}
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{story.namaMitra}</h2>
-            <p className="mt-0.5 text-xs text-gray-500">No. Dokumen: {story.noDokumen}</p>
+            <h2 className="text-[17px] font-bold text-gray-900">{story.namaMitra}</h2>
+            <p className="mt-0.5 text-[10px] text-gray-500">No. Dokumen: {story.noDokumen}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${statusDotMap[story.status]}`} />
-            <span className={`text-sm font-semibold ${statusTextMap[story.status]}`}>{story.status}</span>
+            <span className={`text-[12px] font-semibold ${statusTextMap[story.status]}`}>{story.status}</span>
           </div>
         </div>
 
         {/* Info Row */}
         <div className="grid grid-cols-2 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-4">
           <div>
-            <p className="text-[11px] text-gray-500">Jenis Dokumen</p>
-            <span className={`mt-1 inline-block rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[story.jenis]}`}>
+            <p className="text-[10.5px] text-gray-500">Jenis Dokumen</p>
+            <span className={`mt-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-bold ${jenisBadgeMap[story.jenis]}`}>
               {story.jenis}
             </span>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Kategori Mitra</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.kategoriMitra}</p>
+            <p className="text-[10.5px] text-gray-500">Kategori Mitra</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.kategoriMitra}</p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Tanggal Mulai</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.tanggalMulai}</p>
+            <p className="text-[10.5px] text-gray-500">Tanggal Mulai</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.tanggalMulai}</p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500">Tanggal Berakhir</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{story.tanggalBerakhir}</p>
+            <p className="text-[10.5px] text-gray-500">Tanggal Berakhir</p>
+            <p className="mt-1 text-[12px] font-semibold text-gray-900">{story.tanggalBerakhir}</p>
           </div>
         </div>
 
         {/* Mitra Info + Status Masa Berlaku */}
         <div className="grid grid-cols-1 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-2">
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-800">
+            <p className="text-[10px] font-semibold text-gray-800">
               <span className="mr-1">📄</span> Informasi Mitra
             </p>
-            <div className="space-y-1.5 text-sm text-gray-600">
+            <div className="space-y-1.5 text-[12px] text-gray-600">
               <p className="flex items-center gap-2">
                 <MapPin size={13} className="text-gray-400" />
                 {story.alamat}
@@ -164,31 +164,31 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-800">
+            <p className="text-[10px] font-semibold text-gray-800">
               <span className="mr-1">📋</span> Status Masa Berlaku
             </p>
-            <p className="mt-1 text-xs text-gray-500">Sisa Waktu:</p>
-            <p className="mt-0.5 text-2xl font-bold text-[#1E376C]">{story.sisaWaktu}</p>
+            <p className="mt-1 text-[10px] text-gray-500">Sisa Waktu:</p>
+            <p className="mt-0.5 text-[17px] font-bold text-[#1E376C]">{story.sisaWaktu}</p>
           </div>
         </div>
 
         {/* Ruang Lingkup + Jurusan */}
         <div className="grid grid-cols-1 gap-4 border-t border-gray-100 px-6 py-4 md:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold text-gray-800">Ruang Lingkup Kerjasama</p>
+            <p className="text-[10px] font-semibold text-gray-800">Ruang Lingkup Kerjasama</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {story.ruangLingkup.map((r) => (
-                <span key={r} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                <span key={r} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[10px] font-medium text-blue-700">
                   {r}
                 </span>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-800">Jurusan Terlibat</p>
+            <p className="text-[10px] font-semibold text-gray-800">Jurusan Terlibat</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {story.jurusanTerlibat.map((j) => (
-                <span key={j} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700">
+                <span key={j} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-medium text-cyan-700">
                   {j}
                 </span>
               ))}
@@ -208,13 +208,13 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
       {/* Story Kerjasama & Aktivitas */}
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-900">
+          <h3 className="text-[13.5px] font-bold text-gray-900">
             <span className="mr-1">📖</span> Story Kerjasama & Aktivitas
           </h3>
           <button
             type="button"
             onClick={() => setShowTambah((prev) => !prev)}
-            className="relative z-10 inline-flex items-center gap-1.5 rounded-xl bg-[#091222] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#173B82] hover:shadow-md"
+            className="relative z-10 inline-flex items-center gap-1.5 rounded-xl bg-[#091222] px-4 py-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-[#173B82] hover:shadow-md"
           >
             <Plus size={14} />
             Tambah Aktivitas
@@ -233,7 +233,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
 
         <div className="mt-4 space-y-4">
           {aktivitasList.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-sm text-gray-500">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-[12px] text-gray-500">
               Belum ada aktivitas tercatat.
             </div>
           ) : (
@@ -248,9 +248,9 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-gray-900">{a.judul}</p>
+                          <p className="text-[12px] font-bold text-gray-900">{a.judul}</p>
                         </div>
-                        <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
+                        <div className="mt-0.5 flex items-center gap-3 text-[10px] text-gray-500">
                           <span className="inline-flex items-center gap-1">
                             <Calendar size={11} />
                             {a.tanggal}
@@ -260,8 +260,8 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                             {a.peserta} peserta
                           </span>
                         </div>
-                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{a.deskripsi}</p>
-                        <div className="mt-2 space-y-0.5 text-xs text-gray-500">
+                        <p className="mt-2 text-[12px] text-gray-600 leading-relaxed">{a.deskripsi}</p>
+                        <div className="mt-2 space-y-0.5 text-[10px] text-gray-500">
                           <p>PIC Polibatam: {a.picPolibatam}</p>
                           <p>PIC Mitra: {a.picMitra}</p>
                         </div>
@@ -269,7 +269,7 @@ export default function DetailStoryModal({ story, onBack }: DetailStoryModalProp
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.className}`}>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${badge.className}`}>
                         {badge.label}
                       </span>
                       {/* Tombol Edit dan Hapus dihilangkan untuk internal */}
@@ -297,12 +297,12 @@ function MiniStat({
   value: number;
 }) {
   return (
-    <div className="stat-card flex items-center gap-3 p-4">
+    <div className="stat-card flex items-center gap-3 p-3.5">
       <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="mt-0.5 text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-[10px] text-gray-500">{label}</p>
+        <p className="mt-0.5 text-[17px] font-bold text-gray-900">{value}</p>
       </div>
-      <div className={`ml-auto flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+      <div className={`ml-auto flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
         {icon}
       </div>
     </div>
@@ -359,12 +359,12 @@ function TambahAktivitasForm({
 
   return (
     <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 space-y-5">
-      <h3 className="text-base font-bold text-gray-900">Tambah Aktivitas Baru</h3>
+      <h3 className="text-[13.5px] font-bold text-gray-900">Tambah Aktivitas Baru</h3>
 
       {/* Row 1: Judul & Jenis */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
             Judul Aktivitas <span className="text-red-500">*</span>
           </label>
           <input
@@ -372,17 +372,17 @@ function TambahAktivitasForm({
             value={judul}
             onChange={(e) => setJudul(e.target.value)}
             placeholder="Contoh: Penyusunan kurikulum bersama"
-            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700 placeholder:text-gray-400"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
             Jenis Aktivitas <span className="text-red-500">*</span>
           </label>
           <select
             value={jenisAktivitas}
             onChange={(e) => setJenisAktivitas(e.target.value)}
-            className="input-field h-10 w-full px-3 text-sm text-gray-700"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
           >
             <option value="">Pilih Jenis</option>
             <option value="Workshop">Workshop</option>
@@ -398,34 +398,34 @@ function TambahAktivitasForm({
       {/* Row 2: Tanggal, Jumlah Peserta, Status */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
             Tanggal <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
-            className="input-field h-10 w-full px-3 text-sm text-gray-700"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">Jumlah Peserta</label>
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Jumlah Peserta</label>
           <input
             type="number"
             value={peserta}
             onChange={(e) => setPeserta(e.target.value)}
             placeholder="0"
-            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700 placeholder:text-gray-400"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
             Status <span className="text-red-500">*</span>
           </label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as StatusAktivitas)}
-            className="input-field h-10 w-full px-3 text-sm text-gray-700"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700"
           >
             <option value="direncanakan">Direncanakan</option>
             <option value="berlangsung">Berlangsung</option>
@@ -437,7 +437,7 @@ function TambahAktivitasForm({
       {/* Row 3: PIC Polibatam & PIC Mitra */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">
             PIC Polibatam <span className="text-red-500">*</span>
           </label>
           <input
@@ -445,30 +445,30 @@ function TambahAktivitasForm({
             value={picPolibatam}
             onChange={(e) => setPicPolibatam(e.target.value)}
             placeholder="Nama dosen/staff"
-            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700 placeholder:text-gray-400"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">PIC Mitra</label>
+          <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">PIC Mitra</label>
           <input
             type="text"
             value={picMitra}
             onChange={(e) => setPicMitra(e.target.value)}
             placeholder="Nama PIC dari mitra"
-            className="input-field h-10 w-full px-3 text-sm text-gray-700 placeholder:text-gray-400"
+            className="input-field h-10 w-full px-3 text-[12px] text-gray-700 placeholder:text-gray-400"
           />
         </div>
       </div>
 
       {/* Row 4: Deskripsi */}
       <div>
-        <label className="block text-sm font-semibold text-gray-800 mb-1.5">Deskripsi Aktivitas</label>
+        <label className="block text-[12px] font-semibold text-gray-800 mb-1.5">Deskripsi Aktivitas</label>
         <textarea
           rows={4}
           value={deskripsi}
           onChange={(e) => setDeskripsi(e.target.value)}
           placeholder="Jelaskan detail aktivitas..."
-          className="input-field w-full px-3 py-2 text-sm text-gray-700 resize-y placeholder:text-gray-400"
+          className="input-field w-full px-3 py-2 text-[12px] text-gray-700 resize-y placeholder:text-gray-400"
         />
       </div>
 
@@ -477,14 +477,14 @@ function TambahAktivitasForm({
         <button
           type="button"
           onClick={handleSubmit}
-          className="btn-primary px-5 py-2 text-sm font-semibold"
+          className="btn-primary px-5 py-2 text-[12px] font-semibold"
         >
           Simpan Aktivitas
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
         >
           Batal
         </button>

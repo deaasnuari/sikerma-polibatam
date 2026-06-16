@@ -230,14 +230,14 @@ export default function EksternalStoryAktivitasPage() {
       {/* Filters */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-gray-700">
             <Filter size={15} />
             Filter:
           </span>
           <select
             value={filterJenis}
             onChange={(e) => setFilterJenis(e.target.value)}
-            className="input-field px-3 py-2 text-sm text-gray-700"
+            className="input-field px-3 py-2 text-[12px] text-gray-700"
           >
             {jenisOptions.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
@@ -246,7 +246,7 @@ export default function EksternalStoryAktivitasPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="input-field px-3 py-2 text-sm text-gray-700"
+            className="input-field px-3 py-2 text-[12px] text-gray-700"
           >
             {statusOptions.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
@@ -261,7 +261,7 @@ export default function EksternalStoryAktivitasPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari berdasarkan nama mitra..."
-            className="input-field h-10 w-full pl-10 pr-3 text-sm text-gray-700 placeholder:text-gray-400"
+            className="input-field h-10 w-full pl-10 pr-3 text-[12px] text-gray-700 placeholder:text-gray-400"
           />
         </label>
       </div>
@@ -269,7 +269,7 @@ export default function EksternalStoryAktivitasPage() {
       {/* Kerjasama Cards */}
       <div className="space-y-4">
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-sm text-gray-500">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-10 text-center text-[12px] text-gray-500">
             {kerjasamaData.length === 0
               ? 'Belum ada kerjasama yang disetujui. Story & aktivitas akan muncul setelah pengajuan di-ACC oleh admin.'
               : 'Data tidak ditemukan.'}
@@ -280,10 +280,10 @@ export default function EksternalStoryAktivitasPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <h3 className="text-base font-bold text-gray-900">{k.namaMitra}</h3>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[k.jenis]}`}>{k.jenis}</span>
+                    <h3 className="text-[13.5px] font-bold text-gray-900">{k.namaMitra}</h3>
+                    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${jenisBadgeMap[k.jenis]}`}>{k.jenis}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">
+                  <p className="mt-0.5 text-[10px] text-gray-500">
                     {k.noDokumen}
                     <span className="mx-2 text-gray-300">•</span>
                     Berakhir: {k.tanggalBerakhir}
@@ -291,11 +291,11 @@ export default function EksternalStoryAktivitasPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${statusDotMap[k.status]}`} />
-                  <span className="text-sm font-medium text-gray-700">{k.status}</span>
+                  <span className="text-[12px] font-medium text-gray-700">{k.status}</span>
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] text-gray-500">
                 <span className="inline-flex items-center gap-1">
                   <Activity size={13} />
                   {k.aktivitas.length} Aktivitas
@@ -312,7 +312,7 @@ export default function EksternalStoryAktivitasPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedStory(k)}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[#F28C00] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#d97b00]"
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[#F28C00] px-3 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[#d97b00]"
                 >
                   <Eye size={13} />
                   Lihat Detail & Story
@@ -321,7 +321,7 @@ export default function EksternalStoryAktivitasPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {k.jurusanTerlibat.map((j) => (
-                  <span key={j} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
+                  <span key={j} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-medium text-gray-700">
                     {j}
                   </span>
                 ))}
@@ -348,14 +348,14 @@ function StatCard({
   caption: string;
 }) {
   return (
-    <div className="stat-card flex items-start gap-3 p-4">
-      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+    <div className="stat-card flex items-start gap-3 p-3.5">
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg}`}>
         {icon}
       </div>
       <div>
-        <p className="text-xs text-gray-500">{title}</p>
-        <p className="mt-0.5 text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-[11px] text-gray-400">{caption}</p>
+        <p className="text-[10px] text-gray-500">{title}</p>
+        <p className="mt-0.5 text-[17px] font-bold text-gray-900">{value}</p>
+        <p className="text-[10.5px] text-gray-400">{caption}</p>
       </div>
     </div>
   );
