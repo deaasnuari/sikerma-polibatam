@@ -79,7 +79,7 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
   },
   Revisi: {
     label: 'Revisi',
-    className: 'bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-3 py-1 text-xs font-semibold',
+    className: 'bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-3 py-1 text-[10px] font-semibold',
     iconEl: <Clock size={13} />,
   },
   Disetujui: {
@@ -89,17 +89,17 @@ const statusConfig: Record<PengajuanStatus, { label: string; className: string; 
   },
   'Disetujui Internal': {
     label: 'Disetujui Internal',
-    className: 'bg-indigo-100 text-indigo-800 border border-indigo-300 rounded-full px-3 py-1 text-xs font-semibold',
+    className: 'bg-indigo-100 text-indigo-800 border border-indigo-300 rounded-full px-3 py-1 text-[10px] font-semibold',
     iconEl: <CheckCircle size={13} />,
   },
   'Disetujui Mitra': {
     label: 'Disetujui Mitra',
-    className: 'bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-full px-3 py-1 text-xs font-semibold',
+    className: 'bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-full px-3 py-1 text-[10px] font-semibold',
     iconEl: <CheckCircle size={13} />,
   },
   'Final Approved': {
     label: 'Final Approved',
-    className: 'bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full px-3 py-1 text-xs font-semibold',
+    className: 'bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full px-3 py-1 text-[10px] font-semibold',
     iconEl: <CheckCircle size={13} />,
   },
   Ditolak: {
@@ -1414,29 +1414,29 @@ function addEditJurusanUnitOption() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Pengajuan Kerjasama</h1>
-          <p className="page-subtitle mt-2">Kelola data pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
+          <p className="page-subtitle mt-1">Kelola data pengajuan kerjasama dari seluruh jurusan dan unit di Polibatam</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setMasterModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+            className="inline-flex items-center gap-2 rounded-lg border border-[#1E376C] bg-white px-3 py-2 text-[12px] font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
           >
-            <Plus size={16} />
+            <Plus size={15} />
             Referensi Kampus
           </button>
           <button
             type="button"
             onClick={() => setNegaraModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+            className="inline-flex items-center gap-2 rounded-lg border border-[#1E376C] bg-white px-3 py-2 text-[12px] font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
           >
-            <Plus size={16} />
+            <Plus size={15} />
             Tambah Negara
           </button>
           <button
@@ -1445,24 +1445,24 @@ function addEditJurusanUnitOption() {
               setRuangLingkupModalOpen(true);
               setRuangLingkupMessage(null);
             }}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#1E376C] bg-white px-4 py-2.5 text-sm font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
+            className="inline-flex items-center gap-2 rounded-lg border border-[#1E376C] bg-white px-3 py-2 text-[12px] font-semibold text-[#1E376C] shadow-sm transition hover:bg-[#EEF2FF]"
           >
-            <Plus size={16} />
+            <Plus size={15} />
             Tambah Ruang Lingkup
           </button>
           <button
             type="button"
             onClick={() => setAjukanModalOpen(true)}
-            className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm flex-shrink-0"
+            className="btn-primary flex items-center gap-2 px-3 py-2 text-[12px] font-semibold shadow-sm flex-shrink-0"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Ajukan Kerjasama Baru
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statCards.map((card) => {
           const Icon = card.icon;
           const isActive = filterStatus === card.key;
@@ -1472,18 +1472,18 @@ function addEditJurusanUnitOption() {
               key={card.key}
               type="button"
               onClick={() => setFilterStatus(card.key)}
-              className={`rounded-lg p-4 shadow-sm flex items-center gap-4 text-left border transition-all ${
+              className={`rounded-lg p-3 shadow-sm flex items-center gap-3 text-left border transition-all ${
                 isActive
                   ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-200 shadow-md'
                   : 'bg-white border-slate-200 hover:border-sky-200 hover:shadow-md'
               }`}
             >
-              <div className={`w-10 h-10 ${card.iconWrap} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                <Icon size={20} className={card.iconText} />
+              <div className={`w-9 h-9 ${card.iconWrap} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <Icon size={18} className={card.iconText} />
               </div>
               <div>
-                <p className="text-xs text-gray-500">{card.label}</p>
-                <p className={`text-2xl font-bold ${card.valueText}`}>{card.value}</p>
+                <p className="text-[10px] text-gray-500">{card.label}</p>
+                <p className={`text-[17px] font-bold ${card.valueText}`}>{card.value}</p>
               </div>
             </button>
           );
@@ -1491,16 +1491,16 @@ function addEditJurusanUnitOption() {
       </div>
 
       {/* Filter Row */}
-      <div className="toolbar-shell p-4">
+      <div className="toolbar-shell p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 text-sm text-gray-700 font-medium">
+          <div className="flex items-center gap-1.5 text-[12px] text-gray-700 font-medium">
             <Filter size={15} />
             Filter:
           </div>
           <select
             value={filterJurusan}
             onChange={(e) => setFilterJurusan(e.target.value)}
-            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
+            className="input-field px-3 py-2 text-[12px] text-gray-700 cursor-pointer"
           >
             <option>Semua Kategori Kerjasama</option>
             <option>Internal</option>
@@ -1510,7 +1510,7 @@ function addEditJurusanUnitOption() {
             <button
               type="button"
               onClick={() => setYearPickerOpen((prev) => !prev)}
-              className="input-field inline-flex min-w-[150px] items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 transition-colors"
+              className="input-field inline-flex min-w-[150px] items-center justify-between gap-2 px-3 py-2 text-[12px] text-gray-700 transition-colors"
             >
               <span>{filterTahun === 'Semua Tahun' ? 'Pilih Tahun' : filterTahun}</span>
               <CalendarDays size={16} className="text-gray-500" />
@@ -1526,7 +1526,7 @@ function addEditJurusanUnitOption() {
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <p className="text-sm font-semibold text-gray-800">
+                  <p className="text-[12px] font-semibold text-gray-800">
                     {yearRangeStart} - {yearRangeStart + 11}
                   </p>
                   <button
@@ -1552,7 +1552,7 @@ function addEditJurusanUnitOption() {
                           setFilterTahun(yearString);
                           setYearPickerOpen(false);
                         }}
-                        className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                        className={`rounded-lg border px-3 py-2 text-[12px] font-medium transition-colors ${
                           isSelected
                             ? 'border-[#1E376C] bg-[#1E376C] text-white'
                             : hasData
@@ -1567,14 +1567,14 @@ function addEditJurusanUnitOption() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-                  <p className="text-xs text-gray-500">Pilih tahun untuk menampilkan data tahunan</p>
+                  <p className="text-[10px] text-gray-500">Pilih tahun untuk menampilkan data tahunan</p>
                   <button
                     type="button"
                     onClick={() => {
                       setFilterTahun('Semua Tahun');
                       setYearPickerOpen(false);
                     }}
-                    className="text-xs font-semibold text-[#1E376C] transition-colors hover:text-[#2B4A93]"
+                    className="text-[10px] font-semibold text-[#1E376C] transition-colors hover:text-[#2B4A93]"
                   >
                     Semua Tahun
                   </button>
@@ -1585,7 +1585,7 @@ function addEditJurusanUnitOption() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="input-field px-3 py-2 text-sm text-gray-700 cursor-pointer"
+            className="input-field px-3 py-2 text-[12px] text-gray-700 cursor-pointer"
           >
             <option>Semua Status</option>
             <option>Menunggu</option>
@@ -1600,7 +1600,7 @@ function addEditJurusanUnitOption() {
               placeholder="Cari berdasarkan nama mitra atau judul..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input-field w-full pl-9 pr-3 py-2 text-sm text-gray-700"
+              className="input-field w-full pl-9 pr-3 py-2 text-[12px] text-gray-700"
             />
           </div>
         </div>
@@ -1613,14 +1613,14 @@ function addEditJurusanUnitOption() {
           return (
             <div
               key={item.id}
-              className="card p-5 hover:shadow-md transition-shadow"
+              className="card p-4 hover:shadow-md transition-shadow"
             >
               {/* Top row */}
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-0.5">Judul Pengajuan:</p>
-                  <h3 className="text-base font-bold text-gray-900">{item.judulPengajuan}</h3>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-[10px] text-gray-500 mb-0.5">Judul Pengajuan:</p>
+                  <h3 className="text-[13.5px] font-bold text-gray-900">{item.judulPengajuan}</h3>
+                  <p className="text-[10px] text-gray-500 mt-1">
                     Pengusul: {item.namaPengusul} &bull; {item.diajukanPada}
                   </p>
                 </div>
@@ -1634,29 +1634,29 @@ function addEditJurusanUnitOption() {
               <div className="flex flex-wrap items-start justify-between gap-3 mt-4">
                 <div className="flex flex-wrap items-start gap-4">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Mitra Tujuan</p>
-                    <p className="text-sm font-semibold text-gray-900">{item.namaMitra}</p>
+                    <p className="text-[10px] text-gray-400 mb-1">Mitra Tujuan</p>
+                    <p className="text-[12px] font-semibold text-gray-900">{item.namaMitra}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Jenis Dokumen</p>
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                    <p className="text-[10px] text-gray-400 mb-1">Jenis Dokumen</p>
+                    <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${pengajuanDokumenBadge[item.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                       {item.jenisDokumen}
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Jurusan</p>
-                    <p className="text-sm text-gray-700">{item.namaUnitProdi}</p>
+                    <p className="text-[10px] text-gray-400 mb-1">Jurusan</p>
+                    <p className="text-[12px] text-gray-700">{item.namaUnitProdi}</p>
                   </div>
                   {item.keputusan && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Keputusan</p>
-                      <p className="text-sm font-semibold text-gray-900">{item.keputusan}</p>
+                      <p className="text-[10px] text-gray-400 mb-1">Keputusan</p>
+                      <p className="text-[12px] font-semibold text-gray-900">{item.keputusan}</p>
                     </div>
                   )}
                   {item.catatan && (
                     <div className="max-w-[200px]">
-                      <p className="text-xs text-gray-400 mb-1">Catatan Review</p>
-                      <p className="text-sm text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
+                      <p className="text-[10px] text-gray-400 mb-1">Catatan Review</p>
+                      <p className="text-[12px] text-gray-700 truncate" title={item.catatan}>{item.catatan}</p>
                     </div>
                   )}
                 </div>
@@ -1664,7 +1664,7 @@ function addEditJurusanUnitOption() {
                   <button
                     type="button"
                     onClick={() => setDetailItem(item)}
-                    className="btn-secondary inline-flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
+                    className="btn-secondary inline-flex items-center gap-1.5 text-[10px] sm:text-[12px] px-2.5 sm:px-3 py-1.5"
                   >
                     <Eye size={14} />
                     <span className="hidden xs:inline sm:inline">Detail</span>
@@ -1672,7 +1672,7 @@ function addEditJurusanUnitOption() {
                   <button
                     type="button"
                     onClick={() => openReview(item)}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-green-700 border border-green-300 bg-green-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
+                    className="inline-flex items-center gap-1.5 text-[10px] sm:text-[12px] text-green-700 border border-green-300 bg-green-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-green-100"
                   >
                     <MessageSquare size={14} />
                     <span className="hidden xs:inline sm:inline">Review</span>
@@ -1680,7 +1680,7 @@ function addEditJurusanUnitOption() {
                   <button
                     type="button"
                     onClick={() => openEdit(item)}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
+                    className="inline-flex items-center gap-1.5 text-[10px] sm:text-[12px] text-amber-700 border border-amber-300 bg-amber-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-amber-100"
                   >
                     <Pencil size={14} />
                     <span className="hidden xs:inline sm:inline">Edit</span>
@@ -1688,7 +1688,7 @@ function addEditJurusanUnitOption() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(item)}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-700 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
+                    className="inline-flex items-center gap-1.5 text-[10px] sm:text-[12px] text-red-700 border border-red-300 bg-red-50 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium transition-colors hover:bg-red-100"
                   >
                     <Trash2 size={14} />
                     <span className="hidden xs:inline sm:inline">Hapus</span>
@@ -1698,11 +1698,11 @@ function addEditJurusanUnitOption() {
 
               {/* Ruang Lingkup */}
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="text-xs text-gray-500">Ruang Lingkup:</span>
+                <span className="text-[10px] text-gray-500">Ruang Lingkup:</span>
                 {item.ruangLingkup.map((rl) => (
                   <span
                     key={rl}
-                    className="bg-gray-100 text-gray-700 rounded text-xs font-medium px-3 py-1"
+                    className="bg-gray-100 text-gray-700 rounded text-[10px] font-medium px-3 py-1"
                   >
                     {rl}
                   </span>
@@ -1843,8 +1843,8 @@ function addEditJurusanUnitOption() {
           <div className="w-full max-w-[640px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3] flex flex-col max-h-[90vh]">
             <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Detail Pengajuan</h3>
-                <p className="text-xs text-gray-600">ID: {detailItem.id}</p>
+                <h3 className="text-[17px] font-bold text-gray-900">Detail Pengajuan</h3>
+                <p className="text-[10px] text-gray-600">ID: {detailItem.id}</p>
               </div>
               <button type="button" onClick={() => { setDetailItem(null); }} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
@@ -1853,14 +1853,14 @@ function addEditJurusanUnitOption() {
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-xs text-gray-500">Status:</p>
-                <p className="text-sm font-semibold text-gray-900 mt-0.5">{statusConfig[detailItem.statusPengajuan]?.label || 'Menunggu'}</p>
+                <p className="text-[10px] text-gray-500">Status:</p>
+                <p className="text-[12px] font-semibold text-gray-900 mt-0.5">{statusConfig[detailItem.statusPengajuan]?.label || 'Menunggu'}</p>
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-sm font-semibold text-gray-900">{detailItem.judulPengajuan}</p>
-                <p className="text-xs text-gray-600 mt-1">Diajukan oleh: {detailItem.namaPengusul}</p>
-                <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                <p className="text-[12px] font-semibold text-gray-900">{detailItem.judulPengajuan}</p>
+                <p className="text-[10px] text-gray-600 mt-1">Diajukan oleh: {detailItem.namaPengusul}</p>
+                <div className="mt-3 grid gap-3 text-[10px] sm:grid-cols-2">
                   <div>
                     <p className="text-gray-500">Nomor WhatsApp Aktif Mitra</p>
                     {buildWhatsAppUrl(detailItem.mitraTelepon) ? (
@@ -1897,15 +1897,15 @@ function addEditJurusanUnitOption() {
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-sm font-semibold text-gray-900 mb-3">Informasi Pengajuan</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                <p className="text-[12px] font-semibold text-gray-900 mb-3">Informasi Pengajuan</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[10px]">
                   <div>
                     <p className="text-gray-500">Tanggal Pengajuan</p>
                     <p className="text-gray-900 font-medium">{detailItem.diajukanPada}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Jenis Dokumen</p>
-                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${pengajuanDokumenBadge[detailItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[10.5px] font-semibold ${pengajuanDokumenBadge[detailItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                       {detailItem.jenisDokumen}
                     </span>
                   </div>
@@ -1929,10 +1929,10 @@ function addEditJurusanUnitOption() {
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-xs text-gray-500 mb-2">Ruang Lingkup Kerjasama:</p>
+                <p className="text-[10px] text-gray-500 mb-2">Ruang Lingkup Kerjasama:</p>
                 <div className="flex flex-wrap gap-2">
                   {detailItem.ruangLingkup.map((rl) => (
-                    <span key={rl} className="bg-[#ECEFF6] text-[#1E376C] rounded-md text-[11px] font-semibold px-2.5 py-1">
+                    <span key={rl} className="bg-[#ECEFF6] text-[#1E376C] rounded-md text-[10.5px] font-semibold px-2.5 py-1">
                       {rl}
                     </span>
                   ))}
@@ -1940,7 +1940,7 @@ function addEditJurusanUnitOption() {
               </div>
 
               <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4]">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Dokumen Pendukung</p>
+                <p className="text-[12px] font-semibold text-gray-900 mb-2">Dokumen Pendukung</p>
 
                 {(() => {
                   const originalFiles = detailFileEntries.filter((f) => !f.isAcc);
@@ -1952,7 +1952,7 @@ function addEditJurusanUnitOption() {
                   return (
                     <>
                       {originalFiles.length === 0 ? (
-                        <p className="text-xs text-gray-500 mb-2">Belum ada dokumen awal yang diunggah.</p>
+                        <p className="text-[10px] text-gray-500 mb-2">Belum ada dokumen awal yang diunggah.</p>
                       ) : (
                         <div className="space-y-2 mb-3">
                           {originalFiles.map((doc, index) => {
@@ -1964,7 +1964,7 @@ function addEditJurusanUnitOption() {
                                   href={sourceUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="truncate text-xs font-medium text-blue-600 underline hover:text-blue-800"
+                                  className="truncate text-[10px] font-medium text-blue-600 underline hover:text-blue-800"
                                 >
                                   {doc.name}
                                 </a>
@@ -1978,7 +1978,7 @@ function addEditJurusanUnitOption() {
                         <>
                           <div className="flex items-center gap-1.5 mb-2 mt-1">
                             <CheckCircle size={13} className="text-emerald-600" />
-                            <p className="text-xs font-semibold text-emerald-700">Dokumen Final (ACC)</p>
+                            <p className="text-[10px] font-semibold text-emerald-700">Dokumen Final (ACC)</p>
                           </div>
                           <div className="space-y-2">
                             {accFiles.map((doc, index) => (
@@ -1989,7 +1989,7 @@ function addEditJurusanUnitOption() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download={doc.name}
-                                  className="truncate text-xs font-medium text-emerald-700 underline hover:text-emerald-800"
+                                  className="truncate text-[10px] font-medium text-emerald-700 underline hover:text-emerald-800"
                                 >
                                   {doc.name}
                                 </a>
@@ -2006,7 +2006,7 @@ function addEditJurusanUnitOption() {
               <button
                 type="button"
                 onClick={() => { setDetailItem(null); }}
-                className="w-full h-10 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+                className="w-full h-10 rounded-lg bg-[#1E376C] text-white text-[12px] font-semibold hover:bg-[#2A4A8F]"
               >
                 Tutup
               </button>
@@ -2020,8 +2020,8 @@ function addEditJurusanUnitOption() {
           <div className="w-full max-w-[680px] bg-[#EFEFF1] rounded-xl shadow-xl border border-[#DBDDE3] flex flex-col max-h-[90vh]">
             <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#D5D7DD]">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Review Pengajuan</h3>
-                <p className="text-sm text-gray-700 mt-0.5">{reviewItem.judulPengajuan}</p>
+                <h3 className="text-[17px] font-bold text-gray-900">Review Pengajuan</h3>
+                <p className="text-[12px] text-gray-700 mt-0.5">{reviewItem.judulPengajuan}</p>
               </div>
               <button type="button" onClick={() => setReviewItem(null)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
@@ -2029,7 +2029,7 @@ function addEditJurusanUnitOption() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4] grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+              <div className="bg-white rounded-lg px-4 py-3 border border-[#D9DCE4] grid grid-cols-2 gap-x-4 gap-y-3 text-[10px]">
                 <div>
                   <p className="text-gray-500">Pengusul:</p>
                   <p className="text-gray-900 font-medium">{reviewItem.namaPengusul}</p>
@@ -2044,20 +2044,20 @@ function addEditJurusanUnitOption() {
                 </div>
                 <div>
                   <p className="text-gray-500">Jenis Dokumen</p>
-                  <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[11px] font-semibold ${pengajuanDokumenBadge[reviewItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
+                  <span className={`inline-flex mt-1 px-2 py-0.5 rounded text-[10.5px] font-semibold ${pengajuanDokumenBadge[reviewItem.jenisDokumen] || 'bg-[#1E376C] text-white'}`}>
                     {reviewItem.jenisDokumen}
                   </span>
                 </div>
               </div>
 
 <div>
-                <p className="text-xs font-semibold text-gray-700 mb-2">Keputusan *</p>
+                <p className="text-[10px] font-semibold text-gray-700 mb-2">Keputusan *</p>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Revisi button - LEFT side */}
                   <button
                     type="button"
                     onClick={() => setReviewDecision('Revisi')}
-                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Revisi' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-600 border-orange-300 hover:bg-orange-50'}`}
+                    className={`h-11 rounded-lg text-[10px] font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Revisi' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-600 border-orange-300 hover:bg-orange-50'}`}
                   >
                     <ThumbsDown size={14} />
                     REVISI
@@ -2066,7 +2066,7 @@ function addEditJurusanUnitOption() {
                   <button
                     type="button"
                     onClick={() => setReviewDecision('Disetujui')}
-                    className={`h-11 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Disetujui' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-[#1E376C] border-[#C7D2EA] hover:bg-green-50'}`}
+                    className={`h-11 rounded-lg text-[10px] font-semibold inline-flex items-center justify-center gap-2 border ${reviewDecision === 'Disetujui' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-[#1E376C] border-[#C7D2EA] hover:bg-green-50'}`}
                   >
                     <CheckCircle size={14} />
                     ACC FINAL BERKAS
@@ -2076,23 +2076,23 @@ function addEditJurusanUnitOption() {
 
               {reviewDecision === 'Revisi' && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-700">Catatan Revisi</label>
+                  <label className="text-[10px] font-semibold text-gray-700">Catatan Revisi</label>
                   <textarea
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     rows={3}
                     placeholder="Berikan catatan revisi untuk pengusul..."
-                    className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                    className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-[12px] text-gray-700 outline-none focus:border-[#1E376C]"
                   />
                 </div>
               )}
 
               {reviewDecision === 'Disetujui' && (
                 <div className="rounded-lg border border-[#D9DCE4] bg-white p-4">
-                  <p className="text-sm font-semibold text-gray-900 mb-3">Upload Final Berkas</p>
-                  <p className="text-xs text-gray-600 mb-3">Unggah dokumen final yang telah disetujui untuk disimpan sebagai arsip.</p>
+                  <p className="text-[12px] font-semibold text-gray-900 mb-3">Upload Final Berkas</p>
+                  <p className="text-[10px] text-gray-600 mb-3">Unggah dokumen final yang telah disetujui untuk disimpan sebagai arsip.</p>
 
-<label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-sm font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
+<label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-[12px] font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
                     <Upload size={16} />
                     Klik untuk Pilih File
                     <input
@@ -2108,11 +2108,11 @@ function addEditJurusanUnitOption() {
 
                   {reviewFinalFilePreview && (
                     <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-xs font-semibold text-green-700 mb-1">File Dipilih:</p>
+                      <p className="text-[10px] font-semibold text-green-700 mb-1">File Dipilih:</p>
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex items-center gap-2">
                           <Paperclip size={14} className="shrink-0 text-green-600" />
-                          <span className="truncate text-xs font-medium text-green-700">{reviewFinalFilePreview.name}</span>
+                          <span className="truncate text-[10px] font-medium text-green-700">{reviewFinalFilePreview.name}</span>
                         </div>
                         <button
                           type="button"
@@ -2128,11 +2128,11 @@ function addEditJurusanUnitOption() {
 {/* Display existing final files if any */}
                   {reviewItem.finalFileName && (
                     <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <p className="text-xs font-semibold text-slate-700 mb-1">File Final Terunggah:</p>
+                      <p className="text-[10px] font-semibold text-slate-700 mb-1">File Final Terunggah:</p>
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex items-center gap-2">
                           <Paperclip size={14} className="shrink-0 text-slate-500" />
-                          <span className="truncate text-xs font-medium text-blue-600">{reviewItem.finalFileName}</span>
+                          <span className="truncate text-[10px] font-medium text-blue-600">{reviewItem.finalFileName}</span>
                         </div>
                         <button
                           type="button"
@@ -2152,31 +2152,31 @@ function addEditJurusanUnitOption() {
                   )}
 
                   <div className="mt-3">
-                    <label className="text-xs font-semibold text-gray-700">Catatan ACC </label>
+                    <label className="text-[10px] font-semibold text-gray-700">Catatan ACC </label>
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
                       rows={3}
                       placeholder="Tambahkan catatan untuk Internal/Mitra bersama dokumen final ini..."
-                      className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#1E376C]"
+                      className="mt-1 w-full rounded-lg border border-[#D2D7E5] bg-white px-3 py-2 text-[12px] text-gray-700 outline-none focus:border-[#1E376C]"
                     />
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-lg border border-[#D9DCE4] px-3 py-2 text-[11px] text-gray-600">
+              <div className="bg-white rounded-lg border border-[#D9DCE4] px-3 py-2 text-[10.5px] text-gray-600">
                 Notifikasi Otomatis: status akan diperbarui dan pengusul mendapat info hasil review.
               </div>
 
               {/* WhatsApp PIC Section */}
               {reviewItem.whatsappPengusul && (
                 <div className="mt-2 rounded-lg border border-green-200 bg-green-50 p-3">
-                  <p className="text-xs font-semibold text-green-800 mb-2">Hubungi PIC via WhatsApp</p>
+                  <p className="text-[10px] font-semibold text-green-800 mb-2">Hubungi PIC via WhatsApp</p>
                   <a
                     href={buildWhatsAppUrl(reviewItem.whatsappPengusul) || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-[10px] font-semibold text-white hover:bg-green-700"
                   >
                     <MessageSquare size={14} />
                     Hubungi via WhatsApp
@@ -2189,7 +2189,7 @@ function addEditJurusanUnitOption() {
                 <button
                   type="button"
                   onClick={() => setReviewItem(null)}
-                  className="h-9 px-4 rounded-lg bg-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-300"
+                  className="h-9 px-4 rounded-lg bg-gray-200 text-gray-700 text-[10px] font-semibold hover:bg-gray-300"
                 >
                   Batal
                 </button>
@@ -2210,7 +2210,7 @@ function addEditJurusanUnitOption() {
                       setUploadConfirmOpen(true);
                     }
                   }}
-                  className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-xs font-semibold hover:bg-[#2A4A8F]"
+                  className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-[10px] font-semibold hover:bg-[#2A4A8F]"
                 >
                   Simpan dan kirim notifikasi
                 </button>
@@ -2225,8 +2225,8 @@ function addEditJurusanUnitOption() {
           <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Kelola Referensi Kampus</h3>
-                <p className="text-xs text-slate-500">Tambah Jurusan/Unit kampus di atas, lalu kelola Prodi langsung per jurusan.</p>
+                <h3 className="text-[15px] font-bold text-slate-900">Kelola Referensi Kampus</h3>
+                <p className="text-[10px] text-slate-500">Tambah Jurusan/Unit kampus di atas, lalu kelola Prodi langsung per jurusan.</p>
               </div>
               <button type="button" onClick={() => setMasterModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -2235,12 +2235,12 @@ function addEditJurusanUnitOption() {
 
             <div className="space-y-4 p-5 bg-slate-50/70">
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="mb-3 text-xs font-semibold text-slate-700">Tambah Jurusan / Unit Kerja</p>
+                <p className="mb-3 text-[10px] font-semibold text-slate-700">Tambah Jurusan / Unit Kerja</p>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <select
                   value={masterJenis}
                   onChange={(e) => setMasterJenis(e.target.value as 'jurusan' | 'unit_kerja')}
-                  className="input-field h-10 rounded-lg px-3 text-sm"
+                  className="input-field h-10 rounded-lg px-3 text-[12px]"
                 >
                   <option value="jurusan">Jurusan</option>
                   <option value="unit_kerja">Unit</option>
@@ -2249,13 +2249,13 @@ function addEditJurusanUnitOption() {
                   value={masterKode}
                   onChange={(e) => setMasterKode(e.target.value)}
                   placeholder="Kode"
-                  className="input-field h-10 rounded-lg px-3 text-sm"
+                  className="input-field h-10 rounded-lg px-3 text-[12px]"
                 />
                 <input
                   value={masterNama}
                   onChange={(e) => setMasterNama(e.target.value)}
                   placeholder="Nama master"
-                  className="input-field h-10 rounded-lg px-3 text-sm"
+                  className="input-field h-10 rounded-lg px-3 text-[12px]"
                 />
                 <button
                   type="button"
@@ -2263,7 +2263,7 @@ function addEditJurusanUnitOption() {
                     void handleSubmitMasterReference();
                   }}
                   disabled={masterSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-[12px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   <Plus size={14} />
                   {masterSaving ? 'Menyimpan...' : 'Simpan'}
@@ -2272,7 +2272,7 @@ function addEditJurusanUnitOption() {
               </div>
 
               {masterMessage && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] text-slate-700">
                   {masterMessage}
                 </div>
               )}
@@ -2281,11 +2281,11 @@ function addEditJurusanUnitOption() {
                 value={masterSearch}
                 onChange={(e) => setMasterSearch(e.target.value)}
                 placeholder="Cari jurusan atau prodi..."
-                className="input-field h-10 w-full rounded-lg border-slate-300 bg-white px-3 text-sm"
+                className="input-field h-10 w-full rounded-lg border-slate-300 bg-white px-3 text-[12px]"
               />
 
               <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="text-xs font-semibold text-slate-700">Jurusan dan Daftar Prodi</p>
+                <p className="text-[10px] font-semibold text-slate-700">Jurusan dan Daftar Prodi</p>
                 <div className="mt-2 space-y-3">
                   {filteredJurusanRows.map((jurusan) => {
                     const prodis = masterProdiRows.filter((prodi) => prodi.parent_id === jurusan.id);
@@ -2295,8 +2295,8 @@ function addEditJurusanUnitOption() {
                       <div key={jurusan.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{jurusan.kode || '-'}</span>
-                            <p className="text-sm font-semibold text-[#173B82]">{jurusan.nama}</p>
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] text-slate-600">{jurusan.kode || '-'}</span>
+                            <p className="text-[12px] font-semibold text-[#173B82]">{jurusan.nama}</p>
                           </div>
                           <button
                             type="button"
@@ -2304,7 +2304,7 @@ function addEditJurusanUnitOption() {
                               void handleDeleteJurusan(jurusan.id);
                             }}
                             disabled={masterSaving}
-                            className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10.5px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Hapus Jurusan
                           </button>
@@ -2315,13 +2315,13 @@ function addEditJurusanUnitOption() {
                             value={draft.kode}
                             onChange={(e) => setProdiDraftField(jurusan.id, 'kode', e.target.value)}
                             placeholder="Kode prodi"
-                            className="input-field h-9 rounded-lg px-2 text-xs"
+                            className="input-field h-9 rounded-lg px-2 text-[10px]"
                           />
                           <input
                             value={draft.nama}
                             onChange={(e) => setProdiDraftField(jurusan.id, 'nama', e.target.value)}
                             placeholder="Nama prodi"
-                            className="input-field h-9 rounded-lg px-2 text-xs"
+                            className="input-field h-9 rounded-lg px-2 text-[10px]"
                           />
                           <button
                             type="button"
@@ -2329,7 +2329,7 @@ function addEditJurusanUnitOption() {
                               void handleAddProdiToJurusan(jurusan.id);
                             }}
                             disabled={masterSaving}
-                            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#1E376C] px-3 text-xs font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#1E376C] px-3 text-[10px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
                           >
                             + Prodi
                           </button>
@@ -2337,7 +2337,7 @@ function addEditJurusanUnitOption() {
 
                         <div className="mt-3 space-y-2">
                           {prodis.length === 0 ? (
-                            <span className="text-[11px] text-slate-400">Belum ada prodi</span>
+                            <span className="text-[10.5px] text-slate-400">Belum ada prodi</span>
                           ) : (
                             prodis.map((prodi) => {
                               const isEditing = editingProdiId === prodi.id;
@@ -2349,13 +2349,13 @@ function addEditJurusanUnitOption() {
                                       value={editingProdiKode}
                                       onChange={(e) => setEditingProdiKode(e.target.value)}
                                       placeholder="Kode"
-                                      className="input-field h-8 rounded-md px-2 text-[11px]"
+                                      className="input-field h-8 rounded-md px-2 text-[10.5px]"
                                     />
                                     <input
                                       value={editingProdiNama}
                                       onChange={(e) => setEditingProdiNama(e.target.value)}
                                       placeholder="Nama prodi"
-                                      className="input-field h-8 rounded-md px-2 text-[11px]"
+                                      className="input-field h-8 rounded-md px-2 text-[10.5px]"
                                     />
                                     <button
                                       type="button"
@@ -2363,14 +2363,14 @@ function addEditJurusanUnitOption() {
                                         void saveEditProdi(prodi.id);
                                       }}
                                       disabled={masterSaving}
-                                      className="h-8 rounded-md bg-[#1E376C] px-2 text-[11px] font-semibold text-white hover:bg-[#2A4A8F]"
+                                      className="h-8 rounded-md bg-[#1E376C] px-2 text-[10.5px] font-semibold text-white hover:bg-[#2A4A8F]"
                                     >
                                       Simpan
                                     </button>
                                     <button
                                       type="button"
                                       onClick={cancelEditProdi}
-                                      className="h-8 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                                      className="h-8 rounded-md border border-slate-300 bg-white px-2 text-[10.5px] font-semibold text-slate-600 hover:bg-slate-50"
                                     >
                                       Batal
                                     </button>
@@ -2380,14 +2380,14 @@ function addEditJurusanUnitOption() {
 
                               return (
                                 <div key={prodi.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2">
-                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-700">
                                     {prodi.kode ? `${prodi.kode} - ` : ''}{prodi.nama}
                                   </span>
                                   <div className="flex items-center gap-1.5">
                                     <button
                                       type="button"
                                       onClick={() => startEditProdi(prodi)}
-                                      className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+                                      className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10.5px] font-semibold text-blue-700 hover:bg-blue-100"
                                     >
                                       Edit
                                     </button>
@@ -2396,7 +2396,7 @@ function addEditJurusanUnitOption() {
                                       onClick={() => {
                                         void handleDeleteProdi(prodi.id);
                                       }}
-                                      className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                                      className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10.5px] font-semibold text-red-700 hover:bg-red-100"
                                     >
                                       Hapus Prodi
                                     </button>
@@ -2411,19 +2411,19 @@ function addEditJurusanUnitOption() {
                   })}
 
                   {filteredJurusanRows.length === 0 && (
-                    <div className="rounded-md border border-slate-200 bg-white p-3 text-center text-[11px] text-slate-500">
+                    <div className="rounded-md border border-slate-200 bg-white p-3 text-center text-[10.5px] text-slate-500">
                       Tidak ada jurusan/prodi yang cocok dengan pencarian.
                     </div>
                   )}
                 </div>
 
-                <p className="mt-3 text-xs font-semibold text-slate-700">Daftar Unit Kerja</p>
+                <p className="mt-3 text-[10px] font-semibold text-slate-700">Daftar Unit Kerja</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {masterUnitRows.length === 0 ? (
-                    <span className="text-[11px] text-slate-400">Belum ada unit kerja.</span>
+                    <span className="text-[10.5px] text-slate-400">Belum ada unit kerja.</span>
                   ) : (
                     masterUnitRows.map((unit) => (
-                      <div key={unit.id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      <div key={unit.id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10.5px] font-medium text-slate-700">
                         <span>{unit.kode ? `${unit.kode} - ` : ''}{unit.nama}</span>
                         <button
                           type="button"
@@ -2450,27 +2450,27 @@ function addEditJurusanUnitOption() {
           <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#EEF3FF] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1E376C]">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#EEF3FF] px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#1E376C]">
                   Master Data
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">Tambah Negara</h3>
-                <p className="text-sm text-slate-500">Tambahkan opsi negara yang akan muncul di form pengajuan internal dan eksternal.</p>
+                <h3 className="text-[17px] font-bold text-slate-900">Tambah Negara</h3>
+                <p className="text-[12px] text-slate-500">Tambahkan opsi negara yang akan muncul di form pengajuan internal dan eksternal.</p>
               </div>
               <button type="button" onClick={() => setNegaraModalOpen(false)} className="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-                  <label className="flex-1 text-sm font-medium text-slate-700">
+                  <label className="flex-1 text-[12px] font-medium text-slate-700">
                     Nama Negara
                     <input
                       value={negaraInput}
                       onChange={(e) => setNegaraInput(e.target.value)}
                       placeholder="Contoh: Brunei Darussalam"
-                      className="mt-1 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
+                      className="mt-1 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-[12px] text-slate-800 shadow-sm outline-none transition focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
                     />
                   </label>
                   <button
@@ -2478,31 +2478,31 @@ function addEditJurusanUnitOption() {
                     onClick={() => {
                       void handleAddNegaraOption();
                     }}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E376C] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2A4A8F]"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E376C] px-4 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#2A4A8F]"
                   >
                     <Plus size={15} />
                     Tambah Negara
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-slate-500">Negara yang ditambahkan langsung tersedia pada semua form pengajuan.</p>
+                <p className="mt-2 text-[10px] text-slate-500">Negara yang ditambahkan langsung tersedia pada semua form pengajuan.</p>
               </div>
 
               {negaraMessage && (
-                <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2 text-sm text-slate-700">{negaraMessage}</div>
+                <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2 text-[12px] text-slate-700">{negaraMessage}</div>
               )}
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Daftar Negara</p>
-                    <p className="text-xs text-slate-500">Total negara aktif: {masterNegaraRows.length}</p>
+                    <p className="text-[12px] font-semibold text-slate-800">Daftar Negara</p>
+                    <p className="text-[10px] text-slate-500">Total negara aktif: {masterNegaraRows.length}</p>
                   </div>
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">Sinkron otomatis</span>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10.5px] font-semibold text-emerald-700">Sinkron otomatis</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                   {masterNegaraRows.length === 0 ? (
-                    <div className="w-full rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">Belum ada negara yang ditambahkan.</div>
+                    <div className="w-full rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-[12px] text-slate-400">Belum ada negara yang ditambahkan.</div>
                   ) : (
                     masterNegaraRows.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
@@ -2510,10 +2510,10 @@ function addEditJurusanUnitOption() {
                           <input
                             value={editingNegaraNama}
                             onChange={(e) => setEditingNegaraNama(e.target.value)}
-                            className="h-9 w-40 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
+                            className="h-9 w-40 rounded-lg border border-slate-300 bg-white px-2.5 text-[10px] text-slate-800 outline-none focus:border-[#1E376C] focus:ring-2 focus:ring-[#1E376C]/10"
                           />
                         ) : (
-                          <span className="text-sm font-semibold text-slate-800">{item.nama_negara}</span>
+                          <span className="text-[12px] font-semibold text-slate-800">{item.nama_negara}</span>
                         )}
                         <div className="flex items-center gap-1">
                           <button
@@ -2527,7 +2527,7 @@ function addEditJurusanUnitOption() {
                               setEditingNegaraId(item.id);
                               setEditingNegaraNama(item.nama_negara);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[10.5px] font-semibold text-blue-700 transition hover:bg-blue-100"
                           >
                             <Pencil size={12} />
                             {editingNegaraId === item.id ? 'Simpan' : 'Edit'}
@@ -2539,7 +2539,7 @@ function addEditJurusanUnitOption() {
                                 setEditingNegaraId(null);
                                 setEditingNegaraNama('');
                               }}
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
+                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-600 transition hover:bg-slate-100"
                             >
                               Batal
                             </button>
@@ -2549,7 +2549,7 @@ function addEditJurusanUnitOption() {
                               onClick={() => {
                                 void handleDeleteNegaraOption(item);
                               }}
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[10.5px] font-semibold text-red-700 transition hover:bg-red-100"
                               aria-label={`Hapus ${item.nama_negara}`}
                             >
                               <Trash2 size={12} />
@@ -2572,8 +2572,8 @@ function addEditJurusanUnitOption() {
           <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex-none flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Tambah Ruang Lingkup</h3>
-                <p className="text-xs text-slate-500">Tambahkan opsi ruang lingkup untuk form pengajuan.</p>
+                <h3 className="text-[15px] font-bold text-slate-900">Tambah Ruang Lingkup</h3>
+                <p className="text-[10px] text-slate-500">Tambahkan opsi ruang lingkup untuk form pengajuan.</p>
               </div>
               <button
                 type="button"
@@ -2590,7 +2590,7 @@ function addEditJurusanUnitOption() {
                   value={ruangLingkupNama}
                   onChange={(e) => setRuangLingkupNama(e.target.value)}
                   placeholder="Contoh: Publikasi Bersama"
-                  className="input-field h-10 flex-1 rounded-lg px-3 text-sm"
+                  className="input-field h-10 flex-1 rounded-lg px-3 text-[12px]"
                 />
                 <button
                   type="button"
@@ -2598,25 +2598,25 @@ function addEditJurusanUnitOption() {
                     void handleSubmitRuangLingkup();
                   }}
                   disabled={ruangLingkupSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-sm font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1E376C] px-4 text-[12px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   <Plus size={14} />
                   {ruangLingkupSaving ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
-              <p className="text-xs text-slate-500">Data tersimpan ke DB dan langsung dipakai di Form Pengajuan.</p>
+              <p className="text-[10px] text-slate-500">Data tersimpan ke DB dan langsung dipakai di Form Pengajuan.</p>
 
               {ruangLingkupMessage && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] text-slate-700">
                   {ruangLingkupMessage}
                 </div>
               )}
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-700">Daftar Ruang Lingkup</p>
+                <p className="text-[10px] font-semibold text-slate-700">Daftar Ruang Lingkup</p>
                 <div className="mt-2 space-y-2">
                   {ruangLingkupRows.length === 0 ? (
-                    <span className="text-[11px] text-slate-400">Belum ada data ruang lingkup.</span>
+                    <span className="text-[10.5px] text-slate-400">Belum ada data ruang lingkup.</span>
                   ) : (
                     ruangLingkupRows.map((item) => (
                       <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
@@ -2624,11 +2624,11 @@ function addEditJurusanUnitOption() {
                           <input
                             value={editingRuangLingkupNama}
                             onChange={(e) => setEditingRuangLingkupNama(e.target.value)}
-                            className="input-field h-8 flex-1 rounded-md px-2 text-xs"
+                            className="input-field h-8 flex-1 rounded-md px-2 text-[10px]"
                             placeholder="Nama ruang lingkup"
                           />
                         ) : (
-                          <span className="text-xs font-medium text-slate-700">{item.nama_ruang_lingkup}</span>
+                          <span className="text-[10px] font-medium text-slate-700">{item.nama_ruang_lingkup}</span>
                         )}
 
                         <div className="flex items-center gap-1.5">
@@ -2640,14 +2640,14 @@ function addEditJurusanUnitOption() {
                                   void saveEditRuangLingkup(item.id);
                                 }}
                                 disabled={ruangLingkupSaving}
-                                className="h-7 rounded-md bg-[#1E376C] px-2 text-[11px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
+                                className="h-7 rounded-md bg-[#1E376C] px-2 text-[10.5px] font-semibold text-white hover:bg-[#2A4A8F] disabled:cursor-not-allowed disabled:bg-slate-300"
                               >
                                 Simpan
                               </button>
                               <button
                                 type="button"
                                 onClick={cancelEditRuangLingkup}
-                                className="h-7 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                                className="h-7 rounded-md border border-slate-300 bg-white px-2 text-[10.5px] font-semibold text-slate-600 hover:bg-slate-50"
                               >
                                 Batal
                               </button>
@@ -2657,7 +2657,7 @@ function addEditJurusanUnitOption() {
                               <button
                                 type="button"
                                 onClick={() => startEditRuangLingkup(item)}
-                                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+                                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10.5px] font-semibold text-blue-700 hover:bg-blue-100"
                               >
                                 Edit
                               </button>
@@ -2667,7 +2667,7 @@ function addEditJurusanUnitOption() {
                                   void handleDeleteRuangLingkup(item.id);
                                 }}
                                 disabled={ruangLingkupSaving}
-                                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10.5px] font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 Hapus
                               </button>
@@ -2688,52 +2688,52 @@ function addEditJurusanUnitOption() {
         <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Edit Pengajuan</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Edit Pengajuan</h3>
               <button type="button" onClick={() => setEditForm(null)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              <div className="md:col-span-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+              <div className="md:col-span-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] text-blue-700">
                 Edit mengikuti form pengajuan. Jika jenis dokumen diubah (MoU/MoA/IA), upload dokumen baru wajib.
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">Judul Pengajuan</label>
+                <label className="text-[10px] font-semibold text-slate-700">Judul Pengajuan</label>
                 <input
                   type="text"
                   value={editForm.judulPengajuan}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, judulPengajuan: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Mitra Tujuan</label>
+                <label className="text-[10px] font-semibold text-slate-700">Mitra Tujuan</label>
                 <input
                   type="text"
                   value={editForm.namaMitra}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, namaMitra: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Jurusan/Unit</label>
+                <label className="text-[10px] font-semibold text-slate-700">Jurusan/Unit</label>
                 <input
                   type="text"
                   value={editForm.namaUnitProdi}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, namaUnitProdi: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Jenis Dokumen</label>
+                <label className="text-[10px] font-semibold text-slate-700">Jenis Dokumen</label>
 
                 <input
                   type="text"
                   value={editForm.jenisDokumen}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, jenisDokumen: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
 
                 <select
@@ -2744,7 +2744,7 @@ function addEditJurusanUnitOption() {
                     setEditUploadedFiles([]);
                     setEditFileError(null);
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 >
                   <option value="">Pilih jenis kerjasama</option>
                   <option value="MoU">MoU</option>
@@ -2752,30 +2752,30 @@ function addEditJurusanUnitOption() {
                   <option value="IA">IA</option>
                 </select>
                 {editForm.jenisDokumen !== editOriginalJenisDokumen && (
-                  <p className="mt-1 text-[11px] font-semibold text-amber-700">Jenis dokumen berubah, upload ulang dokumen wajib.</p>
+                  <p className="mt-1 text-[10.5px] font-semibold text-amber-700">Jenis dokumen berubah, upload ulang dokumen wajib.</p>
                 )}
 
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Tanggal Mulai</label>
+                <label className="text-[10px] font-semibold text-slate-700">Tanggal Mulai</label>
                 <input
                   type="date"
                   value={editForm.tanggalMulai}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tanggalMulai: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Tanggal Berakhir</label>
+                <label className="text-[10px] font-semibold text-slate-700">Tanggal Berakhir</label>
                 <input
                   type="date"
                   value={editForm.tanggalBerakhir}
                   onChange={(e) => setEditForm((prev) => (prev ? { ...prev, tanggalBerakhir: e.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] text-slate-700"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">Ruang Lingkup</label>
+                <label className="text-[10px] font-semibold text-slate-700">Ruang Lingkup</label>
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                   {editAllRlOptions.map((option) => {
                     const checked = editForm.ruangLingkup.includes(option);
@@ -2783,7 +2783,7 @@ function addEditJurusanUnitOption() {
                     return (
                       <label
                         key={option}
-                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[12px] transition-colors ${
                           checked
                             ? 'border-[#1E376C] bg-[#EEF2FF] text-[#1E376C]'
                             : 'border-slate-300 bg-white text-slate-700 hover:border-[#1E376C]'
@@ -2813,55 +2813,55 @@ function addEditJurusanUnitOption() {
                     );
                   })}
                   {editAllRlOptions.length === 0 && (
-                    <span className="text-[11px] text-slate-500">Belum ada ruang lingkup di master.</span>
+                    <span className="text-[10.5px] text-slate-500">Belum ada ruang lingkup di master.</span>
                   )}
                 </div>
               </div>
 
               <div className="md:col-span-2 rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-4 sm:p-5">
                 <div className="mb-4">
-                  <h4 className="text-base font-bold text-slate-900">Template Dokumen</h4>
-                  <p className="mt-1 text-xs text-slate-600">Alur edit dokumen sama seperti form pengajuan.</p>
+                  <h4 className="text-[13.5px] font-bold text-slate-900">Template Dokumen</h4>
+                  <p className="mt-1 text-[10px] text-slate-600">Alur edit dokumen sama seperti form pengajuan.</p>
                 </div>
 
                 <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">1</span>
-                      <p className="text-sm font-semibold text-gray-900">Pilih Jenis</p>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-[10px] font-bold text-white">1</span>
+                      <p className="text-[12px] font-semibold text-gray-900">Pilih Jenis</p>
                     </div>
-                    <p className="text-xs text-gray-600">Pilih MoU, MoA, atau IA sesuai dokumen.</p>
+                    <p className="text-[10px] text-gray-600">Pilih MoU, MoA, atau IA sesuai dokumen.</p>
                   </div>
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">2</span>
-                      <p className="text-sm font-semibold text-gray-900">Download Template</p>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-[10px] font-bold text-white">2</span>
+                      <p className="text-[12px] font-semibold text-gray-900">Download Template</p>
                     </div>
-                    <p className="text-xs text-gray-600">Opsional sebagai acuan isi dokumen.</p>
+                    <p className="text-[10px] text-gray-600">Opsional sebagai acuan isi dokumen.</p>
                   </div>
                   <div className="rounded-xl border border-[#D7E0F0] bg-white px-4 py-3">
                     <div className="mb-1.5 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-xs font-bold text-white">3</span>
-                      <p className="text-sm font-semibold text-gray-900">Upload Dokumen</p>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E376C] text-[10px] font-bold text-white">3</span>
+                      <p className="text-[12px] font-semibold text-gray-900">Upload Dokumen</p>
                     </div>
-                    <p className="text-xs text-gray-600">Jika jenis berubah, upload ulang wajib.</p>
+                    <p className="text-[10px] text-gray-600">Jika jenis berubah, upload ulang wajib.</p>
                   </div>
                 </div>
 
-                <p className="mb-3 text-xs text-slate-600">Format: PDF, Word (.doc/.docx), maksimal 10MB per file.</p>
+                <p className="mb-3 text-[10px] text-slate-600">Format: PDF, Word (.doc/.docx), maksimal 10MB per file.</p>
 
                 {editSelectedTemplate && editTemplateUrl && (
                   <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-lg font-bold text-[#173B82]">{editSelectedTemplate.title}</p>
-                        <p className="text-sm text-slate-600">{editSelectedTemplate.subtitle}</p>
-                        <p className="mt-2 text-xs text-slate-500">File template: {editTemplateFileName}</p>
+                        <p className="text-[15px] font-bold text-[#173B82]">{editSelectedTemplate.title}</p>
+                        <p className="text-[12px] text-slate-600">{editSelectedTemplate.subtitle}</p>
+                        <p className="mt-2 text-[10px] text-slate-500">File template: {editTemplateFileName}</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleEditDownloadTemplate}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#173B82] px-4 text-xs font-semibold text-white hover:bg-[#0f2c61]"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#173B82] px-4 text-[10px] font-semibold text-white hover:bg-[#0f2c61]"
                     >
                       <Download size={14} />
                       Download Template
@@ -2869,21 +2869,21 @@ function addEditJurusanUnitOption() {
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <p className="mb-2 text-sm font-semibold text-[#173B82]">Isi utama dokumen:</p>
+                      <p className="mb-2 text-[12px] font-semibold text-[#173B82]">Isi utama dokumen:</p>
                       <div className="flex flex-wrap gap-2">
                         {editSelectedTemplate.struktur.map((item) => (
-                          <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700">
+                          <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] text-slate-700">
                             {item}
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <p className="mt-3 text-xs text-slate-600">Catatan: {editSelectedTemplate.note}</p>
+                    <p className="mt-3 text-[10px] text-slate-600">Catatan: {editSelectedTemplate.note}</p>
                   </div>
                 )}
 
-                <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-sm font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
+                <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-[12px] font-medium text-slate-600 hover:border-[#173B82] hover:text-[#173B82]">
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
@@ -2898,15 +2898,15 @@ function addEditJurusanUnitOption() {
                   Upload Dokumen
                 </label>
 
-                {editFileError && <p className="mt-2 text-xs text-red-600">{editFileError}</p>}
+                {editFileError && <p className="mt-2 text-[10px] text-red-600">{editFileError}</p>}
 
                 {editUploadedFiles.length > 0 && (
                   <div className="mt-3 space-y-2">
                     {editUploadedFiles.map((file, index) => (
                       <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-slate-800">{file.name}</p>
-                          <p className="text-[11px] text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                          <p className="truncate text-[10px] font-semibold text-slate-800">{file.name}</p>
+                          <p className="text-[10.5px] text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                         <button
                           type="button"
@@ -2926,14 +2926,14 @@ function addEditJurusanUnitOption() {
               <button
                 type="button"
                 onClick={() => setEditForm(null)}
-                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200"
+                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-[12px] font-semibold hover:bg-slate-200"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={saveEdit}
-                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-[12px] font-semibold hover:bg-[#2A4A8F]"
               >
                 Simpan Perubahan
               </button>
@@ -2946,10 +2946,10 @@ function addEditJurusanUnitOption() {
         <div className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">Hapus Pengajuan</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Hapus Pengajuan</h3>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm text-slate-700">
+              <p className="text-[12px] text-slate-700">
                 Apakah Anda yakin ingin menghapus data pengajuan <span className="font-semibold">{deleteTarget.judulPengajuan}</span>? Tindakan ini tidak bisa dibatalkan.
               </p>
             </div>
@@ -2957,14 +2957,14 @@ function addEditJurusanUnitOption() {
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200"
+                className="h-9 px-4 rounded-lg bg-slate-100 text-slate-700 text-[12px] font-semibold hover:bg-slate-200"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="h-9 px-4 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
+                className="h-9 px-4 rounded-lg bg-red-600 text-white text-[12px] font-semibold hover:bg-red-700"
               >
                 Ya, Hapus
               </button>
@@ -2977,16 +2977,16 @@ function addEditJurusanUnitOption() {
         <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">Informasi</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Informasi</h3>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm text-slate-700">{infoModalMessage}</p>
+              <p className="text-[12px] text-slate-700">{infoModalMessage}</p>
             </div>
             <div className="px-5 py-4 border-t border-slate-200 flex justify-end">
               <button
                 type="button"
                 onClick={() => setInfoModalMessage(null)}
-                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+                className="h-9 px-4 rounded-lg bg-[#1E376C] text-white text-[12px] font-semibold hover:bg-[#2A4A8F]"
               >
                 OK
               </button>
@@ -2999,22 +2999,22 @@ function addEditJurusanUnitOption() {
         <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-[2px] p-4 flex items-center justify-center">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-[15px] font-bold text-slate-900">
                 {reviewDecision === 'Revisi' ? 'Konfirmasi Kirim Revisi' : 'Konfirmasi Upload Dokumen Final'}
               </h3>
             </div>
             <div className="px-5 py-4 space-y-2">
               {reviewDecision === 'Revisi' ? (
-                <p className="text-sm text-slate-700">
+                <p className="text-[12px] text-slate-700">
                   Yakin ingin mengirim catatan revisi? Status pengajuan akan berubah menjadi <span className="font-semibold text-orange-600">Revisi</span> dan notifikasi akan dikirim ke Pengaju untuk melakukan perbaikan sesuai catatan.
                 </p>
               ) : (
                 <>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-[12px] text-slate-700">
                     Yakin ingin ACC dan upload dokumen final? Status pengajuan akan berubah menjadi <span className="font-semibold text-emerald-600">Disetujui</span> Pastikan data dan dokumen sudah benar sebelum melanjutkan.
                   </p>
                   {reviewFinalFilePreview && (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 text-xs">
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 text-[10px]">
                       <span className="font-semibold text-emerald-700">File:</span>
                       <span className="truncate text-emerald-600">{reviewFinalFilePreview.name}</span>
                     </div>
@@ -3026,14 +3026,14 @@ function addEditJurusanUnitOption() {
               <button
                 type="button"
                 onClick={() => setUploadConfirmOpen(false)}
-                className="h-9 px-4 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-300"
+                className="h-9 px-4 rounded-lg bg-gray-200 text-gray-700 text-[12px] font-semibold hover:bg-gray-300"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={() => { void executeReview(); }}
-                className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-sm font-semibold hover:bg-[#2A4A8F]"
+                className="h-9 px-5 rounded-lg bg-[#1E376C] text-white text-[12px] font-semibold hover:bg-[#2A4A8F]"
               >
                 Ya, Konfirmasi
               </button>
