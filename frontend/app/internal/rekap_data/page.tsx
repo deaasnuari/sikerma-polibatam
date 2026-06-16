@@ -246,7 +246,7 @@ export default function InternalRekapDataPage() {
         <button
           type="button"
           onClick={handleExport}
-          className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-sm"
+          className="btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-semibold shadow-sm"
         >
           <Download size={16} />
           Export
@@ -266,7 +266,7 @@ export default function InternalRekapDataPage() {
                 setCurrentPage(1);
               }}
               placeholder="Cari berdasarkan nama mitra atau nomor..."
-              className="input-field h-10 w-full pl-10 pr-3 text-sm text-gray-700 placeholder:text-gray-400"
+              className="input-field h-10 w-full pl-10 pr-3 text-[12px] text-gray-700 placeholder:text-gray-400"
             />
           </label>
 
@@ -277,7 +277,7 @@ export default function InternalRekapDataPage() {
                 setFilterJurusan(e.target.value);
                 setCurrentPage(1);
               }}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {jurusanOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -292,7 +292,7 @@ export default function InternalRekapDataPage() {
                 setFilterJenis(e.target.value);
                 setCurrentPage(1);
               }}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {jenisOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -307,7 +307,7 @@ export default function InternalRekapDataPage() {
                 setFilterStatus(e.target.value);
                 setCurrentPage(1);
               }}
-              className="input-field px-3 py-2 text-sm text-gray-700"
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
             >
               {statusOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -324,7 +324,7 @@ export default function InternalRekapDataPage() {
         <div className="overflow-x-auto">
           <table className="min-w-[980px] w-full border-collapse">
             <thead>
-              <tr className="table-head border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-700">
+              <tr className="table-head border-b border-gray-200 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-700">
                 <th className="px-4 py-3">No. Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
@@ -338,7 +338,7 @@ export default function InternalRekapDataPage() {
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-10 text-center text-[12px] text-gray-500">
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
@@ -346,26 +346,26 @@ export default function InternalRekapDataPage() {
                 paginatedData.map((row, index) => (
                   <tr
                     key={`${row.noDokumen}-${index}`}
-                    className="border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50/60"
+                    className="border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50/60"
                   >
-                    <td className="px-4 py-3 text-xs text-gray-600">
+                    <td className="px-4 py-3 text-[10px] text-gray-600">
                       {row.noDokumen}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${jenisBadgeMap[row.jenis]}`}>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${jenisBadgeMap[row.jenis]}`}>
                         {row.jenis}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-block rounded-full bg-[#1E376C] px-3 py-1 text-xs font-medium text-white">
+                      <span className="inline-block rounded-full bg-[#1E376C] px-3 py-1 text-[10px] font-medium text-white">
                         {row.unit}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.tanggalMulai}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{row.berlakuHingga}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeMap[row.status]}`}>
+                      <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusBadgeMap[row.status]}`}>
                         {row.status}
                       </span>
                     </td>
@@ -404,7 +404,7 @@ export default function InternalRekapDataPage() {
 
         {/* Pagination */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 sm:flex-row">
-          <p className="text-sm text-gray-500">
+          <p className="text-[12px] text-gray-500">
             Menampilkan {paginatedData.length} dari {filteredData.length} data
           </p>
           <div className="flex items-center gap-2">
@@ -412,13 +412,13 @@ export default function InternalRekapDataPage() {
               type="button"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={14} />
               Sebelumnya
             </button>
 
-            <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg bg-[#1E376C] px-2 text-sm font-semibold text-white">
+            <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg bg-[#1E376C] px-2 text-[12px] font-semibold text-white">
               {currentPage}
             </span>
 
@@ -426,7 +426,7 @@ export default function InternalRekapDataPage() {
               type="button"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Selanjutnya
               <ChevronRight size={14} />
