@@ -358,34 +358,34 @@ export default function ManajemenUserPage() {
   const totalMitra = users.filter((u) => u.role === 'Mitra').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="page-title">Manajemen User</h1>
-          <p className="page-subtitle mt-1">
+          <h1 className="text-[17px] font-bold text-gray-900">Manajemen User</h1>
+          <p className="text-[10px] text-gray-500 mt-0.5">
             Kelola user dan hak akses sistem
           </p>
         </div>
         <button
           onClick={openAdd}
           disabled={submitting}
-          className="btn-primary flex items-center gap-2 text-sm font-medium px-4 py-2.5"
+          className="btn-primary flex items-center gap-1.5"
         >
-          <Plus size={16} />
+          <Plus size={14} />
           Tambah User
         </button>
       </div>
 
       {/* Summary Cards */}
       {loadError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
           {loadError}
         </div>
       )}
 
       {deleteError && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="shrink-0 text-red-500" />
             <span className="font-medium">Gagal:</span>
@@ -403,7 +403,7 @@ export default function ManajemenUserPage() {
 
       {isFallback && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="flex items-center gap-2.5 text-sm text-amber-800">
+          <div className="flex items-center gap-2.5 text-[12px] text-amber-800">
             <ClockAlert size={16} className="shrink-0 text-amber-500" />
             <span>Menampilkan <span className="font-semibold">data lokal (lama)</span> — server tidak dapat dijangkau saat ini.</span>
           </div>
@@ -411,7 +411,7 @@ export default function ManajemenUserPage() {
             type="button"
             onClick={handleReload}
             disabled={isReloading}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
           >
             <RefreshCw size={13} className={isReloading ? 'animate-spin' : ''} />
             {isReloading ? 'Memuat...' : 'Tinjau Data Terbaru'}
@@ -419,68 +419,66 @@ export default function ManajemenUserPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Users size={18} className="text-blue-600" />
+      <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-blue-100 flex items-center justify-center">
+              <Users size={14} className="text-blue-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Total User</p>
+            <p className="text-[10px] text-gray-500 font-medium">Total User</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalUser}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalUser}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center">
-              <Shield size={18} className="text-teal-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-teal-100 flex items-center justify-center">
+              <Shield size={14} className="text-teal-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Admin</p>
+            <p className="text-[10px] text-gray-500 font-medium">Admin</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalAdmin}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalAdmin}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Building2 size={18} className="text-blue-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-blue-100 flex items-center justify-center">
+              <Building2 size={14} className="text-blue-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Jurusan</p>
+            <p className="text-[10px] text-gray-500 font-medium">Jurusan</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalJurusan}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalJurusan}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center">
-              <GraduationCap size={18} className="text-orange-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-orange-100 flex items-center justify-center">
+              <GraduationCap size={14} className="text-orange-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Prodi</p>
+            <p className="text-[10px] text-gray-500 font-medium">Prodi</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalProdi}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalProdi}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
-              <UserCheck size={18} className="text-red-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-red-100 flex items-center justify-center">
+              <UserCheck size={14} className="text-red-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Pimpinan</p>
+            <p className="text-[10px] text-gray-500 font-medium">Pimpinan</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalPimpinan}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalPimpinan}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
-              <Handshake size={18} className="text-purple-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-md bg-purple-100 flex items-center justify-center">
+              <Handshake size={14} className="text-purple-600" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Mitra</p>
+            <p className="text-[10px] text-gray-500 font-medium">Mitra</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalMitra}</p>
+          <p className="text-[17px] font-bold text-gray-900">{totalMitra}</p>
         </div>
-
-
       </div>
 
       {/* Search & Filter */}
@@ -495,7 +493,7 @@ export default function ManajemenUserPage() {
             placeholder="Cari akun..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field w-full pl-9 pr-4 py-2.5 text-sm"
+            className="input-field w-full pl-9 pr-4 py-2.5 text-[12px]"
           />
         </div>
 
@@ -503,7 +501,7 @@ export default function ManajemenUserPage() {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="input-field appearance-none pl-4 pr-9 py-2.5 text-sm font-medium"
+            className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium"
           >
             <option>Semua Role</option>
             <option>Admin</option>
@@ -522,7 +520,7 @@ export default function ManajemenUserPage() {
       {/* Table */}
       <div className="table-shell">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[12px]">
             <thead>
               <tr className="table-head border-b border-gray-200">
                 <th className="text-left py-3.5 px-4 font-semibold text-gray-700">
@@ -584,13 +582,13 @@ export default function ManajemenUserPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold min-w-[70px] ${rc.bg} ${rc.text}`}
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-semibold min-w-[70px] ${rc.bg} ${rc.text}`}
                       >
                         {item.role}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
                         {item.unitInstansi}
                       </span>
                     </td>
@@ -598,7 +596,7 @@ export default function ManajemenUserPage() {
                       <button
                         onClick={() => handleToggleStatus(item.id)}
                         disabled={submitting}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition hover:opacity-80 ${sc.bg} ${sc.text}`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold cursor-pointer transition hover:opacity-80 ${sc.bg} ${sc.text}`}
                         title="Klik untuk ubah status"
                       >
                         <UserCheck size={12} />
@@ -634,7 +632,7 @@ export default function ManajemenUserPage() {
 
         {!loading && filtered.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-white">
-            <p className="text-xs text-gray-500">
+            <p className="text-[10px] text-gray-500">
               Menampilkan {startIndex + 1}-{Math.min(startIndex + pageSize, filtered.length)} dari {filtered.length} user
             </p>
 
@@ -642,7 +640,7 @@ export default function ManajemenUserPage() {
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-[10px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Sebelumnya
               </button>
@@ -652,7 +650,7 @@ export default function ManajemenUserPage() {
                   return (
                     <span
                       key={`ellipsis-${index}`}
-                      className="px-1.5 text-xs font-semibold text-gray-500"
+                      className="px-1.5 text-[10px] font-semibold text-gray-500"
                     >
                       ...
                     </span>
@@ -664,7 +662,7 @@ export default function ManajemenUserPage() {
                   <button
                     key={item}
                     onClick={() => setCurrentPage(item)}
-                    className={`min-w-8 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition ${
+                    className={`min-w-8 px-2.5 py-1.5 text-[10px] font-semibold rounded-md border transition ${
                       isActive
                         ? 'bg-[#0e1d34] border-[#0e1d34] text-white'
                         : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -678,7 +676,7 @@ export default function ManajemenUserPage() {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-[10px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Berikutnya
               </button>
@@ -690,80 +688,80 @@ export default function ManajemenUserPage() {
       {/* Add User Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-5">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-[15px] font-bold text-gray-900 mb-4">
               Tambah User Baru
             </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Nama Lengkap <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.nama}
                     onChange={(e) => { setForm({ ...form, nama: e.target.value }); setFormErrors((p) => ({ ...p, nama: '' })); }}
-                    className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Masukkan nama lengkap"
                   />
-                  {formErrors.nama && <p className="text-red-500 text-xs mt-1">{formErrors.nama}</p>}
+                  {formErrors.nama && <p className="text-red-500 text-[10px] mt-1">{formErrors.nama}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Username <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.username}
                     onChange={(e) => { setForm({ ...form, username: e.target.value }); setFormErrors((p) => ({ ...p, username: '' })); }}
-                    className={`w-full border ${formErrors.username ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full border ${formErrors.username ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Masukkan username"
                   />
-                  {formErrors.username && <p className="text-red-500 text-xs mt-1">{formErrors.username}</p>}
+                  {formErrors.username && <p className="text-red-500 text-[10px] mt-1">{formErrors.username}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => { setForm({ ...form, email: e.target.value }); setFormErrors((p) => ({ ...p, email: '' })); }}
-                    className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="contoh@polibatam.ac.id"
                   />
-                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                  {formErrors.email && <p className="text-red-500 text-[10px] mt-1">{formErrors.email}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Password <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
                     value={form.password}
                     onChange={(e) => { setForm({ ...form, password: e.target.value }); setFormErrors((p) => ({ ...p, password: '' })); }}
-                    className={`w-full border ${formErrors.password ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full border ${formErrors.password ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Min. 8 karakter"
                   />
-                  {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
+                  {formErrors.password && <p className="text-red-500 text-[10px] mt-1">{formErrors.password}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
                       value={form.role}
                       onChange={(e) => { setForm({ ...form, role: e.target.value }); setFormErrors((p) => ({ ...p, role: '' })); }}
-                      className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                      className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     >
                       <option value="">Pilih Role</option>
                       <option value="Admin">Admin</option>
@@ -777,40 +775,40 @@ export default function ManajemenUserPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                     />
                   </div>
-                  {formErrors.role && <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>}
+                  {formErrors.role && <p className="text-red-500 text-[10px] mt-1">{formErrors.role}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                     Unit/Instansi <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.unitInstansi}
                     onChange={(e) => { setForm({ ...form, unitInstansi: e.target.value }); setFormErrors((p) => ({ ...p, unitInstansi: '' })); }}
-                    className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                    className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                     placeholder="Nama unit/instansi"
                   />
-                  {formErrors.unitInstansi && <p className="text-red-500 text-xs mt-1">{formErrors.unitInstansi}</p>}
+                  {formErrors.unitInstansi && <p className="text-red-500 text-[10px] mt-1">{formErrors.unitInstansi}</p>}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                   No. Telepon / WhatsApp <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={(e) => { setForm({ ...form, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: '' })); }}
-                  className={`w-full border ${formErrors.phone ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                  className={`w-full border ${formErrors.phone ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                   placeholder="Contoh: 08123456789"
                 />
-                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+                {formErrors.phone && <p className="text-red-500 text-[10px] mt-1">{formErrors.phone}</p>}
               </div>
             </div>
 
             {serverError && (
-              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-[12px] text-red-700">
                 {serverError}
               </div>
             )}
@@ -819,14 +817,14 @@ export default function ManajemenUserPage() {
               <button
                 onClick={() => setShowAddModal(false)}
                 disabled={submitting}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50"
               >
                 Batal
               </button>
               <button
                 onClick={handleSaveAdd}
                 disabled={submitting}
-                className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition"
+                className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-[12px] font-medium transition"
               >
                 {submitting ? 'Menyimpan...' : 'Simpan User'}
               </button>
@@ -838,30 +836,30 @@ export default function ManajemenUserPage() {
       {/* Edit User Modal */}
       {editUser && (
         <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-5">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-[15px] font-bold text-gray-900 mb-4">
               Edit User — {editUser.nama}
             </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
-                  <input type="text" value={form.nama} onChange={(e) => { setForm({ ...form, nama: e.target.value }); setFormErrors((p) => ({ ...p, nama: '' })); }} className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
-                  {formErrors.nama && <p className="text-red-500 text-xs mt-1">{formErrors.nama}</p>}
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
+                  <input type="text" value={form.nama} onChange={(e) => { setForm({ ...form, nama: e.target.value }); setFormErrors((p) => ({ ...p, nama: '' })); }} className={`w-full border ${formErrors.nama ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.nama && <p className="text-red-500 text-[10px] mt-1">{formErrors.nama}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
-                  <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFormErrors((p) => ({ ...p, email: '' })); }} className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
-                  {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Email</label>
+                  <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFormErrors((p) => ({ ...p, email: '' })); }} className={`w-full border ${formErrors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.email && <p className="text-red-500 text-[10px] mt-1">{formErrors.email}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Role</label>
                   <div className="relative">
-                    <select value={form.role} onChange={(e) => { setForm({ ...form, role: e.target.value }); setFormErrors((p) => ({ ...p, role: '' })); }} className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`}>
+                    <select value={form.role} onChange={(e) => { setForm({ ...form, role: e.target.value }); setFormErrors((p) => ({ ...p, role: '' })); }} className={`appearance-none w-full border ${formErrors.role ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`}>
                       <option value="Admin">Admin</option>
                       <option value="Jurusan">Jurusan</option>
                       <option value="Prodi">Prodi</option>
@@ -870,19 +868,19 @@ export default function ManajemenUserPage() {
                     </select>
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
-                  {formErrors.role && <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>}
+                  {formErrors.role && <p className="text-red-500 text-[10px] mt-1">{formErrors.role}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit/Instansi</label>
-                  <input type="text" value={form.unitInstansi} onChange={(e) => { setForm({ ...form, unitInstansi: e.target.value }); setFormErrors((p) => ({ ...p, unitInstansi: '' })); }} className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
-                  {formErrors.unitInstansi && <p className="text-red-500 text-xs mt-1">{formErrors.unitInstansi}</p>}
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Unit/Instansi</label>
+                  <input type="text" value={form.unitInstansi} onChange={(e) => { setForm({ ...form, unitInstansi: e.target.value }); setFormErrors((p) => ({ ...p, unitInstansi: '' })); }} className={`w-full border ${formErrors.unitInstansi ? 'border-red-400' : 'border-gray-300'} rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white`} />
+                  {formErrors.unitInstansi && <p className="text-red-500 text-[10px] mt-1">{formErrors.unitInstansi}</p>}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Status</label>
                 <div className="relative">
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[12px] outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="Aktif">Aktif</option>
                     <option value="NonAktif">NonAktif</option>
                     <option value="Ditolak">Ditolak</option>
@@ -893,16 +891,16 @@ export default function ManajemenUserPage() {
             </div>
 
             {serverError && (
-              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+              <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-[12px] text-red-700">
                 {serverError}
               </div>
             )}
 
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setEditUser(null)} className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
+              <button onClick={() => setEditUser(null)} className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50">
                 Batal
               </button>
-              <button onClick={handleSaveEdit} disabled={submitting} className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-sm font-medium transition">
+              <button onClick={handleSaveEdit} disabled={submitting} className="px-4 py-2.5 bg-[#0e1d34] hover:bg-[#1a2d4a] text-white rounded-lg text-[12px] font-medium transition">
                 {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
