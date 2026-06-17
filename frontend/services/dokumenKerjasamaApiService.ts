@@ -1,4 +1,26 @@
-import { apiRequest } from '@/lib/api';
+import { apiRequest, API_BASE_URL } from '@/lib/api';
+
+function getBackendOrigin(): string {
+  try {
+    const configured = process.env.NEXT_PUBLIC_API_URL;
+    if (configured && /^https?:\/\//i.test(configured)) {
+      return new URL(configured).origin;
+    }
+  } catch {
+    // fall through
+  }
+  return API_BASE_URL.startsWith('http') ? new URL(API_BASE_URL).origin : 'http://127.0.0.1:8000';
+}
+
+function buildLegacyFileUrl(filePath: string): string {
+  if (filePath.startsWith('http')) return filePath;
+  const origin = getBackendOrigin();
+  const clean = filePath.replace(/^\/+/, '');
+  if (clean.startsWith('storage/') || clean.startsWith('uploads/')) {
+    return `${origin}/storage/${clean.replace(/^storage\//, '')}`;
+  }
+  return `${origin}/storage/uploads/${clean}`;
+}
 import type { RekapDokumen } from '@/services/adminRekapDataService';
 
 const REKAP_CACHE_TTL_MS = 60 * 1000;
@@ -20,7 +42,6 @@ type ApiPaginatedResponse<T> = {
 type ApiDokumenRow = {
   id: number;
   nomor_dokumen?: string | null;
-  no_dokumen?: string | null;
   nama_dokumen?: string | null;
   jenis_dokumen: string;
   tanggal_mulai?: string | null;
@@ -88,7 +109,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
   rekapDokumenInFlight = (async () => {
     const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000');
     const mapped = (response.data?.data ?? []).map((row) => {
-    const nomor = row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`;
+    const nomor = row.nomor_dokumen || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
     
     // Priority: mitra relation → pengajuan.nama_mitra → snap_nama_mitra → keterangan → legacy file name
@@ -133,9 +154,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
         })
         .map((f) => {
         const rawPath = f.path_file || '';
-        const fileUrl = rawPath.startsWith('http')
-          ? rawPath
-          : `http://localhost:8000/storage/${rawPath.replace(/^\/+/, '')}`;
+        const fileUrl = buildLegacyFileUrl(rawPath);
         const sizeLabel = f.ukuran_file_bytes
           ? `${Math.round(f.ukuran_file_bytes / 1024)} KB`
           : 'Dokumen Final';
@@ -151,7 +170,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       // Legacy: record lama yang hanya punya kolom 'file'
       dokumenTerkait.push({
         nama: row.file.split('/').pop() || row.file,
-        url: row.file.startsWith('http') ? row.file : `http://localhost:8000/storage/uploads/${row.file}`,
+        url: buildLegacyFileUrl(row.file),
         tipe: row.file.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream',
         ukuran: 'File System',
         tanggal: toDisplayDate(tanggalMulaiRaw),

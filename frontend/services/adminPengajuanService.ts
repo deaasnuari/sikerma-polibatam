@@ -261,6 +261,19 @@ type ApiPengajuanRow = {
     path_file: string;
     peran_berkas?: string;
   }[];
+  dokumen_kerjasama?: {
+    id: number;
+    nomor_dokumen?: string | null;
+    file?: string | null;
+    dokumen_files?: {
+      id: number;
+      nama_file: string;
+      path_file: string;
+      peran_berkas?: string | null;
+      mime_type?: string | null;
+      ukuran_file_bytes?: number | null;
+    }[] | null;
+  } | null;
 };
 
 function getBackendOrigin(): string {
@@ -393,13 +406,34 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     : [];
 
   const resolvedFileName = row.file_name || cachedAttachment?.fileName || undefined;
-  const resolvedAttachments = attachmentRows
+  let resolvedAttachments = attachmentRows
     ? attachmentRows.map((file) => ({
         name: file.nama_file,
         url: buildAttachmentUrl(file.path_file),
         isAcc: file.peran_berkas === 'dokumen_final',
       }))
     : (fallbackAttachments.length > 0 ? fallbackAttachments : cachedAttachment?.fileAttachments);
+
+  // Fallback untuk data lama: gunakan file dari dokumen_kerjasama yang terhubung
+  if (!resolvedAttachments?.length && !resolvedFileName) {
+    const dk = row.dokumen_kerjasama;
+    if (dk?.dokumen_files?.length) {
+      resolvedAttachments = dk.dokumen_files.map((f) => ({
+        name: f.nama_file,
+        url: buildAttachmentUrl(f.path_file),
+        isAcc: f.peran_berkas === 'dokumen_final',
+      }));
+    } else if (dk?.file) {
+      const legacyPath = dk.file.startsWith('http') || dk.file.startsWith('storage/')
+        ? dk.file
+        : `uploads/${dk.file}`;
+      resolvedAttachments = [{
+        name: dk.file.split('/').pop() || dk.file,
+        url: buildAttachmentUrl(legacyPath),
+        isAcc: true,
+      }];
+    }
+  }
 
   if (resolvedFileName || (resolvedAttachments && resolvedAttachments.length > 0)) {
     saveAttachmentCacheEntry(row.id, {

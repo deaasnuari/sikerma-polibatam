@@ -162,7 +162,7 @@ class PengajuanController extends Controller
             'judul_log' => 'Data awal pengajuan disalin ke dokumen',
             'isi_log' => 'Data awal dari form pengajuan otomatis dicatat saat pengajuan disetujui.',
             'payload_json' => null,
-            'nomor' => (string) ($dokumen->nomor_dokumen ?? $dokumen->no_dokumen ?? ''),
+            'nomor' => (string) ($dokumen->nomor_dokumen ?? ''),
             'mitra' => $mitraName !== '' ? $mitraName : null,
             'telepon' => $pengajuan->whatsapp_pengusul,
             'tgl_mulai' => $pengajuan->tanggal_mulai,
@@ -307,7 +307,7 @@ class PengajuanController extends Controller
 
         while (true) {
             $query = DokumenKerjasama::query()->where(function ($q) use ($final) {
-                $q->where('nomor_dokumen', $final)->orWhere('no_dokumen', $final);
+                $q->where('nomor_dokumen', $final);
             });
             if ($ignoreId !== null) {
                 $query->where('id', '!=', $ignoreId);
@@ -339,7 +339,7 @@ class PengajuanController extends Controller
             ->first();
 
         $requestedNomorDokumen = trim((string) $request->input('nomor_dokumen', ''));
-        $existingNomorDokumen = trim((string) ($existingDokumen?->nomor_dokumen ?? $existingDokumen?->no_dokumen ?? ''));
+        $existingNomorDokumen = trim((string) ($existingDokumen?->nomor_dokumen ?? ''));
 
         // Existing nomor_dokumen di database dipertahankan apa adanya.
         $nomorDokumenBase = $existingNomorDokumen !== ''
@@ -381,7 +381,6 @@ class PengajuanController extends Controller
         $dokumenPayload = [
             'no_permohonan' => $nomorPengajuan,
             'nomor_dokumen' => $nomorDokumen,
-            'no_dokumen' => $nomorDokumen,
             'nama_dokumen' => trim((string) ($pengajuan->judul_pengajuan ?? 'Dokumen Kerjasama ' . $nomorPengajuan)),
             'jenis_dokumen' => strtoupper((string) ($pengajuan->jenis_dokumen ?? 'MOU')),
             'judul_dokumen' => trim((string) ($pengajuan->judul_pengajuan ?? '')),
@@ -884,7 +883,16 @@ class PengajuanController extends Controller
         $query = Pengajuan::query();
 
         if ($this->shouldLoadPengajuanRelations()) {
-            $query->with(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra', 'dokumenFiles']);
+            $query->with([
+                'unitProdi:id,nama,jenis_node,kategori_unit',
+                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'dokumenFiles',
+                'dokumenKerjasama:id,no_permohonan,nomor_dokumen,file',
+                'dokumenKerjasama.dokumenFiles' => function ($q) {
+                    $q->select(['id', 'dokumen_id', 'nama_file', 'path_file', 'peran_berkas', 'mime_type', 'ukuran_file_bytes'])
+                      ->whereIn('peran_berkas', ['dokumen_final', 'dokumen_perpanjangan']);
+                },
+            ]);
         }
 
         if ($request->filled('status_pengajuan')) {
@@ -929,7 +937,16 @@ class PengajuanController extends Controller
     public function show(Pengajuan $pengajuan): Response
     {
         if ($this->shouldLoadPengajuanRelations()) {
-            $pengajuan->load(['unitProdi:id,nama,jenis_node,kategori_unit', 'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra']);
+            $pengajuan->load([
+                'unitProdi:id,nama,jenis_node,kategori_unit',
+                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'dokumenFiles',
+                'dokumenKerjasama:id,no_permohonan,nomor_dokumen,file',
+                'dokumenKerjasama.dokumenFiles' => function ($q) {
+                    $q->select(['id', 'dokumen_id', 'nama_file', 'path_file', 'peran_berkas', 'mime_type', 'ukuran_file_bytes'])
+                      ->whereIn('peran_berkas', ['dokumen_final', 'dokumen_perpanjangan']);
+                },
+            ]);
         }
 
         return response([

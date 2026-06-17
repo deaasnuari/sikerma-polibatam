@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import Script from 'next/script';
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -77,7 +78,7 @@ export default function RootLayout({
 
   return (
     <html lang="id" data-scroll-behavior="smooth">
-      <body className={inter.className}>
+      <body className={poppins.className}>
         <Script id="strip-fdprocessedid" strategy="beforeInteractive">
           {stripExtensionInjectedAttributes}
         </Script>

@@ -482,7 +482,7 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
         sourcePengajuanId: row.sumber_pengajuan_id || undefined,
         judul: row.judul_dokumen || undefined,
         namaMitra: namaMitra || '-',
-        noDokumen: row.nomor_dokumen || row.no_dokumen || `DOK-${row.id}`,
+        noDokumen: row.nomor_dokumen || `DOK-${row.id}`,
         jenis: (row.jenis_dokumen?.toUpperCase() === 'MOA' ? 'MoA' : row.jenis_dokumen?.toUpperCase() === 'IA' ? 'IA' : 'MoU'),
         status: status,
         tanggalMulai: formatDisplayDate(row.tanggal_mulai),

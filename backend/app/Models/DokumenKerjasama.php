@@ -14,7 +14,6 @@ class DokumenKerjasama extends Model
     protected $fillable = [
         'nomor_dokumen',
         'no_permohonan',
-        'no_dokumen',
         'nama_dokumen',
         'jenis_dokumen',
         'judul_dokumen',

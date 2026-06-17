@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Casts\PgArrayCast;
 
 class Pengajuan extends Model
@@ -110,6 +111,11 @@ class Pengajuan extends Model
     {
         // Keep legacy relation name so existing API payload still exposes "dokumen_files".
         return $this->pengajuanFiles();
+    }
+
+    public function dokumenKerjasama(): HasOne
+    {
+        return $this->hasOne(DokumenKerjasama::class, 'no_permohonan', 'nomor_pengajuan');
     }
 
     public function pengajuanLogs(): HasMany

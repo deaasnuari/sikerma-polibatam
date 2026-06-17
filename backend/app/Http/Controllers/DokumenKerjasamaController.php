@@ -85,7 +85,7 @@ class DokumenKerjasamaController extends Controller
             $keyword = strtolower($request->string('search')->trim()->toString());
             $query->where(function ($builder) use ($keyword) {
                 $builder
-                    ->whereRaw('LOWER(COALESCE(nomor_dokumen, no_dokumen, \'\')) LIKE ?', ['%' . $keyword . '%'])
+                    ->whereRaw('LOWER(COALESCE(nomor_dokumen, \'\')) LIKE ?', ['%' . $keyword . '%'])
                     ->orWhereRaw('LOWER(COALESCE(nama_dokumen, \'\')) LIKE ?', ['%' . $keyword . '%'])
                     ->orWhereRaw('LOWER(COALESCE(judul_dokumen, \'\')) LIKE ?', ['%' . $keyword . '%']);
             });
@@ -272,7 +272,6 @@ class DokumenKerjasamaController extends Controller
         $validated = $request->validate([
             'nomor_dokumen' => ['required', 'string', 'max:100', 'unique:dokumen_kerjasama,nomor_dokumen'],
             'no_permohonan' => ['required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
-            'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen'],
             'nama_dokumen' => ['required', 'string', 'max:255'],
             'jenis_dokumen' => ['required', 'in:MOU,MOA,IA,LAINNYA'],
             'judul_dokumen' => ['nullable', 'string', 'max:255'],
@@ -320,7 +319,6 @@ class DokumenKerjasamaController extends Controller
         $validated = $request->validate([
             'nomor_dokumen' => ['sometimes', 'required', 'string', 'max:100', 'unique:dokumen_kerjasama,nomor_dokumen,' . $dokumen_kerjasama->id],
             'no_permohonan' => ['sometimes', 'required', 'string', 'exists:pengajuan_v2,nomor_pengajuan'],
-            'no_dokumen' => ['nullable', 'string', 'max:100', 'unique:dokumen_kerjasama,no_dokumen,' . $dokumen_kerjasama->id],
             'nama_dokumen' => ['sometimes', 'required', 'string', 'max:255'],
             'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA,LAINNYA'],
             'judul_dokumen' => ['nullable', 'string', 'max:255'],
@@ -418,7 +416,7 @@ class DokumenKerjasamaController extends Controller
         }
 
         $logs = DokumenLog::query()
-            ->with(['dokumen:id,nomor_dokumen,no_dokumen,mitra_id', 'dokumen.mitra:id,nama_mitra'])
+            ->with(['dokumen:id,nomor_dokumen,mitra_id', 'dokumen.mitra:id,nama_mitra'])
             ->where('tipe_log', 'perpanjangan')
             ->orderByDesc('dibuat_pada')
             ->get();
@@ -449,7 +447,7 @@ class DokumenKerjasamaController extends Controller
 
         $dokumen_kerjasama->loadMissing(['mitra:id,nama_mitra', 'unitProdi:id,nama', 'pengajuan:id,whatsapp_pengusul']);
 
-        $nomorDokumen = $dokumen_kerjasama->nomor_dokumen ?: $dokumen_kerjasama->no_dokumen;
+        $nomorDokumen = $dokumen_kerjasama->nomor_dokumen;
         $namaMitra = $dokumen_kerjasama->mitra?->nama_mitra
             ?: $dokumen_kerjasama->snap_nama_mitra
             ?: $dokumen_kerjasama->nama_dokumen;
@@ -594,9 +592,7 @@ class DokumenKerjasamaController extends Controller
         $namaMitra = $dokumen?->mitra?->nama_mitra
             ?? $dokumen?->nama_dokumen
             ?? '-';
-        $noDokumen = $dokumen?->nomor_dokumen
-            ?? $dokumen?->no_dokumen
-            ?? '-';
+        $noDokumen = $dokumen?->nomor_dokumen ?? '-';
 
         return [
             'id' => (int) $log->id,
