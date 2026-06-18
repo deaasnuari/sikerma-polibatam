@@ -238,6 +238,26 @@ button:active,
   transform: translateY(0) scale(0.99);
 }
 
+.scrollbar-rounded::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-rounded::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.scrollbar-rounded::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.scrollbar-rounded::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.scrollbar-rounded::-webkit-scrollbar-button {
+  display: none;
+}
+
 button:focus,
 button:focus-visible,
 a:focus,

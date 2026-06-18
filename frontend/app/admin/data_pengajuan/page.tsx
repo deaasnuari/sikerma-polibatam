@@ -353,6 +353,18 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
     }
   }, [isAjukanView]);
 
+  useEffect(() => {
+    const isAnyFormModalOpen = ajukanModalOpen || !!editingItem;
+    if (isAnyFormModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [ajukanModalOpen, editingItem]);
+
   // Tandai notifikasi data pengajuan sebagai sudah dibaca saat halaman ini dibuka
   useEffect(() => {
     markNotificationsByHrefPrefixAsRead('/admin/data_pengajuan');
@@ -1763,41 +1775,40 @@ function addEditJurusanUnitOption() {
       </div>
 
         {ajukanModalOpen && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
+            onClick={() => setAjukanModalOpen(false)}
+          >
             <div
-              className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-[2px] p-4"
-              onClick={() => setAjukanModalOpen(false)}
+              className="w-full max-w-[1120px] rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex min-h-full items-center justify-center">
-                <div
-                  className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <AdminAjukanKerjasamaForm
-                    onCancel={() => setAjukanModalOpen(false)}
-                    onSubmitted={() => {
-                      setAjukanModalOpen(false);
-                      void refreshPengajuanData();
-                    }}
-                    initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
-                    initialMasterRuangLingkupRows={ruangLingkupRows}
-                    initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
-                  />
-                </div>
+              <AdminAjukanKerjasamaForm
+                isModal
+                onCancel={() => setAjukanModalOpen(false)}
+                onSubmitted={() => {
+                  setAjukanModalOpen(false);
+                  void refreshPengajuanData();
+                }}
+                initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
+                initialMasterRuangLingkupRows={ruangLingkupRows}
+                initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
+              />
             </div>
           </div>
         )}
 
       {editingItem && (
         <div
-          className="fixed inset-0 z-[70] bg-black/55 backdrop-blur-[2px] p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
           onClick={() => setEditingItem(null)}
         >
-          <div className="flex min-h-full items-center justify-center">
-            <div
-              className="w-full max-w-[1120px] max-h-[92vh] overflow-y-auto rounded-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div
+            className="w-full max-w-[1120px] rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
               <InternalAjukanKerjasamaForm
+                isModal
                 disableDraftPersistence
                 lockJenisKerjasama
                 nomorPengajuanSource="admin"
@@ -1833,7 +1844,6 @@ function addEditJurusanUnitOption() {
                   }}
                 onSubmitOverride={handleSubmitEditFromAjukan}
               />
-            </div>
           </div>
         </div>
       )}

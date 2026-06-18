@@ -148,6 +148,7 @@ type InternalAjukanKerjasamaFormProps = {
   disableDraftPersistence?: boolean;
   lockJenisKerjasama?: boolean;
   submitButtonLabel?: string;
+  isModal?: boolean;
   onSubmitOverride?: (payload: {
     formData: typeof initialForm;
     asal: 'Jurusan' | 'Unit';
@@ -232,6 +233,7 @@ export default function AdminAjukanKerjasamaForm({
   disableDraftPersistence = false,
   lockJenisKerjasama = false,
   submitButtonLabel = 'Ajukan Kerjasama',
+  isModal = false,
   onSubmitOverride,
 }: InternalAjukanKerjasamaFormProps) {
   const router = useRouter();
@@ -755,8 +757,8 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
 
   return (
     <>
-    <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+    <div className={`mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-sm${isModal ? ' flex flex-col max-h-[92vh]' : ''}`}>
+      <div className={`${isModal ? 'flex-none ' : 'sticky top-0 z-10 '}flex items-start justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-6 py-5`}>
         <div>
           <p className="text-sm font-semibold text-[#173B82]">{appearanceSettings.topBadgeText}</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">{appearanceSettings.pageTitle}</h1>
@@ -792,7 +794,7 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+      <form onSubmit={handleSubmit} className={`space-y-5 px-6 py-5${isModal ? ' flex-1 overflow-y-auto scrollbar-rounded' : ''}`}>
         {enableAppearanceEdit && isAppearanceEditMode && (
           <section className="rounded-2xl border border-[#D7E0F0] bg-[#F8FAFF] p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
@@ -1376,7 +1378,7 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
           </div>
         )}
 
-        <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-5 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 pb-5 pt-4">
           <button
             type="button"
             onClick={() => {
