@@ -169,6 +169,25 @@ export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
   return matchedDemoUser;
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(payload: {
+  email: string;
+  otp: string;
+  password: string;
+  password_confirmation: string;
+}): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function verifyCurrentUser(): Promise<'valid' | 'deleted' | 'offline'> {
   const stored = getStoredUser();
   if (!stored?.accessToken) return 'valid';

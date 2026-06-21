@@ -1,19 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  CheckCircle2,
+  KeyRound,
   Lock,
   Mail,
+  RefreshCw,
   Shield,
   UserPlus,
   Users,
   UserCog,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { requestPasswordReset, resetPassword } from '@/services/authService';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -24,6 +28,19 @@ export default function LoginPage() {
   const [roleError, setRoleError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [accountDeleted, setAccountDeleted] = useState(false);
+  const [fpSuccessDone, setFpSuccessDone] = useState(false);
+
+  // Forgot password modal state
+  const [fpOpen, setFpOpen] = useState(false);
+  const [fpStep, setFpStep] = useState<1 | 2 | 3>(1);
+  const [fpEmail, setFpEmail] = useState('');
+  const [fpOtp, setFpOtp] = useState(['', '', '', '', '', '']);
+  const [fpPassword, setFpPassword] = useState('');
+  const [fpConfirm, setFpConfirm] = useState('');
+  const [fpError, setFpError] = useState('');
+  const [fpLoading, setFpLoading] = useState(false);
+  const [fpCountdown, setFpCountdown] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const searchParams = useSearchParams();
 
@@ -87,18 +104,101 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = () => {
-    if (!email.trim()) {
-      setError('Masukkan email terdaftar terlebih dahulu untuk reset password.');
-      return;
+  const openForgotPassword = () => {
+    setFpOpen(true);
+    setFpStep(1);
+    setFpEmail(email.trim());
+    setFpOtp(['', '', '', '', '', '']);
+    setFpPassword('');
+    setFpConfirm('');
+    setFpError('');
+    setFpCountdown(0);
+  };
+
+  const closeForgotPassword = () => {
+    setFpOpen(false);
+    setFpStep(1);
+    setFpEmail('');
+    setFpOtp(['', '', '', '', '', '']);
+    setFpPassword('');
+    setFpConfirm('');
+    setFpError('');
+  };
+
+  const startCountdown = () => {
+    setFpCountdown(60);
+    const interval = setInterval(() => {
+      setFpCountdown((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    if (!fpEmail.trim()) { setFpError('Masukkan email terlebih dahulu.'); return; }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      await requestPasswordReset(fpEmail.trim());
+      setFpStep(2);
+      startCountdown();
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch (err) {
+      setFpError(err instanceof Error ? err.message : 'Gagal mengirim OTP. Coba lagi.');
+    } finally {
+      setFpLoading(false);
     }
+  };
 
-    const subject = encodeURIComponent('Reset Password SIKERMA');
-    const body = encodeURIComponent(
-      `Halo Admin SIKERMA,\n\nSaya ingin melakukan reset password untuk akun dengan email: ${email.trim()}\n\nTerima kasih.`
-    );
+  const handleOtpChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...fpOtp];
+    next[index] = digit;
+    setFpOtp(next);
+    if (digit && index < 5) otpRefs.current[index + 1]?.focus();
+  };
 
-    window.location.href = `mailto:humas@polibatam.ac.id?subject=${subject}&body=${body}`;
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !fpOtp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = () => {
+    const code = fpOtp.join('');
+    if (code.length < 6) { setFpError('Masukkan 6 digit kode OTP.'); return; }
+    setFpError('');
+    setFpStep(3);
+  };
+
+  const handleResetPassword = async () => {
+    if (!fpPassword) { setFpError('Masukkan password baru.'); return; }
+    if (fpPassword.length < 8) { setFpError('Password minimal 8 karakter.'); return; }
+    if (fpPassword !== fpConfirm) { setFpError('Konfirmasi password tidak cocok.'); return; }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      await resetPassword({
+        email: fpEmail.trim(),
+        otp: fpOtp.join(''),
+        password: fpPassword,
+        password_confirmation: fpConfirm,
+      });
+      setFpStep(1);
+      setFpOpen(false);
+      setError('');
+      // Show success message on login form
+      setFpSuccessDone(true);
+    } catch (err) {
+      setFpError(err instanceof Error ? err.message : 'Gagal reset password. Coba lagi.');
+      if (/kedaluwarsa/i.test(err instanceof Error ? err.message : '')) {
+        setFpStep(2);
+        setFpOtp(['', '', '', '', '', '']);
+      }
+    } finally {
+      setFpLoading(false);
+    }
   };
 
   return (
@@ -282,12 +382,18 @@ export default function LoginPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={handleForgotPassword}
+                    onClick={openForgotPassword}
                     className="font-semibold text-[#173B82] transition hover:underline"
                   >
                     Lupa Password?
                   </button>
                 </div>
+                {fpSuccessDone && (
+                  <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                    <p className="text-xs text-emerald-700 font-medium">Password berhasil direset. Silakan login dengan password baru Anda.</p>
+                  </div>
+                )}
                 <p className="text-[11px] text-slate-500">
                   Gunakan email yang terdaftar dan password akun Anda untuk masuk.
                 </p>
@@ -307,6 +413,182 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      {fpOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#173B82]/10">
+                  <KeyRound size={18} className="text-[#173B82]" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-slate-900">Reset Password</h3>
+                  <p className="text-[11px] text-slate-500">
+                    {fpStep === 1 && 'Masukkan email akun Anda'}
+                    {fpStep === 2 && 'Masukkan kode OTP dari email'}
+                    {fpStep === 3 && 'Buat password baru'}
+                  </p>
+                </div>
+              </div>
+              <button type="button" onClick={closeForgotPassword} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            {/* Steps indicator */}
+            <div className="flex items-center gap-2 px-6 pt-4">
+              {[1, 2, 3].map((s) => (
+                <div key={s} className="flex items-center gap-2">
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold transition-colors ${
+                    fpStep > s ? 'bg-emerald-500 text-white' : fpStep === s ? 'bg-[#173B82] text-white' : 'bg-slate-100 text-slate-400'
+                  }`}>
+                    {fpStep > s ? <CheckCircle2 size={13} /> : s}
+                  </div>
+                  {s < 3 && <div className={`h-px w-8 transition-colors ${fpStep > s ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+                </div>
+              ))}
+              <span className="ml-2 text-[11px] text-slate-500">
+                {fpStep === 1 && 'Email'}
+                {fpStep === 2 && 'Verifikasi OTP'}
+                {fpStep === 3 && 'Password Baru'}
+              </span>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {fpError && (
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-500" />
+                  <p className="text-xs text-red-600">{fpError}</p>
+                </div>
+              )}
+
+              {fpStep === 1 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Akun</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
+                      <input
+                        type="email"
+                        value={fpEmail}
+                        onChange={(e) => setFpEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && void handleSendOtp()}
+                        placeholder="Masukkan email terdaftar"
+                        className="input-field h-10 w-full rounded-xl pl-9 pr-4 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">Kode OTP akan dikirim ke email ini.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleSendOtp()}
+                    disabled={fpLoading}
+                    className="btn-primary h-10 w-full rounded-xl text-sm font-semibold disabled:opacity-60"
+                  >
+                    {fpLoading ? 'Mengirim...' : 'Kirim Kode OTP'}
+                  </button>
+                </div>
+              )}
+
+              {fpStep === 2 && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-slate-600">
+                      Kode OTP dikirim ke <span className="font-semibold text-[#173B82]">{fpEmail}</span>
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">Berlaku selama 5 menit. Periksa folder spam jika tidak masuk.</p>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Kode OTP (6 digit)</label>
+                    <div className="flex gap-2">
+                      {fpOtp.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={(el) => { otpRefs.current[i] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(i, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          className="h-12 w-full rounded-xl border border-slate-300 bg-white text-center text-lg font-bold text-[#173B82] focus:border-[#173B82] focus:outline-none focus:ring-2 focus:ring-[#173B82]/20"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">
+                      {fpCountdown > 0 ? `Kirim ulang dalam ${fpCountdown}s` : 'Tidak menerima kode?'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleSendOtp()}
+                      disabled={fpCountdown > 0 || fpLoading}
+                      className="inline-flex items-center gap-1 font-semibold text-[#173B82] hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <RefreshCw size={11} />
+                      Kirim Ulang
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={fpOtp.join('').length < 6}
+                    className="btn-primary h-10 w-full rounded-xl text-sm font-semibold disabled:opacity-60"
+                  >
+                    Verifikasi Kode
+                  </button>
+                </div>
+              )}
+
+              {fpStep === 3 && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">Buat password baru untuk akun <span className="font-semibold text-[#173B82]">{fpEmail}</span></p>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password Baru</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
+                      <input
+                        type="password"
+                        value={fpPassword}
+                        onChange={(e) => setFpPassword(e.target.value)}
+                        placeholder="Minimal 8 karakter"
+                        className="input-field h-10 w-full rounded-xl pl-9 pr-4 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Konfirmasi Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
+                      <input
+                        type="password"
+                        value={fpConfirm}
+                        onChange={(e) => setFpConfirm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && void handleResetPassword()}
+                        placeholder="Ulangi password baru"
+                        className="input-field h-10 w-full rounded-xl pl-9 pr-4 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleResetPassword()}
+                    disabled={fpLoading}
+                    className="btn-primary h-10 w-full rounded-xl text-sm font-semibold disabled:opacity-60"
+                  >
+                    {fpLoading ? 'Menyimpan...' : 'Reset Password'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SendResetPasswordMail;
 use App\Models\MasterMitra;
+use App\Models\OtpCode;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -208,6 +211,93 @@ class AuthController extends Controller
                 'approval_status' => $user->approval_status,
                 'role' => $user->role,
             ],
+        ]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        $emailLower = Str::lower(trim($validated['email']));
+
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$emailLower])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['Email tidak terdaftar dalam sistem.'],
+            ]);
+        }
+
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        OtpCode::query()->where('email', $emailLower)->delete();
+
+        OtpCode::create([
+            'email'      => $emailLower,
+            'otp'        => $otp,
+            'form_data'  => ['type' => 'password_reset'],
+            'expires_at' => now()->addMinutes(5),
+            'is_used'    => false,
+        ]);
+
+        Mail::to($user->email)->send(new SendResetPasswordMail($otp));
+
+        return response()->json([
+            'message' => 'Kode OTP reset password berhasil dikirim ke email Anda. Berlaku selama 5 menit.',
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email'                 => ['required', 'string', 'email'],
+            'otp'                   => ['required', 'string', 'size:6'],
+            'password'              => ['required', 'string', 'confirmed', Password::min(8)],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        $emailLower = Str::lower(trim($validated['email']));
+
+        $otpRecord = OtpCode::query()
+            ->where('email', $emailLower)
+            ->where('otp', $validated['otp'])
+            ->where('is_used', false)
+            ->first();
+
+        if (! $otpRecord) {
+            throw ValidationException::withMessages([
+                'otp' => ['Kode OTP tidak valid atau sudah digunakan.'],
+            ]);
+        }
+
+        if ($otpRecord->isExpired()) {
+            throw ValidationException::withMessages([
+                'otp' => ['Kode OTP sudah kedaluwarsa. Silakan minta kode baru.'],
+            ]);
+        }
+
+        $formData = $otpRecord->form_data;
+        if (! isset($formData['type']) || $formData['type'] !== 'password_reset') {
+            throw ValidationException::withMessages([
+                'otp' => ['Kode OTP tidak valid untuk reset password.'],
+            ]);
+        }
+
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$emailLower])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['Akun tidak ditemukan.'],
+            ]);
+        }
+
+        $user->update(['password' => Hash::make($validated['password'])]);
+        $otpRecord->update(['is_used' => true]);
+
+        return response()->json([
+            'message' => 'Password berhasil direset. Silakan login dengan password baru Anda.',
         ]);
     }
 
