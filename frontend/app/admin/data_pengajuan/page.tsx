@@ -48,6 +48,7 @@ import {
   pengajuanUnitOptions,
   type PengajuanItem,
   type PengajuanStatus,
+  type PengajuanFileAttachment,
 } from '@/services/adminPengajuanService';
 
 type EditFormState = {
@@ -1170,6 +1171,7 @@ function addEditJurusanUnitOption() {
     dokumen: File[];
     dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
+    existingFileAttachments?: PengajuanFileAttachment[];
   }): Promise<boolean> {
     if (!editingItem) {
       return false;
@@ -1184,6 +1186,16 @@ function addEditJurusanUnitOption() {
       setInfoModalMessage('Pilih minimal 1 ruang lingkup pada form edit.');
       return false;
     }
+
+    // Gabungkan file existing yang tidak dihapus + file baru yang diupload
+    const newFileAttachments = payload.dokumenAttachments.map((item) => ({
+      name: item.file.name,
+      type: item.file.type,
+      size: item.file.size,
+      url: item.dataUrl || '',
+    }));
+    const keptExistingFiles = payload.existingFileAttachments ?? [];
+    const allFileAttachments = [...keptExistingFiles, ...newFileAttachments];
 
     const editPayload = {
       judulPengajuan: payload.formData.judulKerjasama.trim(),
@@ -1200,15 +1212,10 @@ function addEditJurusanUnitOption() {
       mitraTelepon: payload.formData.teleponMitra || editingItem.mitraTelepon,
       deskripsiPengajuan: payload.formData.deskripsi.trim() || undefined,
       jabatanPengusul: payload.formData.jabatanKontak.trim() || undefined,
-      ...(payload.dokumen.length > 0
+      ...(allFileAttachments.length > 0
         ? {
-            fileName: payload.dokumen.map((file) => file.name).join(', '),
-            fileAttachments: payload.dokumenAttachments.map((item) => ({
-              name: item.file.name,
-              type: item.file.type,
-              size: item.file.size,
-              url: item.dataUrl || '',
-            })),
+            fileName: allFileAttachments.map((f) => f.name).join(', '),
+            fileAttachments: allFileAttachments,
           }
         : {}),
     };
@@ -1810,12 +1817,12 @@ function addEditJurusanUnitOption() {
               <InternalAjukanKerjasamaForm
                 isModal
                 disableDraftPersistence
-                lockJenisKerjasama
                 nomorPengajuanSource="admin"
                 submitButtonLabel="Simpan Perubahan"
                 initialMasterUnitProdiTree={masterUnitProdiTreeForForm}
                 initialMasterRuangLingkupRows={ruangLingkupRows}
                 initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
+                initialFileAttachments={editingItem.fileAttachments ?? []}
                 initialData={{
                   nomorPengajuan: editingItem.nomorPengajuan,
                   asal: pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan',

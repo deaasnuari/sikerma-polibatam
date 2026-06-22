@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Eye, Filter, Search } from 'lucide-react';
+import { exportToExcel } from '@/lib/exportExcel';
 import {
   fetchMonitoringDataFromApi,
   getMonitoringData,
@@ -29,6 +30,7 @@ export default function PimpinanDaftarKerjasamaPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<Kerjasama | null>(null);
   const currentYear = new Date().getFullYear();
@@ -55,7 +57,7 @@ export default function PimpinanDaftarKerjasamaPage() {
   const filteredItems = useMemo(() => {
     const keyword = search.toLowerCase().trim();
 
-    return kerjasamaList.filter((item) => {
+    const filtered = kerjasamaList.filter((item) => {
       const matchesSearch =
         keyword === '' ||
         item.noDokumen.toLowerCase().includes(keyword) ||
@@ -67,20 +69,11 @@ export default function PimpinanDaftarKerjasamaPage() {
 
       return matchesSearch && matchesStatus && matchesTahun;
     });
-  }, [kerjasamaList, search, filterStatus, filterTahun]);
+    return sortOrder === 'oldest' ? [...filtered].reverse() : filtered;
+  }, [kerjasamaList, search, filterStatus, filterTahun, sortOrder]);
 
   const handleExport = () => {
-    const header = [
-      'No. Dokumen',
-      'Nama Mitra',
-      'Jenis',
-      'Ruang Lingkup',
-      'Tanggal Mulai',
-      'Berlaku Hingga',
-      'Tahun',
-      'Status',
-    ];
-
+    const headers = ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Ruang Lingkup', 'Tanggal Mulai', 'Berlaku Hingga', 'Tahun', 'Status'];
     const rows = filteredItems.map((item) => [
       item.noDokumen,
       item.namaMitra,
@@ -91,25 +84,8 @@ export default function PimpinanDaftarKerjasamaPage() {
       getTahun(item),
       item.status,
     ]);
-
-    const content = [header, ...rows]
-      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
-      .join('\n');
-
-    const blob = new Blob(['﻿', content], {
-      type: 'application/vnd.ms-excel;charset=utf-8;',
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateStamp = new Date().toISOString().slice(0, 10);
-
-    link.href = url;
-    link.download = `daftar-kerjasama-pimpinan-${dateStamp}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToExcel(headers, rows, `daftar-kerjasama-pimpinan-${dateStamp}.xlsx`, 'Daftar Kerjasama');
   };
 
   return (
@@ -232,6 +208,15 @@ export default function PimpinanDaftarKerjasamaPage() {
                 </div>
               )}
             </div>
+
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as 'newest' | 'oldest')}
+              className="input-field h-10 px-3 text-sm text-slate-700"
+            >
+              <option value="newest">Terbaru ke Terlama</option>
+              <option value="oldest">Terlama ke Terbaru</option>
+            </select>
           </div>
         </div>
 

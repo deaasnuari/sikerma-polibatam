@@ -1,4 +1,5 @@
 import { apiRequest, API_BASE_URL } from '@/lib/api';
+import { getCachedMasterRuangLingkup, getMasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
 function getBackendOrigin(): string {
   try {
@@ -107,9 +108,13 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
   }
 
   rekapDokumenInFlight = (async () => {
-    const response = await apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000');
+    const [response] = await Promise.all([
+      apiRequest<ApiPaginatedResponse<ApiDokumenRow & { sumber_pengajuan_id?: number | null; keterangan?: string | null }>>('/dokumen-kerjasama?per_page=2000'),
+      getCachedMasterRuangLingkup().length === 0 ? getMasterRuangLingkup({ aktif: true }).catch(() => []) : Promise.resolve([]),
+    ]);
+    const rlLookup = getCachedMasterRuangLingkup();
     const mapped = (response.data?.data ?? []).map((row) => {
-    const nomor = row.nomor_dokumen || `DOK-${row.id}`;
+    const nomor = row.nomor_dokumen || row.pengajuan?.nomor_pengajuan || `DOK-${row.id}`;
     const tanggalMulaiRaw = row.tanggal_mulai || '';
     
     // Priority: mitra relation → pengajuan.nama_mitra → snap_nama_mitra → keterangan → legacy file name
@@ -178,7 +183,11 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
     }
 
       const ruangLingkup = Array.isArray(row.ruang_lingkup_ids)
-        ? (row.ruang_lingkup_ids as any[]).map(String).filter(Boolean)
+        ? (row.ruang_lingkup_ids as any[]).map((id) => {
+            const numId = Number(id);
+            const found = rlLookup.find((item) => item.id === numId);
+            return found ? found.nama_ruang_lingkup : String(id);
+          }).filter(Boolean)
         : [];
 
       const kategoriUnitRaw = row.unit_prodi?.kategori_unit?.toLowerCase() ?? '';

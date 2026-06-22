@@ -91,7 +91,7 @@ class DokumenKerjasamaController extends Controller
             });
         }
 
-        $data = $query->orderByDesc('updated_at')->paginate((int) $request->integer('per_page', 20));
+        $data = $query->orderByDesc('id')->paginate((int) $request->integer('per_page', 20));
 
         return response([
             'success' => true,

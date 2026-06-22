@@ -13,6 +13,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { fetchArsipDokumenFromApi } from '@/services/dokumenKerjasamaApiService';
+import { exportToExcel } from '@/lib/exportExcel';
 
 interface ArsipDokumen {
   id: number;
@@ -149,8 +150,9 @@ export default function ArsipDokumenPage() {
   }
 
   const handleExportExcel = () => {
+    const headers = ['No', 'No Dokumen', 'Nama Mitra', 'Jenis', 'Tanggal Mulai', 'Berlaku Hingga', 'Alasan Arsip', 'Bukti PDF'];
     const rows = filtered.map((item, index) => [
-      String(index + 1),
+      index + 1,
       item.noDokumen,
       item.namaMitra,
       item.jenis,
@@ -159,36 +161,8 @@ export default function ArsipDokumenPage() {
       item.alasanArsip || '-',
       item.buktiPdf || '-',
     ]);
-
-    const header = [
-      'No',
-      'No Dokumen',
-      'Nama Mitra',
-      'Jenis',
-      'Tanggal Mulai',
-      'Berlaku Hingga',
-      'Alasan Arsip',
-      'Bukti PDF',
-    ];
-
-    const content = [header, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
-      .join('\n');
-
-    const blob = new Blob(['\ufeff', content], {
-      type: 'application/vnd.ms-excel;charset=utf-8;',
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateStamp = new Date().toISOString().slice(0, 10);
-
-    link.href = url;
-    link.download = `arsip-dokumen-${dateStamp}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToExcel(headers, rows, `arsip-dokumen-${dateStamp}.xlsx`, 'Arsip Dokumen');
   };
 
   const totalArsip = data.filter((item) => {

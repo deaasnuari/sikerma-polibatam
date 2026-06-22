@@ -20,6 +20,7 @@ import {
   type RekapDokumen,
 } from '@/services/adminRekapDataService';
 import { dataUrlToBlob, deleteDokumenKerjasamaById, fetchRekapDokumenFromApi, mapJenisToApi, mapStatusToApi, updateDokumenKerjasamaById, updatePengajuanNamaMitra, uploadDokumenFile } from '@/services/dokumenKerjasamaApiService';
+import { exportToExcel } from '@/lib/exportExcel';
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
 import { getRenewalRequests, type RenewalRequestItem } from '@/services/adminRenewalRequestService';
 
@@ -31,6 +32,7 @@ export default function RekapDataPage() {
   const [filterUnit, setFilterUnit] = useState('Semua Jurusan/unit');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [isTambahModalOpen, setIsTambahModalOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<RekapDokumen | null>(null);
@@ -157,30 +159,21 @@ export default function RekapDataPage() {
   const [yearRangeStart, setYearRangeStart] = useState(defaultYearRangeStart);
   const yearGrid = Array.from({ length: 12 }, (_, index) => yearRangeStart + index);
 
-  const filteredRows = filterRekapData(rekapData, {
+  const filteredBase = filterRekapData(rekapData, {
     filterJenis,
     filterUnit,
     filterStatus,
     filterTahun,
     search,
   });
+  const filteredRows = sortOrder === 'oldest' ? [...filteredBase].reverse() : filteredBase;
 
   const { totalKerjasama, totalAktif, totalAkanBerakhir, totalKadaluarsa } = getRekapStats(rekapData);
 
   const handleExportExcel = () => {
-    const header = [
-      'No',
-      'No Dokumen',
-      'Nama Mitra',
-      'Jenis',
-      'Jurusan / Unit',
-      'Tanggal Mulai',
-      'Berlaku Hingga',
-      'Status',
-    ];
-
+    const headers = ['No', 'No Dokumen', 'Nama Mitra', 'Jenis', 'Jurusan / Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'];
     const rows = filteredRows.map((row, index) => [
-      String(index + 1),
+      index + 1,
       row.noDokumen,
       row.namaMitra,
       row.jenis,
@@ -189,25 +182,8 @@ export default function RekapDataPage() {
       row.berlakuHingga,
       row.status,
     ]);
-
-    const content = [header, ...rows]
-      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
-      .join('\n');
-
-    const blob = new Blob(['\ufeff', content], {
-      type: 'application/vnd.ms-excel;charset=utf-8;',
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateStamp = new Date().toISOString().slice(0, 10);
-
-    link.href = url;
-    link.download = `rekap-data-${dateStamp}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToExcel(headers, rows, `rekap-data-${dateStamp}.xlsx`, 'Rekap Data');
   };
 
   function handleDelete(item: RekapDokumen) {
@@ -430,6 +406,15 @@ export default function RekapDataPage() {
                 </div>
               )}
             </div>
+
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as 'newest' | 'oldest')}
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
+            >
+              <option value="newest">Terbaru ke Terlama</option>
+              <option value="oldest">Terlama ke Terbaru</option>
+            </select>
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center">

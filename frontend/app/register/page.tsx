@@ -11,6 +11,7 @@ import {
   Globe,
   Lock,
   Mail,
+  MessageCircle,
   Phone,
   ShieldCheck,
   User,
@@ -34,6 +35,21 @@ const negaraOptions = [
   'Lainnya',
 ];
 
+const countryPhoneCodeMap: Record<string, string> = {
+  'Indonesia':       '+62',
+  'Malaysia':        '+60',
+  'Singapura':       '+65',
+  'Amerika Serikat': '+1',
+  'Jepang':          '+81',
+  'Korea Selatan':   '+82',
+  'Australia':       '+61',
+  'Jerman':          '+49',
+  'Belanda':         '+31',
+  'Inggris':         '+44',
+  'Tiongkok':        '+86',
+  'Lainnya':         '',
+};
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -49,6 +65,7 @@ export default function RegisterPage() {
     password: '',
     password_confirmation: '',
   });
+  const [phoneCode, setPhoneCode] = useState('+62');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,7 +74,12 @@ export default function RegisterPage() {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'negara') {
+      setPhoneCode(countryPhoneCodeMap[value] ?? '');
+      setForm((prev) => ({ ...prev, negara: value, phone: '' }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -77,9 +99,12 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
+      const fullPhone = phoneCode
+        ? `${phoneCode}${form.phone.replace(/^0+/, '')}`
+        : form.phone;
       await apiRequest('/otp/send', {
         method: 'POST',
-        body: JSON.stringify({ ...form, role: 'external' }),
+        body: JSON.stringify({ ...form, phone: fullPhone, role: 'external' }),
       });
       setStep(2);
     } catch (err: unknown) {
@@ -242,18 +267,31 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">WA Aktif Pengusul</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 text-slate-400" size={18} />
-                      <input
-                        name="phone"
-                        value={form.phone}
-                        onChange={handleChange}
-                        placeholder="08xxxxxxxxxx"
-                        required
-                        className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
-                      />
+                    <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">Nomor Telepon</label>
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-[#173B82] focus-within:ring-1 focus-within:ring-[#173B82]/20">
+                      {phoneCode && (
+                        <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-100 px-3 text-sm font-semibold text-slate-600">
+                          {phoneCode}
+                        </span>
+                      )}
+                      <div className="relative flex-1">
+                        <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          name="phone"
+                          value={form.phone}
+                          onChange={handleChange}
+                          placeholder={form.negara === 'Indonesia' ? '8xxxxxxxxxx' : 'Nomor telepon'}
+                          required
+                          className="h-11 w-full bg-transparent pl-9 pr-4 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        />
+                      </div>
                     </div>
+                    {form.negara === 'Indonesia' && (
+                      <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+                        <MessageCircle size={12} className="shrink-0" />
+                        Pastikan nomor ini aktif di WhatsApp agar mudah dihubungi
+                      </p>
+                    )}
                   </div>
 
                   <div>

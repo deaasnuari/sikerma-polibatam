@@ -313,14 +313,140 @@
 
 ## 16. Pengujian Keamanan Dasar
 
+### Persiapan Sebelum Uji Keamanan
+
+Sebelum menjalankan TC-SEC-01 s/d TC-SEC-04, login terlebih dahulu dengan masing-masing role untuk mendapatkan token:
+
+| Role | Endpoint Login | Body Request |
+|------|---------------|--------------|
+| Internal | `POST /api/login` | `{"login":"internal@polibatam.ac.id","password":"Pass@123","role":"internal"}` |
+| External | `POST /api/login` | `{"login":"mitra@company.com","password":"Pass@123","role":"external"}` |
+| Pimpinan | `POST /api/login` | `{"login":"pimpinan@polibatam.ac.id","password":"Pass@123","role":"pimpinan"}` |
+
+Simpan masing-masing `access_token` dari response untuk digunakan di test berikut.
+
+---
+
+### TC-SEC-01 — Akses Endpoint Admin oleh Role Internal
+
+**Langkah di Postman:**
+```
+1. Method : GET
+2. URL    : http://localhost:8000/api/admin/users
+3. Header : Authorization: Bearer {token_internal}
+            Accept: application/json
+4. Klik Send
+```
+
 | No | ID Uji | Skenario | Data Input | Output yang Diharapkan | Status |
 |----|--------|----------|-----------|------------------------|--------|
-| 143 | TC-SEC-01 | Akses endpoint admin oleh user `internal` | Token internal, GET `/api/admin/users` | Response 403 Forbidden | - |
-| 144 | TC-SEC-02 | Akses endpoint admin oleh user `external` | Token external, GET `/api/admin/users` | Response 403 Forbidden | - |
-| 145 | TC-SEC-03 | Akses endpoint admin oleh user `pimpinan` | Token pimpinan, GET `/api/admin/users` | Response 403 Forbidden (jika hanya admin) | - |
-| 146 | TC-SEC-04 | Mengakses data user lain tanpa izin | Token user A, GET `/api/admin/users/{id_user_B}` | Response 403 atau hanya data yang diizinkan | - |
-| 147 | TC-SEC-05 | Request dengan token tidak valid/palsu | Token: `Bearer token_palsu_123` | Response 401 Unauthorized | - |
-| 148 | TC-SEC-06 | Request dengan token kedaluwarsa | Token lama (sudah expired) | Response 401 Unauthorized | - |
+| 143 | TC-SEC-01 | Akses endpoint admin oleh user `internal` | Token role `internal`, `GET /api/admin/users` | HTTP 403, body: `{"message":"Akses ditolak. Hanya admin yang dapat mengelola user."}` | - |
+
+---
+
+### TC-SEC-02 — Akses Endpoint Admin oleh Role External
+
+**Langkah di Postman:**
+```
+1. Method : GET
+2. URL    : http://localhost:8000/api/admin/users
+3. Header : Authorization: Bearer {token_external}
+            Accept: application/json
+4. Klik Send
+```
+
+| No | ID Uji | Skenario | Data Input | Output yang Diharapkan | Status |
+|----|--------|----------|-----------|------------------------|--------|
+| 144 | TC-SEC-02 | Akses endpoint admin oleh user `external` | Token role `external`, `GET /api/admin/users` | HTTP 403, body: `{"message":"Akses ditolak. Hanya admin yang dapat mengelola user."}` | - |
+
+---
+
+### TC-SEC-03 — Akses Endpoint Admin oleh Role Pimpinan
+
+**Langkah di Postman:**
+```
+1. Method : GET
+2. URL    : http://localhost:8000/api/admin/users
+3. Header : Authorization: Bearer {token_pimpinan}
+            Accept: application/json
+4. Klik Send
+```
+
+| No | ID Uji | Skenario | Data Input | Output yang Diharapkan | Status |
+|----|--------|----------|-----------|------------------------|--------|
+| 145 | TC-SEC-03 | Akses endpoint admin oleh user `pimpinan` | Token role `pimpinan`, `GET /api/admin/users` | HTTP 403, body: `{"message":"Akses ditolak. Hanya admin yang dapat mengelola user."}` | - |
+
+---
+
+### TC-SEC-04 — Akses Data User Lain oleh Non-Admin
+
+**Langkah di Postman:**
+```
+1. Method : GET
+2. URL    : http://localhost:8000/api/admin/users/{id_user_lain}
+            (ganti {id_user_lain} dengan ID user yang bukan miliknya)
+3. Header : Authorization: Bearer {token_internal atau token_external}
+            Accept: application/json
+4. Klik Send
+```
+
+| No | ID Uji | Skenario | Data Input | Output yang Diharapkan | Status |
+|----|--------|----------|-----------|------------------------|--------|
+| 146 | TC-SEC-04 | Non-admin mengakses detail user lain | Token role `internal`, `GET /api/admin/users/2` | HTTP 403, body: `{"message":"Akses ditolak. Hanya admin yang dapat mengelola user."}` | - |
+
+---
+
+### TC-SEC-05 — Request dengan Token Tidak Valid/Palsu
+
+**Langkah di Postman:**
+```
+1. Method : GET
+2. URL    : http://localhost:8000/api/me
+3. Header : Authorization: Bearer token_palsu_123
+            Accept: application/json
+4. Klik Send
+```
+
+Variasi token palsu yang diuji:
+
+| No | ID Uji | Skenario | Token yang Dipakai | Output yang Diharapkan | Status |
+|----|--------|----------|--------------------|------------------------|--------|
+| 147 | TC-SEC-05a | Token berupa string acak | `Bearer token_palsu_123` | HTTP 401, body: `{"message":"Unauthenticated."}` | - |
+| - | TC-SEC-05b | Token berupa format JWT palsu | `Bearer eyJhbGciOiJIUzI1NiJ9.palsu.palsu` | HTTP 401, body: `{"message":"Unauthenticated."}` | - |
+| - | TC-SEC-05c | Header Authorization tidak diisi sama sekali | *(tidak ada header Authorization)* | HTTP 401, body: `{"message":"Unauthenticated."}` | - |
+| - | TC-SEC-05d | Token berisi kata `null` | `Bearer null` | HTTP 401, body: `{"message":"Unauthenticated."}` | - |
+
+---
+
+### TC-SEC-06 — Request dengan Token Sudah Tidak Berlaku (Setelah Logout)
+
+> **Catatan:** Aplikasi ini menggunakan Laravel Sanctum dengan `expiration: null` (token tidak otomatis kedaluwarsa). Token menjadi tidak valid setelah user logout karena token dihapus dari database. Cara simulasi: login → catat token → logout → gunakan token lama.
+
+**Langkah di Postman:**
+```
+Step 1 — Login dulu, catat token:
+  Method : POST
+  URL    : http://localhost:8000/api/login
+  Body   : {"login":"admin@polibatam.ac.id","password":"Admin@123","role":"admin"}
+  → Catat nilai access_token dari response
+
+Step 2 — Logout untuk menghapus token:
+  Method : POST
+  URL    : http://localhost:8000/api/logout
+  Header : Authorization: Bearer {token_dari_step1}
+  → Token kini sudah terhapus dari database
+
+Step 3 — Coba gunakan token lama:
+  Method : GET
+  URL    : http://localhost:8000/api/me
+  Header : Authorization: Bearer {token_dari_step1}  ← token yang sudah di-logout
+  Accept : application/json
+  → Klik Send
+```
+
+| No | ID Uji | Skenario | Data Input | Output yang Diharapkan | Status |
+|----|--------|----------|-----------|------------------------|--------|
+| 148 | TC-SEC-06 | Gunakan token yang sudah di-logout | Token valid yang sudah di-logout via `POST /api/logout` | HTTP 401, body: `{"message":"Unauthenticated."}` | - |
 
 ---
 

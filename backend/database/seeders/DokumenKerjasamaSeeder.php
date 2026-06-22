@@ -47,21 +47,27 @@ class DokumenKerjasamaSeeder extends Seeder
             static fn ($noPermohonan) => trim((string) $noPermohonan)
         )->flip();
 
+        // Kolom no_dokumen sudah di-drop (migration 2026_06_18). Gunakan nomor_dokumen.
+        $hasNoDokumenCol = Schema::hasColumn('dokumen_kerjasama', 'no_dokumen');
+
         $processed = 0;
         $insertedOrUpdated = 0;
         $skippedMissingPermohonan = 0;
         $skippedMissingFile = 0;
+        $skippedUniqueConflict = 0;
 
         $oldConnection->table('rekap')
             ->select(['no_permohonan', 'no_dokumen', 'file'])
-            ->orderBy('id')
+            ->orderBy('no_permohonan')
             ->chunk(500, function ($rows) use (
                 $dokumenLookup,
                 $ajuanNumbers,
+                $hasNoDokumenCol,
                 &$processed,
                 &$insertedOrUpdated,
                 &$skippedMissingPermohonan,
-                &$skippedMissingFile
+                &$skippedMissingFile,
+                &$skippedUniqueConflict
             ) {
                 foreach ($rows as $row) {
                     $processed++;
@@ -101,31 +107,61 @@ class DokumenKerjasamaSeeder extends Seeder
 
                     $payload = [
                         'no_permohonan' => $noPermohonan,
-                        'no_dokumen' => $noDokumen,
-                        'nama_dokumen' => $namaDokumen,
+                        'nama_dokumen'  => $namaDokumen,
                         'jenis_dokumen' => $jenisDokumen !== '' ? $jenisDokumen : null,
-                        'file' => $file,
-                        'keterangan' => implode(' | ', $keteranganParts),
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'file'          => $file,
+                        'keterangan'    => implode(' | ', $keteranganParts),
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
                     ];
 
-                    if ($noDokumen) {
-                        DB::table('dokumen_kerjasama')->updateOrInsert(
-                            ['no_dokumen' => $noDokumen],
-                            $payload
-                        );
+                    // no_dokumen sudah di-drop; gunakan nomor_dokumen sebagai gantinya
+                    if ($hasNoDokumenCol) {
+                        $payload['no_dokumen'] = $noDokumen;
                     } else {
-                        DB::table('dokumen_kerjasama')->updateOrInsert(
-                            [
-                                'no_permohonan' => $noPermohonan,
-                                'file' => $file,
-                            ],
-                            $payload
-                        );
+                        $payload['nomor_dokumen'] = $noDokumen;
                     }
 
-                    $insertedOrUpdated++;
+                    try {
+                        if ($noDokumen) {
+                            if ($hasNoDokumenCol) {
+                                DB::table('dokumen_kerjasama')->updateOrInsert(
+                                    ['no_dokumen' => $noDokumen],
+                                    $payload
+                                );
+                            } else {
+                                // Coba update record yang sudah ada via no_permohonan dan nomor_dokumen masih null
+                                $updated = DB::table('dokumen_kerjasama')
+                                    ->where('no_permohonan', $noPermohonan)
+                                    ->whereNull('nomor_dokumen')
+                                    ->update([
+                                        'nomor_dokumen' => $noDokumen,
+                                        'nama_dokumen'  => $namaDokumen,
+                                        'jenis_dokumen' => $jenisDokumen !== '' ? $jenisDokumen : null,
+                                        'keterangan'    => implode(' | ', $keteranganParts),
+                                        'updated_at'    => now(),
+                                    ]);
+
+                                if ($updated === 0) {
+                                    // Record belum ada, insert baru
+                                    DB::table('dokumen_kerjasama')->insertOrIgnore($payload);
+                                }
+                            }
+                        } else {
+                            DB::table('dokumen_kerjasama')->updateOrInsert(
+                                [
+                                    'no_permohonan' => $noPermohonan,
+                                    'file'          => $file,
+                                ],
+                                $payload
+                            );
+                        }
+
+                        $insertedOrUpdated++;
+                    } catch (Throwable $e) {
+                        $skippedUniqueConflict++;
+                        $this->command?->warn('Skip conflict: ' . $noDokumen . ' - ' . $e->getMessage());
+                    }
                 }
             });
 
@@ -134,5 +170,6 @@ class DokumenKerjasamaSeeder extends Seeder
         $this->command?->line('Berhasil insert/update: ' . $insertedOrUpdated);
         $this->command?->line('Skip no_permohonan tidak valid/ tidak ada di pengajuan_v2: ' . $skippedMissingPermohonan);
         $this->command?->line('Skip karena file kosong: ' . $skippedMissingFile);
+        $this->command?->line('Skip karena konflik unik: ' . $skippedUniqueConflict);
     }
 }

@@ -22,6 +22,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import LaporanPelaksanaanModal, { type LaporanPelaksanaanData } from '@/components/LaporanPelaksanaanModal';
+import { exportToExcel } from '@/lib/exportExcel';
 import type { PengajuanItem } from '../../../services/adminPengajuanService';
 import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import TahapanStepper from '@/components/TahapanStepper';
@@ -166,6 +167,7 @@ export default function DaftarKerjasamaEksternalPage() {
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [filterReview, setFilterReview] = useState<'Semua Review' | 'Belum Direview' | 'Sudah Direview'>('Semua Review');
   const [filterTahun, setFilterTahun] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const [yearRangeStart, setYearRangeStart] = useState(currentYear - 4);
@@ -215,7 +217,7 @@ export default function DaftarKerjasamaEksternalPage() {
   const filteredItems = useMemo(() => {
     const keyword = search.toLowerCase().trim();
 
-    return data.filter((item) => {
+    const filtered = data.filter((item) => {
       const matchesSearch =
         keyword === '' ||
         item.noDokumen.toLowerCase().includes(keyword) ||
@@ -228,7 +230,8 @@ export default function DaftarKerjasamaEksternalPage() {
 
       return matchesSearch && matchesStatus && matchesReview && matchesTahun;
     });
-  }, [data, search, filterStatus, filterReview, filterTahun]);
+    return sortOrder === 'oldest' ? [...filtered].reverse() : filtered;
+  }, [data, search, filterStatus, filterReview, filterTahun, sortOrder]);
 
   const reviewStats = useMemo(() => {
     const belumDireview = data.filter((item) => item.reviewState === 'Belum Direview').length;
@@ -238,17 +241,7 @@ export default function DaftarKerjasamaEksternalPage() {
   }, [data]);
 
   const handleExport = () => {
-    const header = [
-      'No. Dokumen',
-      'Nama Mitra',
-      'Jenis',
-      'Unit',
-      'Tanggal Mulai',
-      'Berlaku Hingga',
-      'Tahun',
-      'Status',
-    ];
-
+    const headers = ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Tahun', 'Status'];
     const rows = filteredItems.map((item) => [
       item.noDokumen,
       item.namaMitra,
@@ -259,25 +252,8 @@ export default function DaftarKerjasamaEksternalPage() {
       item.tahun,
       item.status,
     ]);
-
-    const content = [header, ...rows]
-      .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join('\t'))
-      .join('\n');
-
-    const blob = new Blob(['\ufeff', content], {
-      type: 'application/vnd.ms-excel;charset=utf-8;',
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateStamp = new Date().toISOString().slice(0, 10);
-
-    link.href = url;
-    link.download = `daftar-kerjasama-eksternal-${dateStamp}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToExcel(headers, rows, `daftar-kerjasama-eksternal-${dateStamp}.xlsx`, 'Daftar Kerjasama');
   };
 
   return (
@@ -411,6 +387,15 @@ export default function DaftarKerjasamaEksternalPage() {
                 </div>
               )}
             </div>
+
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as 'newest' | 'oldest')}
+              className="input-field h-10 px-3 text-[12px] text-slate-700"
+            >
+              <option value="newest">Terbaru ke Terlama</option>
+              <option value="oldest">Terlama ke Terbaru</option>
+            </select>
           </div>
         </div>
 

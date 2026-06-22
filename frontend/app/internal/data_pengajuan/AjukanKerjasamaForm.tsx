@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CalendarDays, ChevronDown, Download, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, Download, MessageCircle, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   pengajuanJurusanOptions,
   pengajuanUnitOptions,
+  type PengajuanFileAttachment,
 } from '@/services/adminPengajuanService';
 import {
   getMasterUnitProdiTree,
@@ -61,6 +62,25 @@ const unitOptions = pengajuanUnitOptions;
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
 
+const countryPhoneCodeMap: Record<string, string> = {
+  'Indonesia':       '+62',
+  'Malaysia':        '+60',
+  'Singapura':       '+65',
+  'Amerika Serikat': '+1',
+  'Jepang':          '+81',
+  'Korea Selatan':   '+82',
+  'Australia':       '+61',
+  'Jerman':          '+49',
+  'Belanda':         '+31',
+  'Inggris':         '+44',
+  'Tiongkok':        '+86',
+  'Taiwan':          '+886',
+  'Prancis':         '+33',
+  'Filipina':        '+63',
+  'Vietnam':         '+84',
+  'Palestina':       '+970',
+};
+
 const defaultNegaraOptions = [
   'Indonesia',
   'Malaysia',
@@ -104,6 +124,13 @@ const INTERNAL_PENGAJUAN_DRAFT_KEY = 'internal-pengajuan-draft-v1';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const JENIS_KERJASAMA_OPTIONS = ['MoU', 'MoA', 'IA', 'Lainnya'] as const;
 
+const JENIS_KERJASAMA_LABELS: Record<string, string> = {
+  MoU: 'Memorandum of Understanding',
+  MoA: 'Memorandum of Agreement',
+  IA: 'Implementation Agreement',
+  Lainnya: 'Dokumen Lainnya',
+};
+
 function parseJenisKerjasamaSelection(value: string): string[] {
   return value
     .split(',')
@@ -142,6 +169,7 @@ type InternalAjukanKerjasamaFormProps = {
     selectedRuangLingkup?: string[];
     nomorPengajuan?: string;
   };
+  initialFileAttachments?: PengajuanFileAttachment[];
   nomorPengajuanSource?: 'admin' | 'internal' | 'eksternal';
   initialMasterUnitProdiTree?: MasterUnitProdi[];
   initialMasterRuangLingkupRows?: MasterRuangLingkup[];
@@ -157,6 +185,7 @@ type InternalAjukanKerjasamaFormProps = {
     dokumen: File[];
     dokumenAttachments: { file: File; dataUrl?: string }[];
     selectedProdiId: number | null;
+    existingFileAttachments: PengajuanFileAttachment[];
   }) => boolean | void | Promise<boolean | void>;
 };
 
@@ -204,7 +233,7 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   sectionDokumenSubtitle: 'Pilih jenis dokumen, unduh template bila diperlukan, lalu upload berkas pendukung.',
   labelNamaMitra: 'Nama Mitra',
   labelJenisMitra: 'Jenis Mitra',
-  labelTeleponMitra: 'WhatsApp Aktif',
+  labelTeleponMitra: 'WhatsApp Aktif / No. Telepon',
   labelEmailMitra: 'Email Mitra',
   labelAlamatMitra: 'Alamat Lengkap',
   labelJenisKerjasama: 'Jenis Kerjasama',
@@ -217,7 +246,7 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   labelNamaKontak: 'Nama Lengkap',
   labelJabatanKontak: 'Jabatan',
   labelEmailKontak: 'Email',
-  labelTeleponKontak: 'WhatsApp Aktif',
+  labelTeleponKontak: 'WhatsApp Aktif / No. Telepon',
 };
 
 const DEFAULT_APPEARANCE_STORAGE_KEY = 'internal-pengajuan-appearance-v1';
@@ -228,6 +257,7 @@ export default function InternalAjukanKerjasamaForm({
   enableAppearanceEdit = false,
   appearanceStorageKey = DEFAULT_APPEARANCE_STORAGE_KEY,
   initialData,
+  initialFileAttachments,
   nomorPengajuanSource = 'internal',
   initialMasterUnitProdiTree,
   initialMasterRuangLingkupRows,
@@ -241,6 +271,7 @@ export default function InternalAjukanKerjasamaForm({
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
+  const [existingFileAttachments, setExistingFileAttachments] = useState<PengajuanFileAttachment[]>(() => initialFileAttachments ?? []);
   const [dokumenError, setDokumenError] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
@@ -457,11 +488,11 @@ export default function InternalAjukanKerjasamaForm({
         const next = { ...prev, ...parsed };
 
         if (!next.labelTeleponMitra || next.labelTeleponMitra === 'Telepon') {
-          next.labelTeleponMitra = 'WhatsApp Aktif';
+          next.labelTeleponMitra = 'WhatsApp Aktif / No. Telepon';
         }
 
         if (!next.labelTeleponKontak || next.labelTeleponKontak === 'Telepon') {
-          next.labelTeleponKontak = 'WhatsApp Aktif';
+          next.labelTeleponKontak = 'WhatsApp Aktif / No. Telepon';
         }
 
         return next;
@@ -643,6 +674,10 @@ export default function InternalAjukanKerjasamaForm({
     setDokumen((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  const handleRemoveExistingFile = (indexToRemove: number) => {
+    setExistingFileAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   const handleChange = (field: keyof typeof initialForm, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -684,6 +719,7 @@ export default function InternalAjukanKerjasamaForm({
             dokumen: dokumen.map((item) => item.file),
             dokumenAttachments: dokumen,
             selectedProdiId,
+            existingFileAttachments,
           }));
 
           if (submitResult === false) {
@@ -848,7 +884,20 @@ export default function InternalAjukanKerjasamaForm({
             </div>
             <div>
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelTeleponMitra}</label>
-              <input value={formData.teleponMitra} onChange={(e) => handleChange('teleponMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-[12px]" placeholder="+62 812 3456 7890" required />
+              <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100">
+                {countryPhoneCodeMap[formData.negara] && (
+                  <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-100 px-2.5 text-[11px] font-semibold text-slate-600">
+                    {countryPhoneCodeMap[formData.negara]}
+                  </span>
+                )}
+                <input value={formData.teleponMitra} onChange={(e) => handleChange('teleponMitra', e.target.value)} className="h-10 flex-1 bg-transparent px-3 text-[12px] outline-none" placeholder={formData.negara === 'Indonesia' ? '812 3456 7890' : 'Nomor telepon'} required />
+              </div>
+              {formData.negara === 'Indonesia' && (
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+                  <MessageCircle size={12} className="shrink-0" />
+                  Pastikan nomor ini aktif di WhatsApp agar mudah dihubungi
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelEmailMitra}</label>
@@ -881,8 +930,12 @@ export default function InternalAjukanKerjasamaForm({
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelJenisKerjasama}</label>
               <div className={`rounded-xl border border-slate-200 bg-white p-3 ${lockJenisKerjasama ? 'bg-slate-100' : ''}`}>
                 <div className="flex flex-wrap gap-2">
-                  {JENIS_KERJASAMA_OPTIONS.map((item) => {
+{JENIS_KERJASAMA_OPTIONS.map((item) => {
                     const checked = selectedJenisKerjasama.includes(item);
+                    const label = JENIS_KERJASAMA_LABELS[item] || item;
+                    const labelParts = label.split(' (');
+                    const mainLabel = labelParts[0];
+                    const subLabel = labelParts[1] ? ` (${labelParts[1]}` : '';
 
                     return (
                       <label
@@ -896,7 +949,11 @@ export default function InternalAjukanKerjasamaForm({
                           disabled={lockJenisKerjasama}
                           className="h-4 w-4 accent-[#173B82]"
                         />
-                        <span>{item}</span>
+                        <span>
+                          <span className="font-semibold">{item}</span>
+                          {subLabel && <span className="font-normal">{subLabel}</span>}
+                          {!subLabel && item !== 'Lainnya' && <span className="font-normal text-slate-500"> - {mainLabel}</span>}
+                        </span>
                       </label>
                     );
                   })}
@@ -1197,7 +1254,20 @@ export default function InternalAjukanKerjasamaForm({
             </div>
             <div>
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelTeleponKontak}</label>
-              <input value={formData.teleponKontak} onChange={(e) => handleChange('teleponKontak', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-[12px]" placeholder="+62 812 3457 6789" required />
+              <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100">
+                {countryPhoneCodeMap[formData.negara] && (
+                  <span className="flex shrink-0 items-center border-r border-slate-200 bg-slate-100 px-2.5 text-[11px] font-semibold text-slate-600">
+                    {countryPhoneCodeMap[formData.negara]}
+                  </span>
+                )}
+                <input value={formData.teleponKontak} onChange={(e) => handleChange('teleponKontak', e.target.value)} className="h-10 flex-1 bg-transparent px-3 text-[12px] outline-none" placeholder={formData.negara === 'Indonesia' ? '812 3457 6789' : 'Nomor telepon'} required />
+              </div>
+              {formData.negara === 'Indonesia' && (
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+                  <MessageCircle size={12} className="shrink-0" />
+                  Pastikan nomor ini aktif di WhatsApp agar mudah dihubungi
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -1299,6 +1369,31 @@ export default function InternalAjukanKerjasamaForm({
           )}
 
           <div className="space-y-3">
+            {existingFileAttachments.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold text-slate-600">File yang sudah diunggah:</p>
+                {existingFileAttachments.map((file, index) => (
+                  <div key={`existing-${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] text-slate-700">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Paperclip size={15} className="shrink-0 text-blue-500" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-800">{file.name}</p>
+                        <p className="text-[10px] text-slate-500">{file.size > 0 ? formatFileSize(file.size) : 'File tersimpan'}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExistingFile(index)}
+                      className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
+                      aria-label={`Hapus ${file.name}`}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <label
               className="block cursor-pointer rounded-xl border-2 border-dashed border-[#173B82]/30 bg-white p-5 transition hover:border-[#173B82] hover:bg-slate-50"
             >

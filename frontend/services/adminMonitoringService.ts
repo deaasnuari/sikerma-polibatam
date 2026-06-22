@@ -80,6 +80,7 @@ export function generateNoDokumen({
 // File ini dipakai agar data, tipe, dan helper bisnis tidak bercampur dengan komponen UI Next.js.
 
 import { apiRequest } from '@/lib/api';
+import { getCachedMasterRuangLingkup, getMasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
 
 export interface RenewalRecord {
@@ -445,9 +446,13 @@ export function getMonitoringData(): Kerjasama[] {
 
 export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
   try {
-    const response = await apiRequest<any>('/dokumen-kerjasama?per_page=2000');
+    const [response] = await Promise.all([
+      apiRequest<any>('/dokumen-kerjasama?per_page=2000'),
+      getCachedMasterRuangLingkup().length === 0 ? getMasterRuangLingkup({ aktif: true }).catch(() => []) : Promise.resolve([]),
+    ]);
     const items = response.data?.data || [];
-    
+    const rlLookup = getCachedMasterRuangLingkup();
+
     const mapped = items.map((row: any) => {
       const { status, sisaMasaBerlaku } = resolveStatusAndSisa(row.tanggal_berakhir);
       
@@ -474,7 +479,11 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
       }
       
       const ruangLingkup = Array.isArray(row.ruang_lingkup_ids)
-        ? (row.ruang_lingkup_ids as any[]).map(String).filter(Boolean)
+        ? (row.ruang_lingkup_ids as any[]).map((id) => {
+            const numId = Number(id);
+            const found = rlLookup.find((item) => item.id === numId);
+            return found ? found.nama_ruang_lingkup : String(id);
+          }).filter(Boolean)
         : [];
 
       return {
@@ -482,7 +491,7 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
         sourcePengajuanId: row.sumber_pengajuan_id || undefined,
         judul: row.judul_dokumen || undefined,
         namaMitra: namaMitra || '-',
-        noDokumen: row.nomor_dokumen || `DOK-${row.id}`,
+        noDokumen: row.nomor_dokumen || row.pengajuan?.nomor_pengajuan || `DOK-${row.id}`,
         jenis: (row.jenis_dokumen?.toUpperCase() === 'MOA' ? 'MoA' : row.jenis_dokumen?.toUpperCase() === 'IA' ? 'IA' : 'MoU'),
         status: status,
         tanggalMulai: formatDisplayDate(row.tanggal_mulai),

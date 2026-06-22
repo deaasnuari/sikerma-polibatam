@@ -17,6 +17,7 @@ import { fetchRekapDokumenFromApi } from '@/services/dokumenKerjasamaApiService'
 import { fetchPengajuanDataFromApi, type PengajuanItem, type PengajuanStatus } from '@/services/adminPengajuanService';
 
 import { getMasterUnitProdi } from '@/services/masterUnitProdiService';
+import { exportToExcel } from '@/lib/exportExcel';
 
 type ApprovalStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 type Jenis = 'MoU' | 'MoA' | 'IA';
@@ -101,6 +102,7 @@ export default function InternalRekapDataPage() {
   const [filterJurusan, setFilterJurusan] = useState('Semua Jurusan');
   const [filterJenis, setFilterJenis] = useState('Semua Jenis');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
 
   const [detailItem, setDetailItem] = useState<KerjasamaItem | null>(null);
@@ -182,7 +184,7 @@ export default function InternalRekapDataPage() {
   }
 
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
+    const filtered = data.filter((item) => {
       const keyword = search.toLowerCase().trim();
 
       const matchesSearch =
@@ -196,7 +198,8 @@ export default function InternalRekapDataPage() {
 
       return matchesSearch && matchesJurusan && matchesJenis && matchesStatus;
     });
-  }, [data, search, filterJurusan, filterJenis, filterStatus]);
+    return sortOrder === 'oldest' ? [...filtered].reverse() : filtered;
+  }, [data, search, filterJurusan, filterJenis, filterStatus, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const paginatedData = filteredData.slice(
@@ -205,33 +208,18 @@ export default function InternalRekapDataPage() {
   );
 
   function handleExport() {
-    const csvRows = [
-      ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'],
-      ...filteredData.map((item) => [
-        item.noDokumen,
-        item.namaMitra,
-        item.jenis,
-        item.unit,
-        item.tanggalMulai,
-        item.berlakuHingga,
-        item.status,
-      ]),
-    ];
-
-    const csvContent = csvRows.map((row) => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `rekap_kerjasama_${new Date().toISOString().split('T')[0]}.csv`;
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
+    const headers = ['No. Dokumen', 'Nama Mitra', 'Jenis', 'Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'];
+    const rows = filteredData.map((item) => [
+      item.noDokumen,
+      item.namaMitra,
+      item.jenis,
+      item.unit,
+      item.tanggalMulai,
+      item.berlakuHingga,
+      item.status,
+    ]);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    exportToExcel(headers, rows, `rekap-kerjasama-${dateStamp}.xlsx`, 'Rekap Kerjasama');
   }
 
   return (
@@ -314,6 +302,18 @@ export default function InternalRekapDataPage() {
                   {opt}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={sortOrder}
+              onChange={(e) => {
+                setSortOrder(e.target.value as 'newest' | 'oldest');
+                setCurrentPage(1);
+              }}
+              className="input-field px-3 py-2 text-[12px] text-gray-700"
+            >
+              <option value="newest">Terbaru ke Terlama</option>
+              <option value="oldest">Terlama ke Terbaru</option>
             </select>
           </div>
         </div>
