@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AdminNavbar from '@/components/admin/AdminNavbar';
 import AdminFooter from '@/components/admin/AdminFooter';
@@ -46,28 +47,33 @@ function MenuIcon() {
   );
 }
 
-/** SVG Pie Chart */
-function PieChart({ size, segments }: { size: number; segments: { value: number; color: string }[] }) {
+/** SVG Donut Chart */
+function DonutChart({ size, segments, centerLabel }: { size: number; segments: { value: number; color: string }[]; centerLabel?: string }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0);
   const cx = size / 2;
   const cy = size / 2;
-  const r = size / 2 - 2;
+  const r = size / 2 - 8;
+  const innerR = r * 0.55;
 
-  let startAngle = -Math.PI / 2; // start from top
+  let startAngle = -Math.PI / 2;
 
-  function describeArc(start: number, end: number) {
-    const x1 = cx + r * Math.cos(start);
-    const y1 = cy + r * Math.sin(start);
-    const x2 = cx + r * Math.cos(end);
-    const y2 = cy + r * Math.sin(end);
+  function describeArc(start: number, end: number, outer: number, inner: number) {
+    const x1 = cx + outer * Math.cos(start);
+    const y1 = cy + outer * Math.sin(start);
+    const x2 = cx + outer * Math.cos(end);
+    const y2 = cy + outer * Math.sin(end);
+    const x3 = cx + inner * Math.cos(end);
+    const y3 = cy + inner * Math.sin(end);
+    const x4 = cx + inner * Math.cos(start);
+    const y4 = cy + inner * Math.sin(start);
     const largeArc = end - start > Math.PI ? 1 : 0;
-    return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+    return `M ${x1} ${y1} A ${outer} ${outer} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${inner} ${inner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
   }
 
   const paths = segments.map((seg) => {
-    const angle = (seg.value / total) * 2 * Math.PI;
+    const angle = total > 0 ? (seg.value / total) * 2 * Math.PI : 0;
     const endAngle = startAngle + angle;
-    const d = describeArc(startAngle, endAngle);
+    const d = describeArc(startAngle, endAngle, r, innerR);
     startAngle = endAngle;
     return { d, color: seg.color };
   });
@@ -75,8 +81,14 @@ function PieChart({ size, segments }: { size: number; segments: { value: number;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {paths.map((p, i) => (
-        <path key={i} d={p.d} fill={p.color} stroke="white" strokeWidth="1.5" />
+        <path key={i} d={p.d} fill={p.color} stroke="white" strokeWidth="2" />
       ))}
+      {centerLabel && (
+        <>
+          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="22" fontWeight="bold" fill="#1e293b">{centerLabel}</text>
+          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#64748b">Total</text>
+        </>
+      )}
     </svg>
   );
 }
@@ -84,7 +96,9 @@ function PieChart({ size, segments }: { size: number; segments: { value: number;
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRow, setSelectedRow] = useState<KerjasamaRow | null>(null);
   const [search, setSearch] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [selectedWilayah, setSelectedWilayah] = useState('Semua Wilayah');
@@ -239,6 +253,38 @@ export default function Home() {
     setCurrentPage(next);
   };
 
+  const jenisDistribution = useMemo(() => {
+    const counts = { MoU: 0, MoA: 0, IA: 0 };
+    kerjasamaList.forEach((r) => {
+      if (r.jenis === 'MoU') counts.MoU++;
+      else if (r.jenis === 'MoA') counts.MoA++;
+      else if (r.jenis === 'IA') counts.IA++;
+    });
+    return counts;
+  }, [kerjasamaList]);
+
+  const topRuangLingkup = useMemo(() => {
+    const counts: Record<string, number> = {};
+    kerjasamaList.forEach((r) => {
+      if (!r.bidang || r.bidang === '-') return;
+      r.bidang.split(',').forEach((b) => {
+        const name = b.trim();
+        if (name && name !== '-') counts[name] = (counts[name] || 0) + 1;
+      });
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [kerjasamaList]);
+
+  const handleLihatDetail = () => {
+    try {
+      const raw = localStorage.getItem('user');
+      const token = raw ? (JSON.parse(raw) as { accessToken?: string }).accessToken : null;
+      router.push(token ? '/admin/rekap_data' : '/login');
+    } catch {
+      router.push('/login');
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <main className="bg-gradient-to-b from-slate-50 to-white font-sans text-slate-800">
@@ -391,46 +437,30 @@ export default function Home() {
       {/* ── SUMMARY CARDS ── */}
       <section className="relative -mt-6 px-6 pb-3 md:pb-4">
         <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-blue-50 p-2">
-                <DocEditIcon className="h-9 w-9" />
-              </div>
-              <div>
-                <p className="text-[11.5px] font-semibold text-slate-600">Total Kerjasama</p>
-                <p className="text-[20px] font-bold text-slate-900">{stats.total}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-cyan-50 p-2">
-                <DocIcon className="h-9 w-9" />
-              </div>
-              <div>
-                <p className="text-[11.5px] font-semibold text-slate-600">Kerjasama Dalam Negeri</p>
-                <p className="text-[20px] font-bold text-slate-900">{stats.dalam_negeri}</p>
+          {[
+            { label: 'Total Kerjasama', value: stats.total, sub: 'Seluruh dokumen aktif', color: '#173B82', bg: 'from-blue-600 to-blue-800', icon: <DocEditIcon className="h-9 w-9" /> },
+            { label: 'Dalam Negeri',    value: stats.dalam_negeri, sub: `${Math.round((stats.dalam_negeri / (stats.total || 1)) * 100)}% dari total`, color: '#0e7490', bg: 'from-cyan-600 to-cyan-800', icon: <DocIcon className="h-9 w-9" /> },
+            { label: 'Luar Negeri',     value: stats.luar_negeri,  sub: `${Math.round((stats.luar_negeri  / (stats.total || 1)) * 100)}% dari total`, color: '#b45309', bg: 'from-amber-500 to-amber-700', icon: <DocIcon className="h-9 w-9" /> },
+          ].map((card) => (
+            <div key={card.label} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className={`h-1 w-full bg-gradient-to-r ${card.bg}`} />
+              <div className="flex items-center gap-4 p-4">
+                <div className="rounded-xl p-2.5" style={{ backgroundColor: `${card.color}15` }}>
+                  <div style={{ color: card.color }}>{card.icon}</div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-slate-500">{card.label}</p>
+                  <p className="text-[22px] font-bold leading-tight" style={{ color: card.color }}>{card.value.toLocaleString('id-ID')}</p>
+                  <p className="text-[10px] text-slate-400">{card.sub}</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-amber-50 p-2">
-                <DocIcon className="h-9 w-9" />
-              </div>
-              <div>
-                <p className="text-[11.5px] font-semibold text-slate-600">Kerjasama Luar Negeri</p>
-                <p className="text-[20px] font-bold text-slate-900">{stats.luar_negeri}</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* ── STATISTIK KERJASAMA ── */}
-      <section className="px-4 pt-4 md:pt-4 pb-18 md:pb-12">
+      <section className="px-4 pt-4 pb-18 md:pb-12">
         <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
@@ -438,46 +468,112 @@ export default function Home() {
               <h2 className="text-[20px] font-bold text-slate-900">Gambaran umum kolaborasi Polibatam</h2>
             </div>
             <p className="max-w-2xl text-[11.5px] text-slate-500">
-              Ringkasan mitra dan dokumen kerja sama ditampilkan dalam visual yang lebih jelas agar mudah dipahami oleh pengunjung.
+              Ringkasan mitra dan dokumen kerja sama berdasarkan data terkini dari sistem.
             </p>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5">
-              <h3 className="text-[11.5px] font-bold text-slate-800">Jenis Mitra &amp; Wilayah</h3>
-              <div className="mt-3 flex flex-wrap gap-3 text-[10.5px] text-slate-600">
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#FFB6C1]" /> Instansi Dalam Negeri</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#ADD8E6]" /> Instansi Luar Negeri</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#F5F5DC]" /> Dudi Dalam Negeri</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#90EE90]" /> Dudi Luar Negeri</span>
-              </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {/* Card 1: Jenis Mitra & Wilayah */}
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-slate-50 p-4 md:p-5">
+              <h3 className="text-[12px] font-bold text-slate-800">Jenis Mitra &amp; Wilayah</h3>
               <div className="mt-4 flex items-center justify-center">
-                <PieChart
-                  size={260}
+                <DonutChart
+                  size={180}
+                  centerLabel={String(stats.total)}
                   segments={[
-                    { value: 292, color: '#FFB6C1' },
-                    { value: 24, color: '#ADD8E6' },
-                    { value: 154, color: '#F5F5DC' },
-                    { value: 7, color: '#90EE90' },
+                    { value: stats.instansi_nasional,     color: '#173B82' },
+                    { value: stats.instansi_internasional, color: '#3B82F6' },
+                    { value: stats.dudi_nasional,          color: '#93C5FD' },
+                    { value: stats.dudi_internasional,     color: '#BFDBFE' },
                   ]}
                 />
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: 'Instansi Dalam Negeri', value: stats.instansi_nasional,      color: '#173B82' },
+                  { label: 'Instansi Luar Negeri',  value: stats.instansi_internasional, color: '#3B82F6' },
+                  { label: 'DUDI Dalam Negeri',     value: stats.dudi_nasional,          color: '#93C5FD' },
+                  { label: 'DUDI Luar Negeri',      value: stats.dudi_internasional,     color: '#BFDBFE' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      {item.label}
+                    </span>
+                    <span className="font-semibold text-slate-800">{item.value.toLocaleString('id-ID')}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5">
-              <h3 className="text-[11.5px] font-bold text-slate-800">Komposisi Dokumen Kerjasama</h3>
-              <div className="mt-3 flex flex-wrap gap-3 text-[10.5px] text-slate-600">
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#ADD8E6]" /> MoU</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#F5F5DC]" /> MoA</span>
-              </div>
+            {/* Card 2: Komposisi Dokumen */}
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-50 to-slate-50 p-4 md:p-5">
+              <h3 className="text-[12px] font-bold text-slate-800">Komposisi Dokumen</h3>
               <div className="mt-4 flex items-center justify-center">
-                <PieChart
-                  size={260}
+                <DonutChart
+                  size={180}
+                  centerLabel={String(jenisDistribution.MoU + jenisDistribution.MoA + jenisDistribution.IA)}
                   segments={[
-                    { value: 263, color: '#ADD8E6' },
-                    { value: 215, color: '#F5F5DC' },
+                    { value: jenisDistribution.MoU, color: '#1D4ED8' },
+                    { value: jenisDistribution.MoA, color: '#7C3AED' },
+                    { value: jenisDistribution.IA,  color: '#A78BFA' },
                   ]}
                 />
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: 'MoU', value: jenisDistribution.MoU, color: '#1D4ED8' },
+                  { label: 'MoA', value: jenisDistribution.MoA, color: '#7C3AED' },
+                  { label: 'IA',  value: jenisDistribution.IA,  color: '#A78BFA' },
+                ].map((item) => {
+                  const total = jenisDistribution.MoU + jenisDistribution.MoA + jenisDistribution.IA;
+                  const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                  return (
+                    <div key={item.label}>
+                      <div className="mb-1 flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1.5 text-slate-600">
+                          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                          {item.label}
+                        </span>
+                        <span className="font-semibold text-slate-800">{item.value} <span className="font-normal text-slate-400">({pct}%)</span></span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: item.color }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Card 3: Top 5 Ruang Lingkup */}
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-cyan-50 to-slate-50 p-4 md:p-5">
+              <h3 className="text-[12px] font-bold text-slate-800">Top 5 Ruang Lingkup</h3>
+              <p className="mt-0.5 text-[10px] text-slate-400">Bidang paling sering diajukan</p>
+              <div className="mt-5 space-y-3">
+                {topRuangLingkup.length === 0 ? (
+                  <p className="text-center text-[11px] text-slate-400">Memuat data...</p>
+                ) : topRuangLingkup.map(([nama, jumlah], idx) => {
+                  const max = topRuangLingkup[0][1];
+                  const pct = max > 0 ? Math.round((jumlah / max) * 100) : 0;
+                  const colors = ['#173B82', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA'];
+                  return (
+                    <div key={nama}>
+                      <div className="mb-1 flex items-start justify-between gap-2 text-[10.5px]">
+                        <span className="flex items-center gap-1.5 leading-tight text-slate-700">
+                          <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: colors[idx] }}>
+                            {idx + 1}
+                          </span>
+                          {nama}
+                        </span>
+                        <span className="flex-shrink-0 font-semibold text-slate-800">{jumlah}</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colors[idx] }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -497,111 +593,149 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-3">
-            <span className="text-[11.5px] text-slate-600">Show</span>
-            <select
-              value={perPage}
-              onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
-            >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
+          <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100">
+                <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Cari mitra atau bidang..."
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                  className="w-44 bg-transparent text-[11.5px] text-slate-700 outline-none placeholder:text-slate-400"
+                />
+              </div>
 
-            <div className="flex-1" />
+              {/* Periode */}
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-600 shadow-sm">
+                <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <input
+                  type="month"
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="bg-transparent outline-none"
+                />
+              </div>
 
-            <span className="text-[11.5px] text-slate-600">Entries</span>
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-600">
-              <span>Periode</span>
-              <input
-                type="month"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="bg-transparent outline-none"
-              />
+              {/* Wilayah */}
+              <select
+                value={selectedWilayah}
+                onChange={(e) => { setSelectedWilayah(e.target.value); setCurrentPage(1); }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-700 shadow-sm outline-none focus:border-blue-400"
+              >
+                <option>Semua Wilayah</option>
+                <option>Dalam Negeri</option>
+                <option>Luar Negeri</option>
+              </select>
+
+              {/* Jenis */}
+              <select
+                value={selectedJenisDokumen}
+                onChange={(e) => { setSelectedJenisDokumen(e.target.value); setCurrentPage(1); }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-700 shadow-sm outline-none focus:border-blue-400"
+              >
+                <option>Semua Jenis</option>
+                <option>MoU</option>
+                <option>MoA</option>
+                <option>IA</option>
+              </select>
+
+              {/* Unit */}
+              <select
+                value={selectedUnit}
+                onChange={(e) => { setSelectedUnit(e.target.value); setCurrentPage(1); }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-700 shadow-sm outline-none focus:border-blue-400"
+              >
+                {unitOptions.map((unit) => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+
+              <div className="ml-auto flex items-center gap-2 text-[11.5px] text-slate-500">
+                <span>Tampilkan</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  className="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11.5px] shadow-sm outline-none"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>data</span>
+              </div>
             </div>
-            <select
-              value={selectedWilayah}
-              onChange={(e) => {
-                setSelectedWilayah(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
-            >
-              <option>Semua Wilayah</option>
-              <option>Dalam Negeri</option>
-              <option>Luar Negeri</option>
-            </select>
-            <select
-              value={selectedJenisDokumen}
-              onChange={(e) => {
-                setSelectedJenisDokumen(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
-            >
-              <option>Semua Jenis</option>
-              <option>MoU</option>
-              <option>MoA</option>
-              <option>IA</option>
-            </select>
-            <select
-              value={selectedUnit}
-              onChange={(e) => {
-                setSelectedUnit(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11.5px]"
-            >
-              {unitOptions.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] outline-none focus:border-blue-400 min-w-[150px]"
-            />
+
+            {(search || selectedWilayah !== 'Semua Wilayah' || selectedJenisDokumen !== 'Semua Jenis' || selectedUnit !== 'Semua Unit' || selectedPeriod) && (
+              <div className="mt-2 flex items-center gap-2 text-[11px]">
+                <span className="text-slate-400">Hasil:</span>
+                <span className="font-semibold text-[#173B82]">{filtered.length} dokumen</span>
+                <button
+                  onClick={() => { setSearch(''); setSelectedWilayah('Semua Wilayah'); setSelectedJenisDokumen('Semua Jenis'); setSelectedUnit('Semua Unit'); setSelectedPeriod(''); setCurrentPage(1); }}
+                  className="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-slate-600 hover:bg-slate-300"
+                >
+                  Reset filter
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
             <table className="w-full min-w-[900px] border-collapse text-[11.5px]">
               <thead>
-                <tr className="bg-slate-50 text-slate-700">
-                  <th className="w-10 px-4 py-3 text-left font-semibold">No</th>
-                  <th className="px-4 py-3 text-left font-semibold">Nama Mitra</th>
-                  <th className="px-4 py-3 text-left font-semibold">Bidang Kerjasama</th>
-                  <th className="px-4 py-3 text-left font-semibold">Jenis Dokumen</th>
-                  <th className="px-4 py-3 text-left font-semibold">Unit Pengaju</th>
-                  <th className="w-16 px-4 py-3 text-left font-semibold">Detail</th>
+                <tr className="bg-[#173B82] text-white">
+                  <th className="w-10 px-4 py-3 text-left text-[11px] font-semibold tracking-wide opacity-80">No</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-wide">Nama Mitra</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-wide">Bidang Kerjasama</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-wide">Jenis</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-wide">Unit Pengaju</th>
+                  <th className="w-16 px-4 py-3 text-center text-[11px] font-semibold tracking-wide">Detail</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {isLoadingTable ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-[11.5px] text-slate-500">Memuat data kerjasama...</td>
+                    <td colSpan={6} className="px-4 py-12 text-center text-[11.5px] text-slate-400">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#173B82] border-t-transparent" />
+                        Memuat data kerjasama...
+                      </div>
+                    </td>
                   </tr>
                 ) : pagedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-[11.5px] text-slate-500">Tidak ada data yang sesuai.</td>
+                    <td colSpan={6} className="px-4 py-12 text-center text-[11.5px] text-slate-400">
+                      <div className="flex flex-col items-center gap-1">
+                        <svg className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Tidak ada data yang sesuai
+                      </div>
+                    </td>
                   </tr>
                 ) : pagedItems.map((row, i) => (
-                  <tr key={row.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'}>
-                    <td className="px-4 py-3 align-top text-slate-600">{startIndex + i + 1}.</td>
-                    <td className="px-4 py-3 align-top text-slate-700">{row.nama}</td>
-                    <td className="px-4 py-3 align-top text-slate-600">{row.bidang}</td>
-                    <td className="px-4 py-3 align-top text-slate-600">{row.jenis}</td>
-                    <td className="px-4 py-3 align-top text-slate-600">{row.unit}</td>
-                    <td className="px-4 py-3 align-top">
-                      <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#173B82] transition-colors hover:bg-[#091222]">
+                  <tr key={row.id} className="group cursor-default bg-white transition-colors hover:bg-blue-50/60">
+                    <td className="px-4 py-3 align-middle text-[11px] text-slate-400">{startIndex + i + 1}</td>
+                    <td className="px-4 py-3 align-middle font-medium text-slate-800">{row.nama}</td>
+                    <td className="px-4 py-3 align-middle text-slate-500">{row.bidang}</td>
+                    <td className="px-4 py-3 align-middle">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${
+                        row.jenis === 'MoU' ? 'bg-blue-100 text-blue-700' :
+                        row.jenis === 'MoA' ? 'bg-purple-100 text-purple-700' :
+                        'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {row.jenis}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 align-middle text-slate-500">{row.unit}</td>
+                    <td className="px-4 py-3 align-middle text-center">
+                      <button
+                        onClick={() => setSelectedRow(row)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#173B82]/10 text-[#173B82] transition-colors hover:bg-[#173B82] hover:text-white group-hover:bg-[#173B82]/20"
+                      >
                         <MenuIcon />
                       </button>
                     </td>
@@ -613,16 +747,16 @@ export default function Home() {
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[11.5px] text-slate-500">
-              Showing {filtered.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filtered.length} entries
+              Menampilkan <span className="font-semibold text-slate-700">{filtered.length === 0 ? 0 : startIndex + 1}–{endIndex}</span> dari <span className="font-semibold text-slate-700">{filtered.length}</span> dokumen
             </p>
 
-            <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => changePage(-1)}
                 disabled={currentPage === 1}
-                className="border-r border-slate-200 px-3 py-1.5 text-[11.5px] text-slate-500 disabled:cursor-default disabled:bg-slate-100"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-600 transition hover:bg-slate-50 disabled:cursor-default disabled:opacity-40"
               >
-                Previous
+                ‹ Prev
               </button>
 
               {(() => {
@@ -633,8 +767,10 @@ export default function Home() {
                   <button
                     key={n}
                     onClick={() => setCurrentPage(n)}
-                    className={`border-r border-slate-200 px-3 py-1.5 text-[11.5px] font-medium ${
-                      currentPage === n ? 'bg-[#173B82] text-white' : 'bg-white text-[#173B82] hover:bg-blue-50'
+                    className={`rounded-lg border px-3 py-1.5 text-[11.5px] font-medium transition ${
+                      currentPage === n
+                        ? 'border-[#173B82] bg-[#173B82] text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-blue-50 hover:border-blue-200'
                     }`}
                   >
                     {n}
@@ -661,9 +797,9 @@ export default function Home() {
               <button
                 onClick={() => changePage(1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 text-[11.5px] text-[#173B82] hover:bg-blue-50 disabled:cursor-default disabled:bg-slate-100 disabled:text-slate-400"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] text-slate-600 transition hover:bg-slate-50 disabled:cursor-default disabled:opacity-40"
               >
-                Next
+                Next ›
               </button>
             </div>
           </div>
@@ -673,6 +809,68 @@ export default function Home() {
       <div id="kontak" className="px-4 py-8 md:py-12">
         <AdminFooter />
       </div>
+
+      {selectedRow && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+          onClick={() => setSelectedRow(null)}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="relative bg-gradient-to-r from-[#0f2557] to-[#173B82] px-6 py-5">
+              <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white/5 blur-2xl" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-300">Dokumen Kerjasama</p>
+                  <h2 className="mt-1 text-[15px] font-bold leading-snug text-white">{selectedRow.nama}</h2>
+                </div>
+                <button onClick={() => setSelectedRow(null)} className="ml-3 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${
+                  selectedRow.jenis === 'MoU' ? 'bg-blue-200/30 text-blue-100' :
+                  selectedRow.jenis === 'MoA' ? 'bg-purple-200/30 text-purple-100' :
+                  'bg-emerald-200/30 text-emerald-100'
+                }`}>{selectedRow.jenis}</span>
+                <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10.5px] text-blue-100">{selectedRow.wilayah}</span>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="divide-y divide-slate-100 px-6">
+              <div className="py-4">
+                <p className="text-[10.5px] font-medium uppercase tracking-wider text-slate-400">Bidang Kerja Sama</p>
+                <p className="mt-1 text-[13px] text-slate-700">{selectedRow.bidang}</p>
+              </div>
+              <div className="py-4">
+                <p className="text-[10.5px] font-medium uppercase tracking-wider text-slate-400">Unit Pengaju</p>
+                <p className="mt-1 text-[13px] text-slate-700">{selectedRow.unit}</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 bg-slate-50 px-6 py-4">
+              <button
+                onClick={() => setSelectedRow(null)}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-[12px] font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                Tutup
+              </button>
+              <button
+                onClick={handleLihatDetail}
+                className="flex-1 rounded-xl bg-[#173B82] py-2.5 text-[12px] font-semibold text-white transition hover:bg-[#0f2557]"
+              >
+                Lihat Detail Lengkap →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
