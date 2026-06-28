@@ -17,13 +17,12 @@
 
 ## 🌐 Link Penting
 
-* 🔗 Repository:https://github.com/deaasnuari/sikerma-polibatam
+* 🔗 Repository: https://github.com/deaasnuari/sikerma-polibatam
 * 📄 Laporan: https://docs.google.com/document/d/1QS-k2jZFqldICti1kPClhsECcS3cQVT66ZkDTYDFylI/edit?usp=sharing
-* 📄 LINK DOKUMEN PENDUKUNG: https://drive.google.com/drive/folders/1dFuGZH6FeIqrPVPVeCMZq0mXI50oAI_n?usp=sharing
-* 🎥 LINK YOUTUBE: https://youtu.be/B-XkPpAVX58?si=qERjljIDkDyH-j8F
-* 🎨 LINK FIGMA: https://www.figma.com/design/bY44yx8V1jxzrcXmjJ40kS/SIKERMA?node-id=0-1&t=4wge3MLy3dB70Eo5-1
-* 🎨 LINK PROTOTIPE: https://www.figma.com/proto/bY44yx8V1jxzrcXmjJ40kS/SIKERMA?node-id=0-1&t=4wge3MLy3dB70Eo5-1
-
+* 📄 Dokumen Pendukung: https://drive.google.com/drive/folders/1dFuGZH6FeIqrPVPVeCMZq0mXI50oAI_n?usp=sharing
+* 🎥 YouTube: https://youtu.be/B-XkPpAVX58?si=qERjljIDkDyH-j8F
+* 🎨 Figma: https://www.figma.com/design/bY44yx8V1jxzrcXmjJ40kS/SIKERMA?node-id=0-1&t=4wge3MLy3dB70Eo5-1
+* 🎨 Prototipe: https://www.figma.com/proto/bY44yx8V1jxzrcXmjJ40kS/SIKERMA?node-id=0-1&t=4wge3MLy3dB70Eo5-1
 
 ---
 
@@ -125,26 +124,26 @@ Menggunakan:
 
 1. Clone repository
 
-```bash id="a1"
+```bash
 git clone https://github.com/deaasnuari/sikerma-polibatam.git
 ```
 
 2. Masuk ke folder project
 
-```bash id="a2"
+```bash
 cd sikerma-polibatam
 ```
 
 3. Install dependency
 
-```bash id="a3"
+```bash
 composer install
 npm install
 ```
 
 4. Copy file environment
 
-```bash id="a4"
+```bash
 cp .env.example .env
 ```
 
@@ -152,20 +151,55 @@ cp .env.example .env
 
 6. Generate key
 
-```bash id="a5"
+```bash
 php artisan key:generate
 ```
 
 7. Migrasi database
 
-```bash id="a6"
+```bash
 php artisan migrate
 ```
 
 8. Jalankan server
 
-```bash id="a7"
+```bash
 php artisan serve
+```
+
+---
+
+## 🧪 Pengujian
+
+Pengujian dilakukan secara menyeluruh mulai 15 Juni 2026 hingga 27 Juni 2026, mencakup 5 jenis pengujian:
+
+| Jenis Pengujian | Tools | Hasil |
+|---|---|---|
+| System Testing (Black Box) | Manual — Excel Test Management | 114 test case, 99,1% pass |
+| Unit & Integration Testing | PHPUnit (Laravel) | 218 tests passed, 0 failed |
+| User Acceptance Testing (UAT) | Manual bersama klien | 114 test case, 100% pass |
+| Performance Testing | Apache JMeter | Sistem mampu menangani beban pengguna |
+| Usability Testing | SUS (System Usability Scale) | Skor 72,65 — Grade B (Good, Acceptable) |
+
+### 📁 Hasil Test (Unit & Integration)
+
+Hasil pengujian otomatis tersimpan di:
+backend/storage/test-results/
+
+├── junit.xml       ← format standar CI/CD (63 KB)
+
+└── report.html     ← laporan HTML, buka di browser (18 KB)
+Untuk menjalankan ulang pengujian:
+
+```bash
+cd backend
+php artisan test
+```
+
+Atau dengan output ke file:
+
+```bash
+php artisan test --log-junit storage/test-results/junit.xml
 ```
 
 ---
@@ -181,22 +215,9 @@ SIKERMA 2.0 berhasil:
 
 ---
 
-## 🧪 Pengujian
-
-Pengujian dilakukan menggunakan:
-
-* Functional Testing
-* Blackbox Testing
-
-Hasil menunjukkan sistem berjalan sesuai dengan kebutuhan pengguna.
-
----
-
 ## 📝 Kesimpulan
 
-SIKERMA 2.0 mampu meningkatkan efisiensi pengelolaan kerja sama di Politeknik Negeri Batam dengan sistem yang lebih terstruktur, transparan, dan terintegrasi.
-
----
+SIKERMA 2.0 mampu meningkatkan efisiensi pengelolaan kerja sama di Politeknik Negeri Batam dengan sistem yang lebih terstruktur, transparan, dan terintegrasi. Berdasarkan hasil pengujian, sistem dinyatakan layak untuk digunakan.
 
 ---
 
