@@ -9,6 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip seluruh migrasi data ini jika pengajuan_v2 belum ada (environment testing / fresh install)
+        if (! Schema::hasTable('pengajuan_v2') || ! Schema::hasTable('pengajuan_log')) {
+            return;
+        }
+
         if (! Schema::hasTable('pengajuan_log_legacy_archive')) {
             Schema::create('pengajuan_log_legacy_archive', function (Blueprint $table) {
                 $table->unsignedBigInteger('original_log_id')->primary();
@@ -56,9 +61,8 @@ return new class extends Migration
         SQL);
 
         DB::statement(<<<'SQL'
-            DELETE FROM pengajuan_log l
-            USING pengajuan_log_legacy_archive a
-            WHERE a.original_log_id = l.id
+            DELETE FROM pengajuan_log
+            WHERE id IN (SELECT original_log_id FROM pengajuan_log_legacy_archive)
         SQL);
 
         Schema::table('pengajuan_log', function (Blueprint $table) {

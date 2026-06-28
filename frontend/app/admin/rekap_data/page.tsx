@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip, RefreshCw } from 'lucide-react';
+import { Activity, CalendarDays, ChevronLeft, ChevronRight, Filter, Pencil, Plus, Search, Trash2, Upload, Eye, Building2, FileText, Hash, Phone, User, CheckCircle2, Clock, XCircle, Download, Paperclip, RefreshCw, CheckSquare, Square } from 'lucide-react';
 import TambahDokumenModal from './TambahDokumenModal';
 import {
   addRekapDokumen,
@@ -38,6 +38,8 @@ export default function RekapDataPage() {
   const [detailItem, setDetailItem] = useState<RekapDokumen | null>(null);
   const [editingItem, setEditingItem] = useState<RekapDokumen | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<RekapDokumen | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
   const [masterUnitOptions, setMasterUnitOptions] = useState<string[]>([]);
   const [renewalHistory, setRenewalHistory] = useState<RenewalRequestItem[]>([]);
@@ -185,6 +187,46 @@ export default function RekapDataPage() {
     const dateStamp = new Date().toISOString().slice(0, 10);
     exportToExcel(headers, rows, `rekap-data-${dateStamp}.xlsx`, 'Rekap Data');
   };
+
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const validIds = filteredRows.map((r) => r.id).filter((id): id is number => typeof id === 'number');
+    if (selectedIds.size === validIds.length && validIds.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(validIds));
+    }
+  }
+
+  async function confirmBulkDelete() {
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(ids.map((id) => deleteDokumenKerjasamaById(id)));
+    } catch {
+      // lanjut hapus lokal meski sebagian API gagal
+    }
+    for (const row of filteredRows) {
+      if (typeof row.id === 'number' && ids.includes(row.id)) {
+        deleteRekapDokumen(row.noDokumen);
+      }
+    }
+    setSelectedIds(new Set());
+    setShowBulkDeleteConfirm(false);
+    try {
+      const rows = await fetchRekapDokumenFromApi({ forceRefresh: true });
+      setRekapData(rows);
+    } catch {
+      setRekapData((prev) => prev.filter((r) => typeof r.id !== 'number' || !ids.includes(r.id)));
+    }
+    setFeedbackModal({ title: 'Berhasil Dihapus', message: `${ids.length} dokumen berhasil dihapus.` });
+  }
 
   function handleDelete(item: RekapDokumen) {
     setDeleteCandidate(item);
@@ -429,14 +471,26 @@ export default function RekapDataPage() {
               />
             </label>
 
-            <button
-              type="button"
-              onClick={handleExportExcel}
-              className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-[12px] font-semibold"
-            >
-              <Upload size={14} />
-              Export Excel
-            </button>
+            <div className="flex items-center gap-2">
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-[12px] font-semibold text-white hover:bg-red-700"
+                >
+                  <Trash2 size={14} />
+                  Hapus ({selectedIds.size})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-[12px] font-semibold"
+              >
+                <Upload size={14} />
+                Export Excel
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -446,6 +500,13 @@ export default function RekapDataPage() {
           <table className="min-w-[980px] w-full border-collapse">
             <thead>
               <tr className="table-head border-b border-gray-200 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-700">
+                <th className="px-4 py-3">
+                  <button type="button" onClick={toggleSelectAll} className="text-gray-500 hover:text-[#1E376C]">
+                    {selectedIds.size > 0 && selectedIds.size === filteredRows.filter((r) => typeof r.id === 'number').length
+                      ? <CheckSquare size={16} className="text-[#1E376C]" />
+                      : <Square size={16} />}
+                  </button>
+                </th>
                 <th className="px-4 py-3">No.Dokumen</th>
                 <th className="px-4 py-3">Nama Mitra</th>
                 <th className="px-4 py-3">Jenis</th>
@@ -464,11 +525,20 @@ export default function RekapDataPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, index) => (
+                filteredRows.map((row, index) => {
+                  const isSelected = typeof row.id === 'number' && selectedIds.has(row.id);
+                  return (
                   <tr
                     key={`${row.noDokumen}-${row.namaMitra}-${row.tanggalMulai}-${index}`}
-                    className="border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50/60"
+                    className={`border-b border-gray-100 text-[12px] text-gray-700 transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50/60'}`}
                   >
+                    <td className="px-4 py-3">
+                      {typeof row.id === 'number' && (
+                        <button type="button" onClick={() => toggleSelect(row.id as number)} className="text-gray-400 hover:text-[#1E376C]">
+                          {isSelected ? <CheckSquare size={16} className="text-[#1E376C]" /> : <Square size={16} />}
+                        </button>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-[10px] text-gray-600">{row.noDokumen}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{row.namaMitra}</td>
                     <td className="px-4 py-3">
@@ -509,7 +579,8 @@ export default function RekapDataPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -847,6 +918,21 @@ export default function RekapDataPage() {
           }
         }}
       />
+
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-[15px] font-bold text-gray-900">Hapus {selectedIds.size} Dokumen</h3>
+            <p className="mt-2 text-[12px] text-gray-600">
+              Yakin ingin menghapus <span className="font-semibold">{selectedIds.size} dokumen</span> yang dipilih? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowBulkDeleteConfirm(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-[12px] font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
+              <button type="button" onClick={confirmBulkDelete} className="rounded-lg bg-red-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-red-700">Ya, Hapus Semua</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteCandidate && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">

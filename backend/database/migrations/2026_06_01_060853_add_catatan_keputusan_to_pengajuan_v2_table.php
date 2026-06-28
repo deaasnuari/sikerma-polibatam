@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pengajuan_v2', function (Blueprint $table) {
-            $table->text('catatan')->nullable()->after('status_pengajuan');
-            $table->string('keputusan')->nullable()->after('catatan');
+            if (! Schema::hasColumn('pengajuan_v2', 'catatan')) {
+                $table->text('catatan')->nullable()->after('status_pengajuan');
+            }
+            if (! Schema::hasColumn('pengajuan_v2', 'keputusan')) {
+                $table->string('keputusan')->nullable()->after('catatan');
+            }
         });
     }
 

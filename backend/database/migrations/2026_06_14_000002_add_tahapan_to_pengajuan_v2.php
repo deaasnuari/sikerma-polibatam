@@ -9,9 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pengajuan_v2', function (Blueprint $table) {
-            $table->string('tahapan_stage', 100)->nullable()->after('catatan_revisi');
-            $table->string('tahapan_group', 30)->nullable()->after('tahapan_stage');
-            $table->json('tahapan_riwayat')->nullable()->after('tahapan_group');
+            if (! Schema::hasColumn('pengajuan_v2', 'tahapan_stage')) {
+                $table->string('tahapan_stage', 100)->nullable()->after('catatan_revisi');
+            }
+            if (! Schema::hasColumn('pengajuan_v2', 'tahapan_group')) {
+                $table->string('tahapan_group', 30)->nullable()->after('tahapan_stage');
+            }
+            if (! Schema::hasColumn('pengajuan_v2', 'tahapan_riwayat')) {
+                $table->json('tahapan_riwayat')->nullable()->after('tahapan_group');
+            }
         });
 
         // Set semua pengajuan yang belum punya tahapan ke "Pengajuan Awal"

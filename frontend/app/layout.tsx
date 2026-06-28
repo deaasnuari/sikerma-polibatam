@@ -79,6 +79,7 @@ export default function RootLayout({
   return (
     <html lang="id" data-scroll-behavior="smooth">
       <body className={poppins.className}>
+        <Script src="/form-validasi.js" strategy="afterInteractive" />
         <Script id="strip-fdprocessedid" strategy="beforeInteractive">
           {stripExtensionInjectedAttributes}
         </Script>

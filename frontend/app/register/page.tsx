@@ -304,6 +304,8 @@ export default function RegisterPage() {
                         onChange={handleChange}
                         placeholder="Masukkan username"
                         required
+                        pattern="[a-zA-Z0-9_\-]+"
+                        title="Username hanya boleh berisi huruf, angka, tanda hubung (-), dan garis bawah (_)."
                         className="input-field h-11 w-full rounded-xl pl-10 pr-4 text-sm"
                       />
                     </div>

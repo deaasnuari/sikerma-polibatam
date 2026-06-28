@@ -82,6 +82,13 @@ export function generateNoDokumen({
 import { apiRequest } from '@/lib/api';
 import { getCachedMasterRuangLingkup, getMasterRuangLingkup } from '@/services/masterRuangLingkupService';
 
+const MONITORING_CACHE_TTL_MS = 60 * 1000;
+let monitoringCache: { data: Kerjasama[]; expiresAt: number } | null = null;
+let monitoringInFlight: Promise<Kerjasama[]> | null = null;
+
+export function invalidateMonitoringCache(): void {
+  monitoringCache = null;
+}
 
 export interface RenewalRecord {
   id: string;
@@ -444,8 +451,19 @@ export function getMonitoringData(): Kerjasama[] {
   }
 }
 
-export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
-  try {
+export async function fetchMonitoringDataFromApi(options?: { forceRefresh?: boolean }): Promise<Kerjasama[]> {
+  const now = Date.now();
+
+  if (!options?.forceRefresh && monitoringCache && monitoringCache.expiresAt > now) {
+    return monitoringCache.data;
+  }
+
+  if (monitoringInFlight) {
+    return monitoringInFlight;
+  }
+
+  monitoringInFlight = (async () => {
+    try {
     const [response] = await Promise.all([
       apiRequest<any>('/dokumen-kerjasama?per_page=2000'),
       getCachedMasterRuangLingkup().length === 0 ? getMasterRuangLingkup({ aktif: true }).catch(() => []) : Promise.resolve([]),
@@ -506,11 +524,18 @@ export async function fetchMonitoringDataFromApi(): Promise<Kerjasama[]> {
     if (canUseStorage()) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
     }
+
+    monitoringCache = { data: mapped, expiresAt: Date.now() + MONITORING_CACHE_TTL_MS };
     return mapped;
   } catch (error) {
     console.error('Failed to fetch monitoring data:', error);
     return getMonitoringData();
+  } finally {
+    monitoringInFlight = null;
   }
+  })();
+
+  return monitoringInFlight;
 }
 
 // Ambil riwayat notifikasi awal dan clone agar state React aman diubah.

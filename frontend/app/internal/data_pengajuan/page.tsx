@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
+  CheckSquare,
   Clock3,
   Eye,
   FileText,
@@ -13,6 +14,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Square,
   Trash2,
   X,
   XCircle,
@@ -86,7 +88,12 @@ const statusConfig: Partial<Record<PengajuanStatus, { className: string; icon: R
 
 const reviewCopy: Record<PengajuanStatus, string> = {
   Menunggu: 'Pengajuan sudah masuk dan sedang menunggu review dari admin.',
+  'Menunggu Review': 'Pengajuan sedang menunggu review lebih lanjut dari admin.',
   Diproses: 'Admin sedang memeriksa detail pengajuan kerja sama ini.',
+  Revisi: 'Pengajuan perlu diperbaiki. Silakan cek catatan revisi dari admin.',
+  'Disetujui Internal': 'Pengajuan sudah disetujui secara internal dan menunggu konfirmasi mitra.',
+  'Disetujui Mitra': 'Mitra sudah menyetujui pengajuan ini dan menunggu pengesahan final.',
+  'Final Approved': 'Pengajuan telah mendapat persetujuan final dari semua pihak.',
   Disetujui: 'Pengajuan sudah disetujui admin dan siap ditindaklanjuti.',
   Ditolak: 'Pengajuan belum disetujui admin. Silakan cek catatan review.',
 };
@@ -112,6 +119,8 @@ export default function InternalDataPengajuanPage() {
   const [reviewItem, setReviewItem] = useState<PengajuanItem | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PengajuanItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -271,6 +280,39 @@ export default function InternalDataPengajuanPage() {
     }
   }
 
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filteredItems.length && filteredItems.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredItems.map((i) => i.id)));
+    }
+  }
+
+  async function confirmBulkDelete() {
+    const ids = Array.from(selectedIds);
+    try {
+      let remaining = getPengajuanData();
+      for (const id of ids) {
+        remaining = deletePengajuanItem(id);
+      }
+      setPengajuanData(remaining.filter((i) => i.kategoriPengajuan === 'Internal'));
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      setInfoModalMessage(`${ids.length} pengajuan berhasil dihapus.`);
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Gagal menghapus pengajuan.';
+      setInfoModalMessage(message);
+    }
+  }
+
   if (isAjukanView) {
     return (
       <div className="space-y-4">
@@ -398,6 +440,39 @@ export default function InternalDataPengajuanPage() {
         </div>
       </div>
 
+      {filteredItems.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            className="inline-flex items-center gap-2 text-[12px] font-medium text-slate-700 hover:text-[#173B82]"
+          >
+            {selectedIds.size === filteredItems.length ? (
+              <CheckSquare size={16} className="text-[#173B82]" />
+            ) : (
+              <Square size={16} />
+            )}
+            {selectedIds.size === filteredItems.length && filteredItems.length > 0
+              ? 'Batal Pilih Semua'
+              : 'Pilih Semua'}
+          </button>
+
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-[12px] text-slate-500">{selectedIds.size} dipilih</span>
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-red-700"
+              >
+                <Trash2 size={13} />
+                Hapus ({selectedIds.size})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
         {filteredItems.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 shadow-sm">
@@ -406,17 +481,34 @@ export default function InternalDataPengajuanPage() {
         ) : (
           filteredItems.map((item) => {
             const sc = statusConfig[item.statusPengajuan] || statusConfig['Menunggu'];
+            const isSelected = selectedIds.has(item.id);
 
             return (
-              <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div
+                key={item.id}
+                className={`rounded-2xl border bg-white p-5 shadow-sm transition-colors ${isSelected ? 'border-[#173B82] ring-1 ring-[#173B82]' : 'border-slate-200'}`}
+              >
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2">
-                    <div>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(item.id)}
+                        className="mt-0.5 shrink-0 text-slate-400 hover:text-[#173B82]"
+                      >
+                        {isSelected ? (
+                          <CheckSquare size={18} className="text-[#173B82]" />
+                        ) : (
+                          <Square size={18} />
+                        )}
+                      </button>
+                      <div>
                       <p className="text-[10px] text-slate-500 mb-0.5">Judul Pengajuan:</p>
                       <h3 className="text-[15px] font-bold text-slate-900">{item.judulPengajuan}</h3>
                       <p className="text-[10px] text-slate-500">
                         Pengusul: {item.namaPengusul} • {item.diajukanPada}
                       </p>
+                      </div>
                     </div>
 
                     <div className="grid gap-3 text-[12px] text-slate-700 sm:grid-cols-3">
@@ -550,6 +642,26 @@ export default function InternalDataPengajuanPage() {
             <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
               <button type="button" onClick={() => setEditForm(null)} className="h-9 rounded-lg bg-slate-100 px-4 text-[12px] font-semibold text-slate-700 hover:bg-slate-200">Batal</button>
               <button type="button" onClick={saveEdit} className="h-9 rounded-lg bg-[#173B82] px-4 text-[12px] font-semibold text-white hover:bg-[#2A4A8F]">Simpan Perubahan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <h3 className="text-[15px] font-bold text-slate-900">Hapus {selectedIds.size} Pengajuan</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-[12px] text-slate-700">
+                Yakin ingin menghapus <span className="font-semibold">{selectedIds.size} pengajuan</span> yang dipilih? Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+              <button type="button" onClick={() => setShowBulkDeleteConfirm(false)} className="h-9 rounded-lg bg-slate-100 px-4 text-[12px] font-semibold text-slate-700 hover:bg-slate-200">Batal</button>
+              <button type="button" onClick={confirmBulkDelete} className="h-9 rounded-lg bg-red-600 px-4 text-[12px] font-semibold text-white hover:bg-red-700">Ya, Hapus Semua</button>
             </div>
           </div>
         </div>
