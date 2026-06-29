@@ -258,26 +258,18 @@ function LoginPageContent() {
                 </div>
               )}
 
+
               {accountDeleted && (
                 <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-4">
                   <div className="flex items-start gap-2">
                     <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
                     <div>
-                      <p className="text-sm font-semibold text-red-700">Akun tidak dapat diakses</p>
+                      <p className="text-sm font-semibold text-red-700">Akun Anda telah dihapus</p>
                       <p className="mt-0.5 text-xs text-red-600">
-                        Akun mitra dengan email ini tidak ditemukan. Kemungkinan akun telah dihapus oleh admin.
-                        Silakan buat akun baru untuk melanjutkan.
+                        Akun Anda telah dihapus oleh admin. Silakan hubungi administrator jika ini merupakan kesalahan.
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/register')}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#173B82] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e4db7]"
-                  >
-                    <UserPlus size={15} />
-                    Buat Akun Baru
-                  </button>
                 </div>
               )}
 
@@ -370,16 +362,7 @@ function LoginPageContent() {
                   {isLoading ? 'Memproses...' : 'Masuk'}
                 </button>
 
-                <div className="flex items-center justify-between pt-1 text-xs text-slate-600">
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-[#173B82] focus:ring-[#173B82]"
-                    />
-                    Ingat Saya
-                  </label>
+                <div className="flex items-center justify-end pt-1 text-xs text-slate-600">
                   <button
                     type="button"
                     onClick={openForgotPassword}

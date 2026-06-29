@@ -55,13 +55,8 @@ export default function AdminFooter() {
           <div className="h-px bg-slate-700/60 my-[0.27rem]"></div>
 
           {/* Bottom */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-[0.18rem] text-[9.5px] text-slate-400">
+          <div className="flex justify-center items-center text-[9.5px] text-slate-400">
             <p>2026 SIKERMA Polibatam</p>
-            <div className="flex gap-[0.36rem]">
-              <a href="#" className="hover:text-white transition-colors">Privasi</a>
-              <a href="#" className="hover:text-white transition-colors">Syarat</a>
-              <a href="#" className="hover:text-white transition-colors">Cookie</a>
-            </div>
           </div>
         </div>
       </div>

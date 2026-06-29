@@ -104,6 +104,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     : await response.text();
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+      window.location.replace('/login?reason=deleted');
+      throw new Error('Unauthenticated.');
+    }
+
     const validationMessage =
       typeof body === 'object' && body !== null && 'errors' in body && body.errors
         ? Object.values(body.errors as Record<string, string[]>)
