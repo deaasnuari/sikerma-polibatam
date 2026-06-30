@@ -11,6 +11,7 @@ class MasterMitra extends Model
     protected $fillable = [
         'nama_mitra',
         'kategori_mitra',
+        'tingkat_perusahaan',
         'negara',
         'website',
         'alamat',

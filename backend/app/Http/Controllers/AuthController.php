@@ -49,7 +49,8 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:30'],
             'position' => ['required', 'string', 'max:100'],
-            'account_type' => ['required', 'string', 'max:100'],
+            'account_type' => ['required', 'string', 'max:150'],
+            'tingkat_perusahaan' => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],
             'role' => ['nullable', 'string', Rule::in(['external'])],
             'password' => ['required', 'string', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
         ]);
@@ -83,6 +84,7 @@ class AuthController extends Controller
                 ['nama_mitra' => $validated['institution_name']],
                 [
                     'kategori_mitra' => $validated['account_type'],
+                    'tingkat_perusahaan' => $validated['tingkat_perusahaan'] ?? null,
                     'negara' => $validated['negara'],
                     'website' => null,
                     'alamat' => null,

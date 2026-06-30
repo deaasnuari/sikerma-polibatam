@@ -100,9 +100,21 @@ const defaultNegaraOptions = [
   'Palestina',
 ];
 
+const JENIS_MITRA_OPTIONS = [
+  'Pemerintahan',
+  'Perguruan Tinggi',
+  'Swasta/Dunia Usaha dan Dunia Industri (DUDI)',
+  'Sekolah/Institusi Pendidikan Lain',
+  'Organisasi Non-Profit / LSM',
+  'Lainnya',
+] as const;
+
+const TINGKAT_PERUSAHAAN_OPTIONS = ['Lokal', 'Nasional', 'Internasional', 'Multinasional'] as const;
+
 const initialForm = {
   namaMitra: '',
   jenisMitra: '',
+  tingkatPerusahaan: '',
   teleponMitra: '',
   emailMitra: '',
   alamatMitra: '',
@@ -237,11 +249,11 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   labelEmailMitra: 'Email Mitra',
   labelAlamatMitra: 'Alamat Lengkap',
   labelJenisKerjasama: 'Jenis Kerjasama',
-  labelDari: 'Dari',
+  labelDari: 'Tujuan Kerja Sama',
   labelTanggalMulai: 'Tanggal Mulai',
   labelTanggalBerakhir: 'Tanggal Berakhir',
   labelJudulKerjasama: 'Judul Kerjasama',
-  labelDeskripsi: 'Deskripsi',
+  labelDeskripsi: 'Manfaat Kerja Sama',
   labelRuangLingkup: 'Ruang Lingkup',
   labelNamaKontak: 'Nama Lengkap',
   labelJabatanKontak: 'Jabatan',
@@ -740,6 +752,8 @@ export default function InternalAjukanKerjasamaForm({
           judulPengajuan: formData.judulKerjasama,
           namaPengusul: formData.namaKontak || 'Internal Polibatam',
           namaMitra: formData.namaMitra,
+          mitraKategori: formData.jenisMitra.trim() || undefined,
+          mitraTingkatPerusahaan: formData.tingkatPerusahaan.trim() || undefined,
           jenisDokumen: jenisKerjasama,
           namaUnitProdi: formData.unitPelaksana,
           unitProdiId: selectedProdiId,
@@ -874,12 +888,30 @@ export default function InternalAjukanKerjasamaForm({
             </div>
             <div>
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelJenisMitra}</label>
-              <select value={formData.jenisMitra} onChange={(e) => handleChange('jenisMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-[12px]" required>
+              <select
+                value={(JENIS_MITRA_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(formData.jenisMitra) || formData.jenisMitra === '' ? formData.jenisMitra : 'Lainnya'}
+                onChange={(e) => handleChange('jenisMitra', e.target.value)}
+                className="input-field h-10 w-full rounded-lg px-3 text-[12px]"
+                required
+              >
                 <option value="">Pilih jenis mitra</option>
-                <option>Industri</option>
-                <option>Perguruan Tinggi</option>
-                <option>Instansi Pemerintah</option>
-                <option>Komunitas</option>
+                {JENIS_MITRA_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+              {!(JENIS_MITRA_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(formData.jenisMitra) && formData.jenisMitra !== '' && (
+                <input
+                  value={formData.jenisMitra === 'Lainnya' ? '' : formData.jenisMitra}
+                  onChange={(e) => handleChange('jenisMitra', e.target.value || 'Lainnya')}
+                  className="input-field mt-2 h-10 w-full rounded-lg px-3 text-[12px]"
+                  placeholder="Ketik jenis mitra..."
+                  required
+                />
+              )}
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-700">Tingkat Perusahaan</label>
+              <select value={formData.tingkatPerusahaan} onChange={(e) => handleChange('tingkatPerusahaan', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-[12px]">
+                <option value="">Pilih tingkat perusahaan</option>
+                {TINGKAT_PERUSAHAAN_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
               </select>
             </div>
             <div>
@@ -1141,7 +1173,8 @@ export default function InternalAjukanKerjasamaForm({
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelDeskripsi}</label>
-              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-[12px]" placeholder="Jelaskan detail kerjasama yang diajukan" />
+              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} maxLength={100} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-[12px]" placeholder="Jelaskan manfaat kerja sama yang diajukan" />
+              <p className={`mt-1 text-right text-[10px] ${formData.deskripsi.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>{formData.deskripsi.length}/100</p>
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelRuangLingkup}</label>

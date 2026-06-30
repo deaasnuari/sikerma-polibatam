@@ -18,6 +18,7 @@ import {
   type MasterRuangLingkup,
 } from '@/services/masterRuangLingkupService';
 import { getMasterNegara } from '@/services/masterNegaraService';
+import { upsertMasterMitraByName } from '@/services/masterMitraService';
 import { validateSelectedFile } from '@/lib/fileUploadUtils';
 
 type TemplateDokumenConfig = {
@@ -100,9 +101,21 @@ const countryPhoneCodeMap: Record<string, string> = {
   'Palestina':       '+970',
 };
 
+const JENIS_MITRA_OPTIONS = [
+  'Pemerintahan',
+  'Perguruan Tinggi',
+  'Swasta/Dunia Usaha dan Dunia Industri (DUDI)',
+  'Sekolah/Institusi Pendidikan Lain',
+  'Organisasi Non-Profit / LSM',
+  'Lainnya',
+] as const;
+
+const TINGKAT_PERUSAHAAN_OPTIONS = ['Lokal', 'Nasional', 'Internasional', 'Multinasional'] as const;
+
 const initialForm = {
   namaMitra: '',
   jenisMitra: '',
+  tingkatPerusahaan: '',
   teleponMitra: '',
   emailMitra: '',
   alamatMitra: '',
@@ -236,11 +249,11 @@ const defaultAppearanceSettings: FormAppearanceSettings = {
   labelEmailMitra: 'Email Mitra',
   labelAlamatMitra: 'Alamat Lengkap',
   labelJenisKerjasama: 'Jenis Kerjasama',
-  labelDari: 'Dari',
+  labelDari: 'Tujuan Kerja Sama',
   labelTanggalMulai: 'Tanggal Mulai',
   labelTanggalBerakhir: 'Tanggal Berakhir',
   labelJudulKerjasama: 'Judul Kerjasama',
-  labelDeskripsi: 'Deskripsi',
+  labelDeskripsi: 'Manfaat Kerja Sama',
   labelRuangLingkup: 'Ruang Lingkup',
   labelNamaKontak: 'Nama Lengkap',
   labelJabatanKontak: 'Jabatan',
@@ -750,11 +763,33 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
       return;
     }
 
+    // Upsert master_mitra agar jenis & tingkat tersimpan dan mitra_id terisi
+    let resolvedMitraId: number | undefined;
+    if (formData.namaMitra.trim()) {
+      try {
+        const mitra = await upsertMasterMitraByName(formData.namaMitra.trim(), {
+          kategoriMitra: formData.jenisMitra.trim() || null,
+          tingkatPerusahaan: formData.tingkatPerusahaan.trim() || null,
+          extra: {
+            telepon_mitra: formData.teleponMitra.trim() || null,
+            alamat: formData.alamatMitra.trim() || null,
+            negara: formData.negara.trim() || null,
+          },
+        });
+        resolvedMitraId = mitra.id;
+      } catch {
+        // Lanjutkan tanpa mitra_id jika upsert gagal
+      }
+    }
+
     for (const jenisKerjasama of selectedJenisKerjasama) {
       const submitPayload: Parameters<typeof submitPengajuanApi>[0] = {
         judulPengajuan: formData.judulKerjasama,
         namaPengusul: formData.namaKontak || 'Internal Polibatam',
         namaMitra: formData.namaMitra,
+        mitraId: resolvedMitraId,
+        mitraKategori: formData.jenisMitra.trim() || undefined,
+        mitraTingkatPerusahaan: formData.tingkatPerusahaan.trim() || undefined,
         jenisDokumen: jenisKerjasama,
         namaUnitProdi: formData.unitPelaksana,
         unitProdiId: selectedProdiId,
@@ -886,12 +921,30 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelJenisMitra}</label>
-              <select value={formData.jenisMitra} onChange={(e) => handleChange('jenisMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm" required>
+              <select
+                value={(JENIS_MITRA_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(formData.jenisMitra) || formData.jenisMitra === '' ? formData.jenisMitra : 'Lainnya'}
+                onChange={(e) => handleChange('jenisMitra', e.target.value)}
+                className="input-field h-10 w-full rounded-lg px-3 text-sm"
+                required
+              >
                 <option value="">Pilih jenis mitra</option>
-                <option>Industri</option>
-                <option>Perguruan Tinggi</option>
-                <option>Instansi Pemerintah</option>
-                <option>Komunitas</option>
+                {JENIS_MITRA_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+              {!(JENIS_MITRA_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(formData.jenisMitra) && formData.jenisMitra !== '' && (
+                <input
+                  value={formData.jenisMitra === 'Lainnya' ? '' : formData.jenisMitra}
+                  onChange={(e) => handleChange('jenisMitra', e.target.value || 'Lainnya')}
+                  className="input-field mt-2 h-10 w-full rounded-lg px-3 text-sm"
+                  placeholder="Ketik jenis mitra..."
+                  required
+                />
+              )}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Tingkat Perusahaan</label>
+              <select value={formData.tingkatPerusahaan} onChange={(e) => handleChange('tingkatPerusahaan', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-sm">
+                <option value="">Pilih tingkat perusahaan</option>
+                {TINGKAT_PERUSAHAAN_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
               </select>
             </div>
             <div>
@@ -1155,7 +1208,8 @@ const [showDocumentReminderModal, setShowDocumentReminderModal] = useState(false
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelDeskripsi}</label>
-              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Jelaskan detail kerjasama yang diajukan" />
+              <textarea value={formData.deskripsi} onChange={(e) => handleChange('deskripsi', e.target.value)} maxLength={100} className="input-field min-h-[90px] w-full rounded-lg px-3 py-2 text-sm" placeholder="Jelaskan manfaat kerja sama yang diajukan" />
+              <p className={`mt-1 text-right text-xs ${formData.deskripsi.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>{formData.deskripsi.length}/100</p>
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">{appearanceSettings.labelRuangLingkup}</label>

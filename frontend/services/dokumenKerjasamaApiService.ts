@@ -212,6 +212,7 @@ export async function fetchRekapDokumenFromApi(options?: { forceRefresh?: boolea
       ruangLingkup,
       alasanArsip: row.alasan_arsip || null,
       buktiPdf: dokumenTerkait.length > 0 ? dokumenTerkait[0].url : null,
+      manfaatKerjasama: (row.keterangan && !row.keterangan.includes('Mitra:')) ? row.keterangan : undefined,
     };
   });
 
@@ -252,6 +253,7 @@ export async function updateDokumenKerjasamaById(
     tanggal_mulai?: string | null;
     tanggal_berakhir?: string | null;
     status_siklus?: 'active' | 'expiring' | 'archived';
+    keterangan?: string | null;
   }
 ): Promise<void> {
   await apiRequest<unknown>(`/dokumen-kerjasama/${id}`, {

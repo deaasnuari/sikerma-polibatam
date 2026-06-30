@@ -302,6 +302,9 @@ export default function TahapanPengajuanPage() {
   const [tahapanMap, setTahapanMap] = useState<Record<number, PengajuanTahapan>>({});
   const [catatanTarget, setCatatanTarget] = useState<PengajuanItem | null>(null);
   const [riwayatTarget, setRiwayatTarget] = useState<PengajuanItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterGroup, setFilterGroup] = useState<StageGroup | null>(null);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchPengajuanDataFromApi({ perPage: 500 })
@@ -338,12 +341,19 @@ export default function TahapanPengajuanPage() {
 
   const filtered = list.filter((p) => {
     const q = search.toLowerCase();
-    return (
+    const matchSearch =
       p.nomorPengajuan.toLowerCase().includes(q) ||
       p.judulPengajuan.toLowerCase().includes(q) ||
-      p.namaMitra.toLowerCase().includes(q)
-    );
+      p.namaMitra.toLowerCase().includes(q);
+    const tahapan = tahapanMap[p.id] ?? getTahapan(p.id);
+    const matchGroup = filterGroup === null || tahapan.group === filterGroup;
+    return matchSearch && matchGroup;
   });
+
+  useEffect(() => { setCurrentPage(1); }, [search, filterGroup]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedFiltered = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const riwayatForTarget = riwayatTarget
     ? (tahapanMap[riwayatTarget.id]?.riwayat ?? [])
@@ -373,13 +383,25 @@ export default function TahapanPengajuanPage() {
             className="w-56 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-[12px] focus:outline-none focus:ring-1 focus:ring-[#1E376C]/40"
           />
         </div>
-        <div className="flex items-center gap-4">
-          {(['todo', 'in_progress', 'complete'] as StageGroup[]).map((g) => (
-            <div key={g} className="flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${GROUP_CONFIG[g].dot}`} />
-              <span className="text-[11px] text-gray-500">{GROUP_CONFIG[g].label}</span>
-            </div>
-          ))}
+        <div className="flex items-center gap-2">
+          {(['todo', 'in_progress', 'complete'] as StageGroup[]).map((g) => {
+            const isActive = filterGroup === g;
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setFilterGroup(isActive ? null : g)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors ${
+                  isActive
+                    ? 'bg-[#1E376C] text-white border-[#1E376C]'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700'
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full flex-shrink-0 ${GROUP_CONFIG[g].dot}`} />
+                {GROUP_CONFIG[g].label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -394,10 +416,12 @@ export default function TahapanPengajuanPage() {
           <p className="text-sm">Tidak ada data pengajuan</p>
         </div>
       ) : (
+        <>
         <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full min-w-[640px] text-left text-[12px]">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
+                <th className="px-3 py-2.5 font-semibold text-gray-600 text-center w-10">No</th>
                 <th className="px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">No. Pengajuan</th>
                 <th className="px-3 py-2.5 font-semibold text-gray-600">Judul / Mitra</th>
                 <th className="px-3 py-2.5 font-semibold text-gray-600 text-center">Status Tahapan</th>
@@ -406,11 +430,14 @@ export default function TahapanPengajuanPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((item) => {
+              {paginatedFiltered.map((item, index) => {
                 const tahapan = tahapanMap[item.id] ?? getTahapan(item.id);
                 const riwayatCount = tahapan.riwayat?.length ?? 0;
                 return (
                   <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="px-3 py-2.5 text-center text-[11px] text-gray-500 font-medium">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                    </td>
                     <td className="px-3 py-2.5 font-semibold text-[#1E376C] whitespace-nowrap">
                       {item.nomorPengajuan}
                     </td>
@@ -440,6 +467,61 @@ export default function TahapanPengajuanPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+            <p className="text-[11px] text-gray-500">
+              Menampilkan <strong>{(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</strong> dari <strong>{filtered.length}</strong> dokumen
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2.5 py-1.5 rounded text-[11px] font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                &lsaquo; Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) {
+                    acc.push('...');
+                  }
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-[11px]">...</span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setCurrentPage(p as number)}
+                      className={`w-8 h-8 rounded text-[11px] font-medium border transition-colors ${
+                        currentPage === p
+                          ? 'bg-[#1E376C] text-white border-[#1E376C]'
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-2.5 py-1.5 rounded text-[11px] font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next &rsaquo;
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* Modal catatan */}

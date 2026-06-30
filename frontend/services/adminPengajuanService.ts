@@ -18,6 +18,7 @@ export type PengajuanStatus =
 export type PengajuanFileAttachment = {
   name: string;
   url: string;
+  pathFile?: string;
   type?: string;
   size?: number;
   isAcc?: boolean;
@@ -36,6 +37,7 @@ export interface PengajuanItem {
   namaMitra: string;
   jenisDokumen: string;
   mitraKategori?: string;
+  mitraTingkatPerusahaan?: string;
   mitraNegara?: string;
   mitraAlamat?: string;
   mitraEmail?: string;
@@ -200,6 +202,8 @@ type ApiPengajuanRow = {
   whatsapp_pengusul?: string | null;
   unit_prodi_id?: number | null;
   mitra_id?: number | null;
+  jenis_mitra?: string | null;
+  tingkat_perusahaan?: string | null;
   judul_pengajuan: string;
   deskripsi_pengajuan?: string | null;
   jenis_dokumen: string;
@@ -218,7 +222,7 @@ type ApiPengajuanRow = {
     | 'final_approved';
   diajukan_pada?: string | null;
   unit_prodi?: { id: number; nama: string } | null;
-  mitra?: { id: number; nama_mitra: string; kategori_mitra?: string | null; negara?: string | null; alamat?: string | null; email_mitra?: string | null; telepon_mitra?: string | null; } | string | null;
+  mitra?: { id: number; nama_mitra: string; kategori_mitra?: string | null; tingkat_perusahaan?: string | null; negara?: string | null; alamat?: string | null; email_mitra?: string | null; telepon_mitra?: string | null; } | string | null;
   // Legacy schema keys (from recent pulled backend)
   judul?: string;
   deskripsi?: string | null;
@@ -369,31 +373,33 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
   const statusApi = row.status_pengajuan || row.status || 'menunggu';
 
   const mitraNama =
+    row.nama_mitra ||
     (typeof row.mitra === 'object' && row.mitra !== null ? row.mitra.nama_mitra : null) ||
     row.mitra_nama ||
-    row.nama_mitra ||
     '-';
 
   let resolvedRuangLingkup: string[] = [];
   if (Array.isArray(row.ruang_lingkup) && row.ruang_lingkup.length > 0) {
     resolvedRuangLingkup = row.ruang_lingkup;
   } else if (Array.isArray(row.ruang_lingkup_ids) && row.ruang_lingkup_ids.length > 0) {
-    let cachedMaster: any[] = [];
+    let cachedMaster: { id: number; nama_ruang_lingkup: string }[] = [];
     try {
       const module = require('@/services/masterRuangLingkupService');
       cachedMaster = module.getCachedMasterRuangLingkup() || [];
-    } catch (e) {
-      // Ignored
+    } catch {
+      // ignored
     }
     resolvedRuangLingkup = row.ruang_lingkup_ids.map((id) => {
-      const found = cachedMaster.find((m: any) => m.id === id);
+      const found = cachedMaster.find((m) => m.id === id);
       return found ? found.nama_ruang_lingkup : `RL-${id}`;
     });
   }
 
+  // Resolve file attachments: prefer pengajuan_file relation, then file_attachments JSON, then cache
   const attachmentRows = row.pengajuan_files ?? row.dokumen_files;
   const cachedAttachment = getAttachmentCacheEntry(row.id);
-  const fallbackAttachments = Array.isArray(row.file_attachments)
+
+  const fallbackAttachments: PengajuanFileAttachment[] = Array.isArray(row.file_attachments)
     ? row.file_attachments
         .filter((file) => typeof file?.name === 'string' && file.name.trim().length > 0)
         .map((file) => ({
@@ -406,10 +412,14 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     : [];
 
   const resolvedFileName = row.file_name || cachedAttachment?.fileName || undefined;
-  let resolvedAttachments = attachmentRows
+
+  // Use attachmentRows only when it has actual entries — an empty array means no records in the
+  // pengajuan_file table, so fall through to the file_attachments JSON column or cache.
+  let resolvedAttachments: PengajuanFileAttachment[] | undefined = attachmentRows?.length
     ? attachmentRows.map((file) => ({
         name: file.nama_file,
         url: buildAttachmentUrl(file.path_file),
+        pathFile: file.path_file,
         isAcc: file.peran_berkas === 'dokumen_final',
       }))
     : (fallbackAttachments.length > 0 ? fallbackAttachments : cachedAttachment?.fileAttachments);
@@ -421,6 +431,7 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
       resolvedAttachments = dk.dokumen_files.map((f) => ({
         name: f.nama_file,
         url: buildAttachmentUrl(f.path_file),
+        pathFile: f.path_file,
         isAcc: f.peran_berkas === 'dokumen_final',
       }));
     } else if (dk?.file) {
@@ -452,7 +463,8 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     diajukanPada,
     mitraId: row.mitra_id ?? undefined,
     namaMitra: mitraNama,
-    mitraKategori: typeof row.mitra === 'object' && row.mitra !== null && 'kategori_mitra' in row.mitra ? row.mitra.kategori_mitra || undefined : undefined,
+    mitraKategori: row.jenis_mitra || (typeof row.mitra === 'object' && row.mitra !== null && 'kategori_mitra' in row.mitra ? row.mitra.kategori_mitra || undefined : undefined),
+    mitraTingkatPerusahaan: row.tingkat_perusahaan || (typeof row.mitra === 'object' && row.mitra !== null && 'tingkat_perusahaan' in row.mitra ? (row.mitra as { tingkat_perusahaan?: string | null }).tingkat_perusahaan || undefined : undefined),
     mitraNegara: typeof row.mitra === 'object' && row.mitra !== null && 'negara' in row.mitra ? row.mitra.negara || pickOptionalString((row as Record<string, unknown>).negara) : pickOptionalString((row as Record<string, unknown>).negara),
     mitraAlamat: typeof row.mitra === 'object' && row.mitra !== null && 'alamat' in row.mitra ? row.mitra.alamat || pickOptionalString((row as Record<string, unknown>).alamat_mitra) : pickOptionalString((row as Record<string, unknown>).alamat_mitra),
     mitraEmail: typeof row.mitra === 'object' && row.mitra !== null && 'email_mitra' in row.mitra ? row.mitra.email_mitra || pickOptionalString((row as Record<string, unknown>).email_mitra) : pickOptionalString((row as Record<string, unknown>).email_mitra),
@@ -486,8 +498,8 @@ function mapApiPengajuanToItem(row: ApiPengajuanRow): PengajuanItem {
     tahapanGroup: row.tahapan_group ?? null,
     tahapanRiwayat: Array.isArray(row.tahapan_riwayat)
       ? row.tahapan_riwayat.map((r) => ({
-          stage:     r.stage,
-          group:     r.group,
+          stage: r.stage,
+          group: r.group,
           changedAt: r.changed_at,
           changedBy: r.changed_by,
         }))
@@ -617,6 +629,8 @@ export async function updatePengajuanItemApi(
   if (updates.unitProdiId !== undefined) payload.unit_prodi_id = updates.unitProdiId;
   if (updates.mitraId !== undefined) payload.mitra_id = updates.mitraId;
   if (typeof updates.namaMitra === 'string') payload.nama_mitra = updates.namaMitra;
+  if (updates.mitraKategori !== undefined) payload.jenis_mitra = updates.mitraKategori || null;
+  if (updates.mitraTingkatPerusahaan !== undefined) payload.tingkat_perusahaan = updates.mitraTingkatPerusahaan || null;
   if (typeof updates.mitraTelepon === 'string') payload.telepon_mitra = updates.mitraTelepon;
   if (typeof updates.jenisDokumen === 'string') payload.jenis_dokumen = mapJenisDokumenToApi(updates.jenisDokumen);
   if (typeof updates.tanggalMulai === 'string') payload.tanggal_mulai = updates.tanggalMulai;
@@ -630,6 +644,7 @@ export async function updatePengajuanItemApi(
       type: file.type,
       size: file.size,
       url: file.url || '',
+      path_file: file.pathFile || '',
       isAcc: file.isAcc,
     }));
   }
@@ -688,6 +703,8 @@ export async function submitPengajuanApi(
     jenis_dokumen: mapJenisDokumenToApi(data.jenisDokumen),
     mitra_id: data.mitraId ?? null,
     nama_mitra: data.namaMitra,
+    jenis_mitra: data.mitraKategori || null,
+    tingkat_perusahaan: data.mitraTingkatPerusahaan || null,
     telepon_mitra: data.mitraTelepon || null,
     unit_prodi_id: data.unitProdiId ?? null,
     kategori_pengajuan: (data.kategoriPengajuan || (source === 'eksternal' ? 'Eksternal' : 'Internal')).toLowerCase(),

@@ -459,11 +459,25 @@ class PengajuanController extends Controller
     {
         $rawPath = trim((string) ($row['path'] ?? $row['path_file'] ?? ''));
         if ($rawPath !== '') {
+            // If a relative storage path was passed directly, keep it.
+            if (!str_starts_with($rawPath, 'http') && !str_starts_with($rawPath, 'data:')) {
+                return $rawPath;
+            }
+            // Full URL passed as path_file — extract relative path from /storage/... segment.
+            $parsed = parse_url($rawPath, PHP_URL_PATH);
+            if ($parsed && preg_match('#^/storage/(.+)$#', $parsed, $m)) {
+                return $m[1];
+            }
             return $rawPath;
         }
 
         $rawUrl = trim((string) ($row['url'] ?? ''));
         if ($rawUrl !== '' && !str_starts_with($rawUrl, 'data:')) {
+            // Extract relative path from absolute storage URL (e.g. http://host/storage/pengajuan/...)
+            $parsed = parse_url($rawUrl, PHP_URL_PATH);
+            if ($parsed && preg_match('#^/storage/(.+)$#', $parsed, $m)) {
+                return $m[1];
+            }
             return $rawUrl;
         }
 
@@ -739,7 +753,7 @@ class PengajuanController extends Controller
     {
         $validated = $request->validate([
             'judul' => ['required', 'string', 'max:255'],
-            'deskripsi' => ['nullable', 'string'],
+            'deskripsi' => ['nullable', 'string', 'max:100'],
             'pengusul' => ['required', 'string', 'max:200'],
             'tanggal' => ['nullable', 'date'],
             'mitra' => ['required', 'string', 'max:255'],
@@ -778,7 +792,7 @@ class PengajuanController extends Controller
     {
         $validated = $request->validate([
             'judul' => ['sometimes', 'required', 'string', 'max:255'],
-            'deskripsi' => ['nullable', 'string'],
+            'deskripsi' => ['nullable', 'string', 'max:100'],
             'pengusul' => ['sometimes', 'required', 'string', 'max:200'],
             'tanggal' => ['nullable', 'date'],
             'mitra' => ['sometimes', 'required', 'string', 'max:255'],
@@ -885,7 +899,7 @@ class PengajuanController extends Controller
         if ($this->shouldLoadPengajuanRelations()) {
             $query->with([
                 'unitProdi:id,nama,jenis_node,kategori_unit',
-                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'mitra:id,nama_mitra,kategori_mitra,tingkat_perusahaan,negara,alamat,email_mitra,telepon_mitra',
                 'dokumenFiles',
                 'dokumenKerjasama:id,no_permohonan,nomor_dokumen,file',
                 'dokumenKerjasama.dokumenFiles' => function ($q) {
@@ -939,7 +953,7 @@ class PengajuanController extends Controller
         if ($this->shouldLoadPengajuanRelations()) {
             $pengajuan->load([
                 'unitProdi:id,nama,jenis_node,kategori_unit',
-                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'mitra:id,nama_mitra,kategori_mitra,tingkat_perusahaan,negara,alamat,email_mitra,telepon_mitra',
                 'dokumenFiles',
                 'dokumenKerjasama:id,no_permohonan,nomor_dokumen,file',
                 'dokumenKerjasama.dokumenFiles' => function ($q) {
@@ -992,9 +1006,11 @@ class PengajuanController extends Controller
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
             'nama_mitra' => ['nullable', 'string', 'max:255'],
+            'jenis_mitra' => ['nullable', 'string', 'max:150'],
+            'tingkat_perusahaan' => ['nullable', 'string', 'max:50'],
             'telepon_mitra' => ['nullable', 'string', 'max:50'],
             'judul_pengajuan' => ['required', 'string', 'max:255'],
-            'deskripsi_pengajuan' => ['nullable', 'string'],
+            'deskripsi_pengajuan' => ['nullable', 'string', 'max:100'],
             'jenis_dokumen' => ['required', 'in:MOU,MOA,IA,LAINNYA'],
             'kategori_pengajuan' => ['nullable', 'in:internal,eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
@@ -1137,9 +1153,11 @@ class PengajuanController extends Controller
             'unit_prodi_id' => ['nullable', 'integer', 'exists:master_unit_prodi,id'],
             'mitra_id' => ['nullable', 'integer', 'exists:master_mitra,id'],
             'nama_mitra' => ['nullable', 'string', 'max:255'],
+            'jenis_mitra' => ['nullable', 'string', 'max:150'],
+            'tingkat_perusahaan' => ['nullable', 'string', 'max:50'],
             'telepon_mitra' => ['nullable', 'string', 'max:50'],
             'judul_pengajuan' => ['sometimes', 'required', 'string', 'max:255'],
-            'deskripsi_pengajuan' => ['nullable', 'string'],
+            'deskripsi_pengajuan' => ['nullable', 'string', 'max:100'],
             'jenis_dokumen' => ['sometimes', 'required', 'in:MOU,MOA,IA,LAINNYA'],
             'kategori_pengajuan' => ['nullable', 'in:internal,eksternal'],
             'tanggal_mulai' => ['nullable', 'date'],
@@ -1279,7 +1297,7 @@ class PengajuanController extends Controller
         if ($freshPengajuan && $this->shouldLoadPengajuanRelations()) {
             $freshPengajuan->load([
                 'unitProdi:id,nama,jenis_node,kategori_unit',
-                'mitra:id,nama_mitra,kategori_mitra,negara,alamat,email_mitra,telepon_mitra',
+                'mitra:id,nama_mitra,kategori_mitra,tingkat_perusahaan,negara,alamat,email_mitra,telepon_mitra',
                 'dokumenFiles',
             ]);
         }

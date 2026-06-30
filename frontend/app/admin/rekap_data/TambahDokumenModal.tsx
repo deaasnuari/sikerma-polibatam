@@ -16,7 +16,7 @@ interface TambahDokumenModalProps {
 }
 
 const jenisOptions = ['Pilih Jenis', 'MoU', 'MoA', 'IA'];
-const kategoriOptions = ['Pilih Kategori', 'Perusahaan', 'Instansi Pemerintah', 'Universitas', 'Organisasi'];
+const kategoriOptions = ['Pilih Kategori', 'Pemerintahan', 'Perguruan Tinggi', 'Swasta/Dunia Usaha dan Dunia Industri (DUDI)', 'Sekolah/Institusi Pendidikan Lain', 'Organisasi Non-Profit / LSM', 'Lainnya'];
 const statusOptions = ['Aktif', 'Akan Berakhir', 'Kadaluarsa'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -73,6 +73,7 @@ const emptyFormData: DokumenData = {
   whatsappMitra: '',
   asalKategori: 'Jurusan',
   unitKerja: '',
+  manfaatKerjasama: '',
 };
 
 export default function TambahDokumenModal({
@@ -627,6 +628,20 @@ export default function TambahDokumenModal({
                 onChange={(e) => handleInputChange('whatsappMitra', e.target.value)}
               />
             </Field>
+
+            <div className="md:col-span-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-gray-900">Manfaat Kerja Sama</span>
+                <textarea
+                  value={formData.manfaatKerjasama || ''}
+                  onChange={(e) => handleInputChange('manfaatKerjasama', e.target.value)}
+                  maxLength={100}
+                  placeholder="Jelaskan manfaat kerja sama"
+                  className="input-field min-h-[80px] w-full px-4 py-2 text-sm text-gray-700"
+                />
+                <p className={`mt-1 text-right text-xs ${(formData.manfaatKerjasama || '').length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>{(formData.manfaatKerjasama || '').length}/100</p>
+              </label>
+            </div>
           </div>
 
           <div className="mt-8 flex flex-col-reverse gap-2 sm:mt-10 sm:flex-row sm:justify-end sm:gap-3">

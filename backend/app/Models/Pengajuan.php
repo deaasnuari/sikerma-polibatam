@@ -55,6 +55,8 @@ class Pengajuan extends Model
         'diajukan_pada',
         'email_terverifikasi_pada',
         'nama_mitra',
+        'jenis_mitra',
+        'tingkat_perusahaan',
         'telepon_mitra',
         'catatan',
         'keputusan',

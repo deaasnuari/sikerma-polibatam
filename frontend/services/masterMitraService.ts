@@ -4,6 +4,7 @@ export interface MasterMitra {
   id: number;
   nama_mitra: string;
   kategori_mitra: string | null;
+  tingkat_perusahaan: string | null;
   negara: string | null;
   website: string | null;
   alamat: string | null;
@@ -21,6 +22,7 @@ export interface MasterMitra {
 export interface MasterMitraPayload {
   nama_mitra: string;
   kategori_mitra?: string | null;
+  tingkat_perusahaan?: string | null;
   negara?: string | null;
   website?: string | null;
   alamat?: string | null;
@@ -91,6 +93,37 @@ export async function updateMasterMitra(id: number, payload: Partial<MasterMitra
   }
 
   return response.data;
+}
+
+/**
+ * Temukan mitra berdasarkan nama (exact, case-insensitive).
+ * Jika ada → update kategori & tingkat.
+ * Jika tidak ada → buat baru.
+ * Mengembalikan MasterMitra yang dipakai beserta id-nya.
+ */
+export async function upsertMasterMitraByName(
+  namaMitra: string,
+  fields: { kategoriMitra?: string | null; tingkatPerusahaan?: string | null; extra?: Partial<MasterMitraPayload> }
+): Promise<MasterMitra> {
+  const trimmed = namaMitra.trim();
+  const list = await getMasterMitra({ search: trimmed });
+  const exact = list.find((m) => m.nama_mitra.trim().toLowerCase() === trimmed.toLowerCase());
+
+  if (exact) {
+    return updateMasterMitra(exact.id, {
+      kategori_mitra: fields.kategoriMitra !== undefined ? fields.kategoriMitra : exact.kategori_mitra,
+      tingkat_perusahaan: fields.tingkatPerusahaan !== undefined ? fields.tingkatPerusahaan : exact.tingkat_perusahaan,
+      ...fields.extra,
+    });
+  }
+
+  return createMasterMitra({
+    nama_mitra: trimmed,
+    kategori_mitra: fields.kategoriMitra || null,
+    tingkat_perusahaan: fields.tingkatPerusahaan || null,
+    aktif: true,
+    ...fields.extra,
+  });
 }
 
 export async function deleteMasterMitra(id: number): Promise<boolean> {

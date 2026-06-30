@@ -30,7 +30,8 @@ class OtpController extends Controller
             'email'                 => ['required', 'string', 'email', 'max:255'],
             'phone'                 => ['required', 'string', 'max:30'],
             'position'              => ['required', 'string', 'max:100'],
-            'account_type'          => ['required', 'string', 'max:100'],
+            'account_type'          => ['required', 'string', 'max:150'],
+            'tingkat_perusahaan'    => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],
             'password'              => ['required', 'string', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'password_confirmation' => ['required', 'string'],
         ]);
@@ -123,6 +124,7 @@ class OtpController extends Controller
                 ['nama_mitra' => $formData['institution_name']],
                 [
                     'kategori_mitra' => $formData['account_type'],
+                    'tingkat_perusahaan' => $formData['tingkat_perusahaan'] ?? null,
                     'negara' => $formData['negara'],
                     'website' => null,
                     'alamat' => null,

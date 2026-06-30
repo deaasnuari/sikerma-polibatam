@@ -25,7 +25,8 @@ class DummyDataSeeder extends Seeder
             for ($i = 0; $i < 5; $i++) {
                 DB::table('master_mitra')->insert([
                     'nama_mitra' => $faker->company,
-                    'kategori_mitra' => $faker->randomElement(['Perguruan Tinggi', 'Industri', 'Instansi Pemerintah']),
+                    'kategori_mitra' => $faker->randomElement(['Pemerintahan', 'Perguruan Tinggi', 'Swasta/Dunia Usaha dan Dunia Industri (DUDI)', 'Sekolah/Institusi Pendidikan Lain', 'Organisasi Non-Profit / LSM', 'Lainnya']),
+                    'tingkat_perusahaan' => $faker->randomElement(['Lokal', 'Nasional', 'Internasional', 'Multinasional']),
                     'alamat' => $faker->address,
                     'created_at' => now(),
                     'updated_at' => now(),

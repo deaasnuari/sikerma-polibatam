@@ -50,6 +50,7 @@ import {
   type PengajuanStatus,
   type PengajuanFileAttachment,
 } from '@/services/adminPengajuanService';
+import { updateMasterMitra, upsertMasterMitraByName } from '@/services/masterMitraService';
 
 type EditFormState = {
   id: number;
@@ -333,6 +334,17 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
       }
     }
   }, []);
+
+// Sync detailItem dengan pengajuanData setiap kali list di-refresh/update
+  useEffect(() => {
+    if (detailItem) {
+      const refreshed = pengajuanData.find((item) => item.id === detailItem.id);
+      if (refreshed) {
+        setDetailItem(refreshed);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pengajuanData]);
 
 // Auto-refresh every 30 seconds to check for new submissions (polling for notifications)
   useEffect(() => {
@@ -724,6 +736,7 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
     }
   }
 
+
   const detailFileEntries = detailItem
     ? detailItem.fileAttachments?.length
       ? detailItem.fileAttachments
@@ -734,6 +747,35 @@ const [detailItem, setDetailItem] = useState<PengajuanItem | null>(null);
           .map((name) => ({ name, url: '', isAcc: false }))
     : [];
   const detailFallbackTemplateUrl = detailItem ? (templatePreviewUrlByJenis[detailItem.jenisDokumen] || '') : '';
+
+  // Memoize agar referensi tidak berubah saat parent re-render (auto-refresh 30s dll),
+  // sehingga useEffect([initialData]) di form tidak reset field yang sudah diisi user.
+  const editFormInitialData = useMemo(() => {
+    if (!editingItem) return undefined;
+    return {
+      nomorPengajuan: editingItem.nomorPengajuan,
+      asal: (pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan') as 'Jurusan' | 'Unit',
+      namaMitra: editingItem.namaMitra,
+      jenisMitra: editingItem.mitraKategori || '',
+      tingkatPerusahaan: editingItem.mitraTingkatPerusahaan || '',
+      teleponMitra: editingItem.mitraTelepon || editingItem.whatsappPengusul || '',
+      emailMitra: editingItem.mitraEmail || editingItem.emailPengusul || '',
+      alamatMitra: editingItem.mitraAlamat || '',
+      negara: editingItem.mitraNegara || 'Indonesia',
+      jenisKerjasama: editingItem.jenisDokumen,
+      unitPelaksana: editingItem.namaUnitProdi,
+      tanggalMulai: editingItem.tanggalMulai || '',
+      tanggalBerakhir: editingItem.tanggalBerakhir || '',
+      judulKerjasama: editingItem.judulPengajuan,
+      deskripsi: editingItem.deskripsiPengajuan || '',
+      namaKontak: editingItem.namaPengusul,
+      jabatanKontak: editingItem.jabatanPengusul || '',
+      emailKontak: editingItem.emailPengusul || '',
+      teleponKontak: editingItem.whatsappPengusul || '',
+      selectedRuangLingkup: editingItem.ruangLingkup,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingItem?.id]);
 
   const editAllJurusanOptions = [...pengajuanJurusanOptions, ...editCustomJurusanOpts];
   const editAllUnitOptions = [...pengajuanUnitOptions, ...editCustomUnitOpts];
@@ -1150,6 +1192,7 @@ function addEditJurusanUnitOption() {
     formData: {
       namaMitra: string;
       jenisMitra: string;
+      tingkatPerusahaan: string;
       teleponMitra: string;
       emailMitra: string;
       alamatMitra: string;
@@ -1182,11 +1225,6 @@ function addEditJurusanUnitOption() {
       return false;
     }
 
-    if (payload.selectedRuangLingkup.length === 0) {
-      setInfoModalMessage('Pilih minimal 1 ruang lingkup pada form edit.');
-      return false;
-    }
-
     // Gabungkan file existing yang tidak dihapus + file baru yang diupload
     const newFileAttachments = payload.dokumenAttachments.map((item) => ({
       name: item.file.name,
@@ -1197,11 +1235,53 @@ function addEditJurusanUnitOption() {
     const keptExistingFiles = payload.existingFileAttachments ?? [];
     const allFileAttachments = [...keptExistingFiles, ...newFileAttachments];
 
+    // Hanya kirim file_attachments ke backend jika pengguna mengunggah file baru
+    // atau menghapus salah satu file existing. Jika tidak ada perubahan file,
+    // biarkan backend mempertahankan data file yang sudah ada (syncPengajuanFiles skip).
+    const initialFileCount = editingItem.fileAttachments?.length ?? 0;
+    const hasNewFiles = newFileAttachments.length > 0;
+    const existingFilesRemoved = keptExistingFiles.length < initialFileCount;
+    const filesWereModified = hasNewFiles || existingFilesRemoved;
+
+    // Upsert master_mitra agar kategori & tingkat tersimpan dan terhubung via mitra_id
+    let resolvedMitraId: number | undefined = editingItem.mitraId;
+    const jenisMitra = payload.formData.jenisMitra?.trim() || null;
+    const tingkatPerusahaan = payload.formData.tingkatPerusahaan?.trim() || null;
+    const namaMitraTrimmed = payload.formData.namaMitra.trim();
+    const mitraNameChanged = namaMitraTrimmed.toLowerCase() !== (editingItem.namaMitra || '').trim().toLowerCase();
+
+    try {
+      if (resolvedMitraId && !mitraNameChanged) {
+        // Nama mitra sama — cukup update kategori & tingkat pada mitra yang sudah tertaut
+        await updateMasterMitra(resolvedMitraId, {
+          kategori_mitra: jenisMitra,
+          tingkat_perusahaan: tingkatPerusahaan,
+        });
+      } else if (namaMitraTrimmed) {
+        // Nama mitra berubah atau belum ada mitra_id — cari/buat mitra berdasarkan nama baru
+        const mitra = await upsertMasterMitraByName(namaMitraTrimmed, {
+          kategoriMitra: jenisMitra,
+          tingkatPerusahaan: tingkatPerusahaan,
+        });
+        resolvedMitraId = mitra.id;
+      }
+    } catch {
+      // Jika upsert gagal (misal permission), lanjutkan tanpa update mitra_id
+    }
+
     const editPayload = {
       judulPengajuan: payload.formData.judulKerjasama.trim(),
-      namaMitra: payload.formData.namaMitra.trim(),
+      namaMitra: namaMitraTrimmed,
+      mitraId: resolvedMitraId,
+      mitraKategori: jenisMitra ?? '',
+      mitraTingkatPerusahaan: tingkatPerusahaan ?? '',
       namaUnitProdi: payload.formData.unitPelaksana.trim(),
-      unitProdiId: payload.selectedProdiId ?? undefined,
+      unitProdiId: (() => {
+        if (payload.selectedProdiId !== null) return payload.selectedProdiId;
+        const unitName = payload.formData.unitPelaksana.trim().toLowerCase();
+        const allUnits = [...masterJurusanRows, ...masterUnitRows, ...masterProdiRows];
+        return allUnits.find((u) => u.nama.toLowerCase() === unitName)?.id ?? undefined;
+      })(),
       jenisDokumen: payload.formData.jenisKerjasama.trim() || editingItem.jenisDokumen,
       tanggalMulai: payload.formData.tanggalMulai || undefined,
       tanggalBerakhir: payload.formData.tanggalBerakhir || undefined,
@@ -1212,7 +1292,7 @@ function addEditJurusanUnitOption() {
       mitraTelepon: payload.formData.teleponMitra || editingItem.mitraTelepon,
       deskripsiPengajuan: payload.formData.deskripsi.trim() || undefined,
       jabatanPengusul: payload.formData.jabatanKontak.trim() || undefined,
-      ...(allFileAttachments.length > 0
+      ...(filesWereModified
         ? {
             fileName: allFileAttachments.map((f) => f.name).join(', '),
             fileAttachments: allFileAttachments,
@@ -1823,27 +1903,7 @@ function addEditJurusanUnitOption() {
                 initialMasterRuangLingkupRows={ruangLingkupRows}
                 initialCustomNegaraOptions={masterNegaraRows.map((item) => item.nama_negara)}
                 initialFileAttachments={editingItem.fileAttachments ?? []}
-                initialData={{
-                  nomorPengajuan: editingItem.nomorPengajuan,
-                  asal: pengajuanUnitOptions.includes(editingItem.namaUnitProdi) ? 'Unit' : 'Jurusan',
-                  namaMitra: editingItem.namaMitra,
-                  jenisMitra: editingItem.mitraKategori || '',
-                  teleponMitra: editingItem.mitraTelepon || editingItem.whatsappPengusul || '',
-                  emailMitra: editingItem.mitraEmail || editingItem.emailPengusul || '',
-                  alamatMitra: editingItem.mitraAlamat || '',
-                  negara: editingItem.mitraNegara || 'Indonesia',
-                  jenisKerjasama: editingItem.jenisDokumen,
-                  unitPelaksana: editingItem.namaUnitProdi,
-                  tanggalMulai: editingItem.tanggalMulai || '',
-                  tanggalBerakhir: editingItem.tanggalBerakhir || '',
-                  judulKerjasama: editingItem.judulPengajuan,
-                  deskripsi: editingItem.deskripsiPengajuan || '',
-                  namaKontak: editingItem.namaPengusul,
-                  jabatanKontak: editingItem.jabatanPengusul || '',
-                  emailKontak: editingItem.emailPengusul || '',
-                  teleponKontak: editingItem.whatsappPengusul || '',
-                  selectedRuangLingkup: editingItem.ruangLingkup,
-                }}
+                initialData={editFormInitialData}
                 onCancel={() => setEditingItem(null)}
                 onSubmitted={() => {
                     setEditingItem(null);
@@ -1935,6 +1995,14 @@ function addEditJurusanUnitOption() {
                     <p className="text-gray-900 font-medium">{detailItem.namaMitra}</p>
                   </div>
                   <div>
+                    <p className="text-gray-500">Jenis Mitra</p>
+                    <p className="text-gray-900 font-medium">{detailItem.mitraKategori || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Tingkat Perusahaan</p>
+                    <p className="text-gray-900 font-medium">{detailItem.mitraTingkatPerusahaan || '-'}</p>
+                  </div>
+                  <div>
                     <p className="text-gray-500">Tanggal Mulai</p>
                     <p className="text-gray-900 font-medium">{detailItem.tanggalMulai || '-'}</p>
                   </div>
@@ -1942,6 +2010,12 @@ function addEditJurusanUnitOption() {
                     <p className="text-gray-500">Tanggal Berakhir</p>
                     <p className="text-gray-900 font-medium">{detailItem.tanggalBerakhir || '-'}</p>
                   </div>
+                  {detailItem.deskripsiPengajuan && (
+                    <div className="col-span-2">
+                      <p className="text-gray-500">Manfaat Kerja Sama</p>
+                      <p className="text-gray-900 font-medium">{detailItem.deskripsiPengajuan}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

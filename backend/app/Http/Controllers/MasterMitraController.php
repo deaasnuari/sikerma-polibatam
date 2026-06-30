@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\MasterMitra;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -68,7 +67,8 @@ class MasterMitraController extends Controller
 
         $validated = $request->validate([
             'nama_mitra' => 'required|string|max:255',
-            'kategori_mitra' => 'nullable|string|max:80',
+            'kategori_mitra' => ['nullable', 'string', 'max:150'],
+            'tingkat_perusahaan' => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],
             'negara' => 'nullable|string|max:100',
             'website' => 'nullable|url|max:255',
             'alamat' => 'nullable|string',
@@ -115,7 +115,8 @@ class MasterMitraController extends Controller
 
         $validated = $request->validate([
             'nama_mitra' => 'sometimes|required|string|max:255',
-            'kategori_mitra' => 'nullable|string|max:80',
+            'kategori_mitra' => ['nullable', 'string', 'max:150'],
+            'tingkat_perusahaan' => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],
             'negara' => 'nullable|string|max:100',
             'website' => 'nullable|url|max:255',
             'alamat' => 'nullable|string',

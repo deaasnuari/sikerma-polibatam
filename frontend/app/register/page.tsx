@@ -20,6 +20,17 @@ import {
 import { apiRequest } from '@/lib/api';
 import OtpStep from './OtpStep';
 
+const JENIS_AKUN_OPTIONS = [
+  'Pemerintahan',
+  'Perguruan Tinggi',
+  'Swasta/Dunia Usaha dan Dunia Industri (DUDI)',
+  'Sekolah/Institusi Pendidikan Lain',
+  'Organisasi Non-Profit / LSM',
+  'Lainnya',
+] as const;
+
+const TINGKAT_PERUSAHAAN_OPTIONS = ['Lokal', 'Nasional', 'Internasional', 'Multinasional'] as const;
+
 const negaraOptions = [
   'Indonesia',
   'Malaysia',
@@ -61,6 +72,7 @@ export default function RegisterPage() {
     phone: '',
     position: '',
     account_type: '',
+    tingkat_perusahaan: '',
     role: 'external',
     password: '',
     password_confirmation: '',
@@ -363,23 +375,45 @@ export default function RegisterPage() {
                     <div className="relative">
                       <select
                         name="account_type"
-                        value={form.account_type}
+                        value={(JENIS_AKUN_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(form.account_type) || form.account_type === '' ? form.account_type : 'Lainnya'}
                         onChange={handleChange}
                         required
                         className="input-field h-11 w-full appearance-none rounded-xl px-4 pr-10 text-sm text-slate-600"
                       >
-                        <option value="" disabled>
-                          Pilih Kategori Mitra
-                        </option>
-                        <option value="Industri">Industri</option>
-                        <option value="Institusi Pendidikan">Institusi Pendidikan</option>
-                        <option value="Instansi Pemerintah">Instansi Pemerintah</option>
-                        <option value="Organisasi/Lembaga">Organisasi/Lembaga</option>
+                        <option value="" disabled>Pilih Kategori Mitra</option>
+                        {JENIS_AKUN_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
                       </select>
-                      <ChevronDown
-                        size={18}
-                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]"
+                      <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]" />
+                    </div>
+                    {!(JENIS_AKUN_OPTIONS.filter(o => o !== 'Lainnya') as string[]).includes(form.account_type) && form.account_type !== '' && (
+                      <input
+                        name="account_type"
+                        value={form.account_type === 'Lainnya' ? '' : form.account_type}
+                        onChange={(e) => setForm((prev) => ({ ...prev, account_type: e.target.value || 'Lainnya' }))}
+                        className="input-field mt-2 h-11 w-full rounded-xl px-4 text-sm text-slate-600"
+                        placeholder="Ketik jenis akun..."
+                        required
                       />
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-semibold text-[#173B82]">Tingkat Perusahaan</label>
+                    <div className="relative">
+                      <select
+                        name="tingkat_perusahaan"
+                        value={form.tingkat_perusahaan}
+                        onChange={handleChange}
+                        className="input-field h-11 w-full appearance-none rounded-xl px-4 pr-10 text-sm text-slate-600"
+                      >
+                        <option value="">Pilih tingkat perusahaan</option>
+                        {TINGKAT_PERUSAHAAN_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#173B82]" />
                     </div>
                   </div>
                 </div>

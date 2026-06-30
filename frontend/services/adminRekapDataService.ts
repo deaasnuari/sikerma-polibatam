@@ -27,6 +27,7 @@ export interface RekapDokumen {
   whatsappNumber?: string;
   ruangLingkup?: string[];
   dokumenTerkait?: DokumenTerkait[];
+  manfaatKerjasama?: string;
 }
 
 // Data mentah dari modal tambah dokumen sebelum dikonversi ke format rekap.
@@ -46,6 +47,7 @@ export interface DokumenData {
   asalKategori: 'Jurusan' | 'Unit';
   unitKerja: string;
   dokumenTerkait?: DokumenTerkait[];
+  manfaatKerjasama?: string;
 }
 
 export interface RekapFilterOptions {
@@ -223,6 +225,7 @@ function mapDokumenDataToRekap(data: DokumenData): RekapDokumen {
     status: (data.status as RekapStatus) || 'Aktif',
     whatsappNumber: data.whatsappMitra,
     dokumenTerkait: data.dokumenTerkait,
+    manfaatKerjasama: data.manfaatKerjasama || undefined,
   };
 }
 
@@ -396,7 +399,8 @@ export function filterRekapData(items: RekapDokumen[], filters: RekapFilterOptio
     const matchesSearch =
       keyword === '' ||
       item.namaMitra.toLowerCase().includes(keyword) ||
-      item.noDokumen.toLowerCase().includes(keyword);
+      item.noDokumen.toLowerCase().includes(keyword) ||
+      (item.manfaatKerjasama || '').toLowerCase().includes(keyword);
 
     return matchesJenis && matchesUnit && matchesStatus && matchesTahun && matchesSearch;
   });
@@ -472,6 +476,7 @@ if (item.sourcePengajuanId) {
     asalKategori,
     unitKerja: item.unit,
     dokumenTerkait: item.dokumenTerkait,
+    manfaatKerjasama: item.manfaatKerjasama || '',
   };
 }
 

@@ -43,8 +43,15 @@ export default function RekapDataPage() {
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string } | null>(null);
   const [masterUnitOptions, setMasterUnitOptions] = useState<string[]>([]);
   const [renewalHistory, setRenewalHistory] = useState<RenewalRequestItem[]>([]);
+  const [isEditingManfaat, setIsEditingManfaat] = useState(false);
+  const [manfaatDraft, setManfaatDraft] = useState('');
+  const [savingManfaat, setSavingManfaat] = useState(false);
   const detailItemRef = useRef<RekapDokumen | null>(null);
-  useEffect(() => { detailItemRef.current = detailItem; }, [detailItem]);
+  useEffect(() => {
+    detailItemRef.current = detailItem;
+    setIsEditingManfaat(false);
+    setManfaatDraft('');
+  }, [detailItem]);
 
 
   useEffect(() => {
@@ -173,7 +180,7 @@ export default function RekapDataPage() {
   const { totalKerjasama, totalAktif, totalAkanBerakhir, totalKadaluarsa } = getRekapStats(rekapData);
 
   const handleExportExcel = () => {
-    const headers = ['No', 'No Dokumen', 'Nama Mitra', 'Jenis', 'Jurusan / Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status'];
+    const headers = ['No', 'No Dokumen', 'Nama Mitra', 'Jenis', 'Jurusan / Unit', 'Tanggal Mulai', 'Berlaku Hingga', 'Status', 'Manfaat Kerja Sama'];
     const rows = filteredRows.map((row, index) => [
       index + 1,
       row.noDokumen,
@@ -183,6 +190,7 @@ export default function RekapDataPage() {
       row.tanggalMulai,
       row.berlakuHingga,
       row.status,
+      row.manfaatKerjasama || '',
     ]);
     const dateStamp = new Date().toISOString().slice(0, 10);
     exportToExcel(headers, rows, `rekap-data-${dateStamp}.xlsx`, 'Rekap Data');
@@ -272,6 +280,20 @@ export default function RekapDataPage() {
       message: `Dokumen ${candidate.noDokumen} berhasil dihapus dari rekap data.`,
     });
   }
+
+  const handleSaveManfaat = async () => {
+    if (!detailItem?.id) return;
+    setSavingManfaat(true);
+    try {
+      await updateDokumenKerjasamaById(detailItem.id, { keterangan: manfaatDraft.trim() || null });
+      const updated = { ...detailItem, manfaatKerjasama: manfaatDraft.trim() || undefined };
+      setDetailItem(updated);
+      setRekapData((prev) => prev.map((r) => r.id === detailItem.id ? updated : r));
+      setIsEditingManfaat(false);
+    } finally {
+      setSavingManfaat(false);
+    }
+  };
 
   const downloadDokumen = async (url: string, fileName: string) => {
     if (!url) {
@@ -514,13 +536,14 @@ export default function RekapDataPage() {
                 <th className="px-4 py-3">Tanggal mulai</th>
                 <th className="px-4 py-3">Berlaku Hingga</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Manfaat Kerja Sama</th>
                 <th className="px-4 py-3 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr key="empty">
-                  <td colSpan={8} className="px-4 py-10 text-center text-[12px] text-gray-500">
+                  <td colSpan={9} className="px-4 py-10 text-center text-[12px] text-gray-500">
                     Data tidak ditemukan berdasarkan filter saat ini.
                   </td>
                 </tr>
@@ -549,6 +572,9 @@ export default function RekapDataPage() {
                     <td className="px-4 py-3 whitespace-nowrap">{row.berlakuHingga}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ${rekapStatusBadgeMap[row.status]}`}>{row.status}</span>
+                    </td>
+                    <td className="px-4 py-3 max-w-[180px]">
+                      <p className="text-[10px] text-gray-600 line-clamp-2">{row.manfaatKerjasama || '-'}</p>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
@@ -718,6 +744,44 @@ export default function RekapDataPage() {
                   </div>
                 </div>
               )}
+
+              {/* Manfaat Kerja Sama */}
+              <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">Manfaat Kerja Sama</p>
+                  {!isEditingManfaat && detailItem.id && (
+                    <button
+                      type="button"
+                      onClick={() => { setManfaatDraft(detailItem.manfaatKerjasama || ''); setIsEditingManfaat(true); }}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold text-[#1E376C] hover:bg-[#1E376C]/10 transition-colors"
+                    >
+                      <Pencil size={11} />
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {isEditingManfaat ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={manfaatDraft}
+                      onChange={(e) => setManfaatDraft(e.target.value)}
+                      maxLength={100}
+                      rows={3}
+                      className="input-field w-full rounded-lg px-3 py-2 text-[12px]"
+                      placeholder="Jelaskan manfaat kerja sama"
+                    />
+                    <p className={`text-right text-[10px] ${manfaatDraft.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>{manfaatDraft.length}/100</p>
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={() => setIsEditingManfaat(false)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50">Batal</button>
+                      <button type="button" onClick={handleSaveManfaat} disabled={savingManfaat} className="rounded-lg bg-[#1E376C] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2B4A93] disabled:opacity-60">
+                        {savingManfaat ? 'Menyimpan...' : 'Simpan'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-gray-700">{detailItem.manfaatKerjasama || <span className="italic text-gray-400">Belum diisi</span>}</p>
+                )}
+              </div>
 
               {/* Dokumen */}
               <div className="rounded-xl border border-gray-100 bg-slate-50 px-4 py-3">
