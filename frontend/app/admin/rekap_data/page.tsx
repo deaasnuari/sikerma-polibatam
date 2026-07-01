@@ -193,7 +193,7 @@ export default function RekapDataPage() {
       row.manfaatKerjasama || '',
     ]);
     const dateStamp = new Date().toISOString().slice(0, 10);
-    exportToExcel(headers, rows, `rekap-data-${dateStamp}.xlsx`, 'Rekap Data');
+    exportToExcel(headers, rows, `rekap-data-${dateStamp}.xlsx`, 'Rekap Data dan Monitoring');
   };
 
   function toggleSelect(id: number) {
@@ -326,7 +326,7 @@ export default function RekapDataPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="page-title">Data Kerjasama</h1>
+          <h1 className="page-title">Rekap Data dan Monitoring</h1>
           <p className="page-subtitle mt-0.5">Daftar seluruh dokumen kerjasama yang terdaftar di sistem</p>
         </div>
         <button

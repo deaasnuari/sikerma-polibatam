@@ -227,7 +227,7 @@ export default function InternalRekapDataPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="page-title">Daftar Kerjasama</h1>
+          <h1 className="page-title">Rekap Data dan Monitoring</h1>
           <p className="page-subtitle mt-1">Kelola dan monitor semua kerjasama</p>
         </div>
 

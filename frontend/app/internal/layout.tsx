@@ -27,7 +27,7 @@ const menuItems: SidebarMenuItem[] = [
     icon: NotebookPen,
   },
   {
-    label: 'Rekap Data',
+    label: 'Rekap Data dan Monitoring',
     href: '/internal/rekap_data',
     icon: BookOpen,
   },

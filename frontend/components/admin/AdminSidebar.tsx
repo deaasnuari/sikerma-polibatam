@@ -39,10 +39,10 @@ const defaultMenuItems: SidebarMenuItem[] = [
     href: '/admin/data_pengajuan',
     children: [{ label: 'Tahapan Pengajuan', href: '/admin/data_pengajuan/tahapan_pengajuan' }],
   },
-  { icon: RefreshCw, label: 'Rekap Data', href: '/admin/rekap_data' },
+  { icon: RefreshCw, label: 'Rekap Data dan Monitoring', href: '/admin/rekap_data' },
   {
     icon: BarChart3,
-    label: 'Monitoring & Status',
+    label: 'Status dan Progres Kerja Sama',
     href: '/admin/monitoring',
     children: [{ label: 'Permintaan Perpanjangan', href: '/admin/monitoring/perpanjangan' }],
   },
@@ -118,7 +118,7 @@ export default function AdminSidebar({
 
       {/* Sidebar */}
       <aside className={`fixed md:relative top-0 left-0 h-full md:h-full ${backgroundClassName} text-gray-300 z-30 flex flex-col transition-all duration-300 rounded-lg shadow-md overflow-visible
-        ${isOpen ? 'w-52 md:w-48' : 'w-16'}
+        ${isOpen ? 'w-60 md:w-56' : 'w-16'}
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <button
@@ -168,7 +168,7 @@ export default function AdminSidebar({
                   className={sharedClassName}
                 >
                   <Icon size={15} className="flex-shrink-0" />
-                  {isOpen && <span className="truncate text-[10px] font-medium">{item.label}</span>}
+                  {isOpen && <span className="leading-tight text-[10px] font-medium">{item.label}</span>}
                 </button>
               );
             }
@@ -196,7 +196,7 @@ export default function AdminSidebar({
                       <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-1 ring-[#091222]" />
                     )}
                   </span>
-                  {isOpen && <span className="truncate text-[10px] font-medium">{item.label}</span>}
+                  {isOpen && <span className="leading-tight text-[10px] font-medium">{item.label}</span>}
                   {/* Badge count on expanded parent when children not visible */}
                   {isOpen && !showChildren && hasParentBadge && (
                     <span className="ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
@@ -234,7 +234,7 @@ export default function AdminSidebar({
                               <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
                             </span>
                           )}
-                          <span className="flex-1 truncate">{child.label}</span>
+                          <span className="flex-1 leading-tight">{child.label}</span>
                           {hasBell && (
                             <span className="ml-auto inline-flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
                               {childBadge > 9 ? '9+' : childBadge}

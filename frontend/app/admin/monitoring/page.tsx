@@ -167,7 +167,7 @@ export default function MonitoringdanstatusPage() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-[17px] font-bold text-gray-900">Monitoring & Status Kerjasama</h1>
+        <h1 className="text-[17px] font-bold text-gray-900">Status dan Progres Kerja Sama</h1>
         <p className="mt-0.5 text-[10px] text-gray-500">Pantau masa berlaku dokumen kerjasama dan status aktivitas</p>
       </div>
 

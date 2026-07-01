@@ -81,7 +81,7 @@ const quickActions: QuickAction[] = [
     color: 'bg-green-50 border-green-200 text-gray-900',
   },
   {
-    label: 'Monitoring',
+    label: 'Status dan Progres Kerja Sama',
     description: 'Pantau status dan progres kerjasama.',
     href: '/admin/monitoring',
     iconKey: 'trending',

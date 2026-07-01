@@ -241,7 +241,7 @@ export default function ArsipDokumenPage() {
                 <span className="font-semibold">Sudah Kadaluarsa (❌)</span>: Dokumen yang sudah melampaui tanggal berlaku
               </li>
               <li>
-                Dokumen yang sudah kadaluarsa dapat diperpanjang — klik tombol <span className="font-semibold">Perpanjang</span> untuk langsung membuka form perpanjangan di halaman Monitoring
+                Dokumen yang sudah kadaluarsa dapat diperpanjang — klik tombol <span className="font-semibold">Perpanjang</span> untuk langsung membuka form perpanjangan di halaman Status dan Progres Kerja Sama
               </li>
               <li>
                 Arsip dapat dihapus permanen oleh admin jika tidak diperlukan lagi

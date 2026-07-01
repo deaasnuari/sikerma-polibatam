@@ -283,8 +283,10 @@ export default function InternalAjukanKerjasamaForm({
   const router = useRouter();
   const [asal, setAsal] = useState<'Jurusan' | 'Unit'>('Jurusan');
   const [dokumen, setDokumen] = useState<{ file: File; dataUrl?: string }[]>([]);
+  const [dokumenPendukung, setDokumenPendukung] = useState<{ file: File; dataUrl?: string }[]>([]);
   const [existingFileAttachments, setExistingFileAttachments] = useState<PengajuanFileAttachment[]>(() => initialFileAttachments ?? []);
   const [dokumenError, setDokumenError] = useState<string | null>(null);
+  const [dokumenPendukungError, setDokumenPendukungError] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [isAppearanceEditMode, setIsAppearanceEditMode] = useState(false);
   const [appearanceSettings, setAppearanceSettings] = useState<FormAppearanceSettings>(defaultAppearanceSettings);
@@ -296,6 +298,7 @@ export default function InternalAjukanKerjasamaForm({
     () => parseJenisKerjasamaSelection(formData.jenisKerjasama),
     [formData.jenisKerjasama]
   );
+  const requiresDokumenPendukung = selectedJenisKerjasama.some((j) => j === 'MoA' || j === 'IA');
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null);
   const [rlOpen, setRlOpen] = useState(false);
   const [rlSearch, setRlSearch] = useState('');
@@ -686,6 +689,63 @@ export default function InternalAjukanKerjasamaForm({
     setDokumen((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  const handleDokumenPendukungUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    setDokumenPendukung((prev) => {
+      const existingNames = new Set(prev.map((d) => d.file.name));
+      const existingTotalSize = prev.reduce((sum, d) => sum + d.file.size, 0);
+      let cumulativeSize = existingTotalSize;
+      const toAdd: { file: File; dataUrl?: string }[] = [];
+
+      for (const file of files) {
+        const validationError = validateSelectedFile(file, {
+          accept: '.pdf,.doc,.docx',
+          maxSizeBytes: MAX_FILE_SIZE,
+        });
+        if (validationError) {
+          setDokumenPendukungError(`${file.name}: ${validationError}`);
+          event.target.value = '';
+          return prev;
+        }
+        if (existingNames.has(file.name)) {
+          setDokumenPendukungError(`${file.name}: File dengan nama ini sudah diupload.`);
+          event.target.value = '';
+          return prev;
+        }
+        if (cumulativeSize + file.size > MAX_FILE_SIZE) {
+          setDokumenPendukungError(`Total ukuran semua file tidak boleh melebihi 10 MB.`);
+          event.target.value = '';
+          return prev;
+        }
+        cumulativeSize += file.size;
+        existingNames.add(file.name);
+        toAdd.push({ file });
+      }
+
+      event.target.value = '';
+      setDokumenPendukungError(null);
+
+      toAdd.forEach((item) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          setDokumenPendukung((cur) => cur.map((d) => d.file === item.file ? { ...d, dataUrl } : d));
+        };
+        reader.readAsDataURL(item.file);
+      });
+
+      return [...prev, ...toAdd];
+    });
+
+    event.target.value = '';
+  };
+
+  const handleRemoveDokumenPendukung = (indexToRemove: number) => {
+    setDokumenPendukung((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   const handleRemoveExistingFile = (indexToRemove: number) => {
     setExistingFileAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
@@ -695,7 +755,7 @@ export default function InternalAjukanKerjasamaForm({
   };
 
   const buildFileAttachments = () => {
-    return dokumen.map((item) => ({
+    return [...dokumen, ...dokumenPendukung].map((item) => ({
       name: item.file.name,
       type: item.file.type,
       size: item.file.size,
@@ -715,12 +775,24 @@ export default function InternalAjukanKerjasamaForm({
       return;
     }
 
+    if (requiresDokumenPendukung) {
+      if (dokumen.length === 0 && existingFileAttachments.length === 0) {
+        setSubmitError('File utama wajib diunggah untuk jenis dokumen MoA atau IA.');
+        return;
+      }
+      if (dokumenPendukung.length === 0) {
+        setSubmitError('Dokumen pendukung (TOR, KAK, atau Proposal/Laporan Kegiatan) wajib dilampirkan untuk jenis dokumen MoA atau IA.');
+        return;
+      }
+    }
+
     setSubmitError(null);
     setIsSubmitting(true);
 
     try {
       if (onSubmitOverride) {
         for (const jenisKerjasama of selectedJenisKerjasama) {
+          const allDokumen = [...dokumen, ...dokumenPendukung];
           const submitResult = await Promise.resolve(onSubmitOverride({
             formData: {
               ...formData,
@@ -728,8 +800,8 @@ export default function InternalAjukanKerjasamaForm({
             },
             asal,
             selectedRuangLingkup,
-            dokumen: dokumen.map((item) => item.file),
-            dokumenAttachments: dokumen,
+            dokumen: allDokumen.map((item) => item.file),
+            dokumenAttachments: allDokumen,
             selectedProdiId,
             existingFileAttachments,
           }));
@@ -765,7 +837,7 @@ export default function InternalAjukanKerjasamaForm({
           mitraTelepon: formData.teleponMitra,
           ruangLingkupIds: (selectedRuangLingkup || []).map((name) => masterRuangLingkupRows.find((r) => r.nama_ruang_lingkup === name)?.id).filter(Boolean) as number[],
           ruangLingkup: selectedRuangLingkup,
-          fileName: dokumen.map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
+          fileName: [...dokumen, ...dokumenPendukung].map((item) => item.file.name).join(', ') || 'Dokumen pendukung internal',
           fileAttachments: buildFileAttachments(),
         });
       }
@@ -1401,86 +1473,158 @@ export default function InternalAjukanKerjasamaForm({
             </div>
           )}
 
-          <div className="space-y-3">
-            {existingFileAttachments.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold text-slate-600">File yang sudah diunggah:</p>
-                {existingFileAttachments.map((file, index) => (
-                  <div key={`existing-${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] text-slate-700">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Paperclip size={15} className="shrink-0 text-blue-500" />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-800">{file.name}</p>
-                        <p className="text-[10px] text-slate-500">{file.size > 0 ? formatFileSize(file.size) : 'File tersimpan'}</p>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <p className="text-[12px] font-semibold text-slate-700">
+                File Utama
+                {requiresDokumenPendukung && <span className="ml-1 text-rose-500">*</span>}
+              </p>
+
+              {existingFileAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold text-slate-600">File yang sudah diunggah:</p>
+                  {existingFileAttachments.map((file, index) => (
+                    <div key={`existing-${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] text-slate-700">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Paperclip size={15} className="shrink-0 text-blue-500" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-800">{file.name}</p>
+                          <p className="text-[10px] text-slate-500">{file.size > 0 ? formatFileSize(file.size) : 'File tersimpan'}</p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingFile(index)}
+                        className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
+                        aria-label={`Hapus ${file.name}`}
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExistingFile(index)}
-                      className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
-                      aria-label={`Hapus ${file.name}`}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label
-              className="block cursor-pointer rounded-xl border-2 border-dashed border-[#173B82]/30 bg-white p-5 transition hover:border-[#173B82] hover:bg-slate-50"
-            >
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-
-              <div className="flex flex-col items-center justify-center text-center">
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#173B82]/10 text-[#173B82]">
-                  <Upload size={20} />
-                </div>
-                <p className="text-[12px] font-semibold text-slate-800">Klik untuk upload dokumen pendukung</p>
-                <p className="mt-1 text-[10px] text-slate-400">atau drag &amp; drop file ke sini</p>
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-                  {['PDF', 'DOC', 'DOCX'].map((fmt) => (
-                    <span key={fmt} className="rounded-md bg-[#173B82]/8 px-2 py-0.5 text-[10.5px] font-semibold text-[#173B82]">{fmt}</span>
                   ))}
                 </div>
-                <p className="mt-2 text-[10.5px] text-slate-400">Ukuran maksimal per file: <span className="font-semibold text-slate-500">10 MB</span></p>
-              </div>
-            </label>
+              )}
 
-            {dokumenError && (
-              <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[10px] text-rose-700">
-                <span className="mt-0.5 shrink-0">⚠</span>
-                <span>{dokumenError}</span>
-              </div>
-            )}
-
-            {dokumen.length > 0 && (
-              <div className="space-y-2">
-                {dokumen.map((file, index) => (
-                  <div key={`${file.file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Paperclip size={15} className="shrink-0 text-slate-500" />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-800">{file.file.name}</p>
-                        <p className="text-[10px] text-slate-500">{formatFileSize(file.file.size)}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDokumen(index)}
-                      className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
-                      aria-label={`Hapus ${file.file.name}`}
-                    >
-                      <X size={16} />
-                    </button>
+              <label className="block cursor-pointer rounded-xl border-2 border-dashed border-[#173B82]/30 bg-white p-5 transition hover:border-[#173B82] hover:bg-slate-50">
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#173B82]/10 text-[#173B82]">
+                    <Upload size={20} />
                   </div>
-                ))}
+                  <p className="text-[12px] font-semibold text-slate-800">Klik untuk upload file utama</p>
+                  <p className="mt-1 text-[10px] text-slate-400">atau drag &amp; drop file ke sini</p>
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                    {['PDF', 'DOC', 'DOCX'].map((fmt) => (
+                      <span key={fmt} className="rounded-md bg-[#173B82]/8 px-2 py-0.5 text-[10.5px] font-semibold text-[#173B82]">{fmt}</span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10.5px] text-slate-400">Ukuran maksimal per file: <span className="font-semibold text-slate-500">10 MB</span></p>
+                </div>
+              </label>
+
+              {dokumenError && (
+                <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[10px] text-rose-700">
+                  <span className="mt-0.5 shrink-0">⚠</span>
+                  <span>{dokumenError}</span>
+                </div>
+              )}
+
+              {dokumen.length > 0 && (
+                <div className="space-y-2">
+                  {dokumen.map((file, index) => (
+                    <div key={`${file.file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Paperclip size={15} className="shrink-0 text-slate-500" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-800">{file.file.name}</p>
+                          <p className="text-[10px] text-slate-500">{formatFileSize(file.file.size)}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDokumen(index)}
+                        className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
+                        aria-label={`Hapus ${file.file.name}`}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {requiresDokumenPendukung && (
+              <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div>
+                  <p className="text-[12px] font-semibold text-amber-800">
+                    Dokumen Pendukung <span className="text-rose-500">*</span>
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-amber-700">
+                    Jenis dokumen <span className="font-semibold">{selectedJenisKerjasama.filter((j) => j === 'MoA' || j === 'IA').join(' dan ')}</span> wajib dilampirkan minimal satu dokumen pendukung: <span className="font-semibold">TOR, KAK, atau Proposal/Laporan Kegiatan</span>.
+                  </p>
+                </div>
+
+                {dokumenPendukung.length === 0 && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2.5 text-[10px] text-amber-800">
+                    <span className="mt-0.5 shrink-0">⚠</span>
+                    <span>Belum ada dokumen pendukung yang dilampirkan. Harap unggah TOR, KAK, atau Proposal/Laporan Kegiatan.</span>
+                  </div>
+                )}
+
+                <label className="block cursor-pointer rounded-xl border-2 border-dashed border-amber-300 bg-white p-4 transition hover:border-amber-500 hover:bg-amber-50/50">
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleDokumenPendukungUpload}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                      <Upload size={18} />
+                    </div>
+                    <p className="text-[12px] font-semibold text-slate-800">Upload TOR / KAK / Proposal / Laporan Kegiatan</p>
+                    <p className="mt-1 text-[10px] text-slate-400">PDF, DOC, atau DOCX — maks. 10 MB</p>
+                  </div>
+                </label>
+
+                {dokumenPendukungError && (
+                  <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[10px] text-rose-700">
+                    <span className="mt-0.5 shrink-0">⚠</span>
+                    <span>{dokumenPendukungError}</span>
+                  </div>
+                )}
+
+                {dokumenPendukung.length > 0 && (
+                  <div className="space-y-2">
+                    {dokumenPendukung.map((file, index) => (
+                      <div key={`pendukung-${file.file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2 text-[12px] text-slate-700">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Paperclip size={15} className="shrink-0 text-amber-500" />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-slate-800">{file.file.name}</p>
+                            <p className="text-[10px] text-slate-500">{formatFileSize(file.file.size)}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDokumenPendukung(index)}
+                          className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-rose-600"
+                          aria-label={`Hapus ${file.file.name}`}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

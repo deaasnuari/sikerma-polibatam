@@ -101,7 +101,7 @@ export default function MonitoringPerpanjanganPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-[17px] font-bold text-gray-900">Permintaan Perpanjangan</h1>
-        <p className="mt-0.5 text-[10px] text-gray-500">Antrian keputusan admin untuk pengajuan perpanjangan kerja sama dari Monitoring.</p>
+        <p className="mt-0.5 text-[10px] text-gray-500">Antrian keputusan admin untuk pengajuan perpanjangan kerja sama dari Status dan Progres Kerja Sama.</p>
       </div>
 
       {/* Search bar dan tombol export */}
@@ -228,7 +228,7 @@ export default function MonitoringPerpanjanganPage() {
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[10px] text-slate-600">
           <div className="inline-flex items-center gap-1.5">
             <Clock3 size={14} />
-            Permintaan baru otomatis masuk dari aksi Ajukan Perpanjangan pada halaman Monitoring & Status.
+            Permintaan baru otomatis masuk dari aksi Ajukan Perpanjangan pada halaman Status dan Progres Kerja Sama.
           </div>
         </div>
       )}
