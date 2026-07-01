@@ -46,6 +46,7 @@ class MasterMitraController extends Controller
             $query->where(function ($builder) use ($keyword) {
                 $builder
                     ->whereRaw('LOWER(nama_mitra) LIKE ?', ['%' . strtolower($keyword) . '%'])
+                    ->orWhereRaw('LOWER(COALESCE(kode_mitra, \'\')) LIKE ?', ['%' . strtolower($keyword) . '%'])
                     ->orWhereRaw('LOWER(COALESCE(kategori_mitra, \'\')) LIKE ?', ['%' . strtolower($keyword) . '%'])
                     ->orWhereRaw('LOWER(COALESCE(negara, \'\')) LIKE ?', ['%' . strtolower($keyword) . '%'])
                     ->orWhereRaw('LOWER(COALESCE(email_mitra, \'\')) LIKE ?', ['%' . strtolower($keyword) . '%']);
@@ -66,6 +67,7 @@ class MasterMitraController extends Controller
         }
 
         $validated = $request->validate([
+            'kode_mitra' => 'nullable|string|max:20|unique:master_mitra,kode_mitra',
             'nama_mitra' => 'required|string|max:255',
             'kategori_mitra' => ['nullable', 'string', 'max:150'],
             'tingkat_perusahaan' => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],
@@ -114,6 +116,7 @@ class MasterMitraController extends Controller
         }
 
         $validated = $request->validate([
+            'kode_mitra' => ['nullable', 'string', 'max:20', 'unique:master_mitra,kode_mitra,' . $mitra->id],
             'nama_mitra' => 'sometimes|required|string|max:255',
             'kategori_mitra' => ['nullable', 'string', 'max:150'],
             'tingkat_perusahaan' => ['nullable', 'string', 'in:Lokal,Nasional,Internasional,Multinasional'],

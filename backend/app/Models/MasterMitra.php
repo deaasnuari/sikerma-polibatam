@@ -9,6 +9,7 @@ class MasterMitra extends Model
     protected $table = 'master_mitra';
 
     protected $fillable = [
+        'kode_mitra',
         'nama_mitra',
         'kategori_mitra',
         'tingkat_perusahaan',

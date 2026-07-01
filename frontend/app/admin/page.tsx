@@ -31,7 +31,7 @@ import {
 } from '@/services/adminService';
 import { getMasterMitra } from '@/services/masterMitraService';
 import { fetchMonitoringDataFromApi, getMonitoringStats } from '@/services/adminMonitoringService';
-import { getPengajuanData, refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
+import { refreshPengajuanDataFromApi } from '@/services/adminPengajuanService';
 import type { AdminNotification } from '@/types/admin';
 import {
   deleteCarouselImage,
@@ -567,7 +567,7 @@ export default function AdminDashboard() {
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold text-slate-800">{image.title || 'Tanpa Judul'}</p>
-                      <p className="text-[9px] text-slate-500">Urutan: {image.sort_order}</p>
+                      <p className="text-[9px] text-slate-500">Slide ke-{index + 1}</p>
                     </div>
                   </div>
                   <button

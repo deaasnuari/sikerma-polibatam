@@ -57,10 +57,12 @@ class CarouselImageController extends Controller
 
         $storedPath = $request->file('image')->store('carousel', 'public');
 
+        $maxOrder = CarouselImage::query()->where('is_active', true)->max('sort_order') ?? -1;
+
         $image = CarouselImage::create([
             'title' => $validated['title'] ?? null,
             'image_path' => $storedPath,
-            'sort_order' => $validated['sort_order'] ?? $currentCount,
+            'sort_order' => $validated['sort_order'] ?? ($maxOrder + 1),
             'is_active' => true,
         ]);
 

@@ -12,8 +12,10 @@ import {
 } from '@/services/masterMitraService';
 
 type FormState = {
+  kode_mitra: string;
   nama_mitra: string;
   kategori_mitra: string;
+  tingkat_perusahaan: string;
   negara: string;
   website: string;
   alamat: string;
@@ -34,8 +36,6 @@ type GroupedMitraRow = {
   email_mitra: string | null;
   aktif: boolean;
   groupCount: number;
-  hasDomestik: boolean;
-  hasLuarNegeri: boolean;
   kontakList: Array<{
     nama: string;
     jabatan: string;
@@ -45,8 +45,10 @@ type GroupedMitraRow = {
 };
 
 const emptyForm: FormState = {
+  kode_mitra: '',
   nama_mitra: '',
   kategori_mitra: '',
+  tingkat_perusahaan: '',
   negara: 'Indonesia',
   website: '',
   alamat: '',
@@ -59,12 +61,16 @@ const emptyForm: FormState = {
   aktif: true,
 };
 
-const kategoriOptions = ['Industri', 'Institusi Pendidikan', 'Instansi Pemerintah', 'Organisasi/Lembaga'] as const;
-const wilayahOptions = ['Semua Wilayah', 'Dalam Negeri', 'Luar Negeri'] as const;
+const kategoriOptions = [
+  'Perguruan Tinggi',
+  'Sekolah/Institusi Pendidikan Lain',
+  'Pemerintahan',
+  'Swasta/Dunia Usaha dan Dunia Industri (DUDI)',
+  'Organisasi Non-Profit / LSM',
+] as const;
 
-function getWilayahLabel(negara?: string | null): 'Dalam Negeri' | 'Luar Negeri' {
-  return (negara || '').trim().toLowerCase() === 'indonesia' ? 'Dalam Negeri' : 'Luar Negeri';
-}
+const tingkatOptions = ['Lokal', 'Nasional', 'Internasional', 'Multinasional'] as const;
+const tingkatFilterOptions = ['Semua Tingkat', ...tingkatOptions] as const;
 
 export default function MasterMitraPage() {
   const searchParams = useSearchParams();
@@ -72,10 +78,11 @@ export default function MasterMitraPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterKategori, setFilterKategori] = useState('Semua Kategori');
-  const [filterWilayah, setFilterWilayah] = useState<(typeof wilayahOptions)[number]>('Semua Wilayah');
+  const [filterTingkat, setFilterTingkat] = useState<(typeof tingkatFilterOptions)[number]>('Semua Tingkat');
   const [filterStatus, setFilterStatus] = useState('Semua Status');
   const [showModal, setShowModal] = useState(false);
   const [editingRow, setEditingRow] = useState<MasterMitra | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MasterMitra | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -110,18 +117,14 @@ export default function MasterMitraPage() {
   }, []);
 
   useEffect(() => {
-    const wilayahParam = (searchParams.get('wilayah') || '').trim().toLowerCase();
+    const tingkatParam = (searchParams.get('tingkat') || '').trim();
     const kategoriParam = (searchParams.get('kategori') || '').trim();
     const statusParam = (searchParams.get('status') || '').trim().toLowerCase();
 
-    if (wilayahParam === 'dalam-negeri' || wilayahParam === 'dalam negeri') {
-      setFilterWilayah('Dalam Negeri');
-    } else if (wilayahParam === 'luar-negeri' || wilayahParam === 'luar negeri') {
-      setFilterWilayah('Luar Negeri');
-    } else if (kategoriParam === 'Dalam Negeri' || kategoriParam === 'Luar Negeri') {
-      setFilterWilayah(kategoriParam);
+    if (tingkatOptions.includes(tingkatParam as (typeof tingkatOptions)[number])) {
+      setFilterTingkat(tingkatParam as (typeof tingkatFilterOptions)[number]);
     } else {
-      setFilterWilayah('Semua Wilayah');
+      setFilterTingkat('Semua Tingkat');
     }
 
     if (kategoriOptions.includes(kategoriParam as (typeof kategoriOptions)[number])) {
@@ -148,8 +151,10 @@ export default function MasterMitraPage() {
   const openEdit = (item: MasterMitra) => {
     setEditingRow(item);
     setForm({
+      kode_mitra: item.kode_mitra || '',
       nama_mitra: item.nama_mitra,
       kategori_mitra: item.kategori_mitra || '',
+      tingkat_perusahaan: item.tingkat_perusahaan || '',
       negara: item.negara || '',
       website: item.website || '',
       alamat: item.alamat || '',
@@ -186,7 +191,9 @@ export default function MasterMitraPage() {
 
       const payload = {
         ...form,
+        kode_mitra: form.kode_mitra.trim() || null,
         kategori_mitra: form.kategori_mitra.trim() || null,
+        tingkat_perusahaan: form.tingkat_perusahaan.trim() || null,
         negara: form.negara.trim() || null,
         website: form.website.trim() || null,
         alamat: form.alamat.trim() || null,
@@ -218,20 +225,18 @@ export default function MasterMitraPage() {
     }
   };
 
-  const handleDelete = async (item: MasterMitra) => {
-    if (!confirm(`Yakin ingin menghapus mitra "${item.nama_mitra}"?`)) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    const target = deleteTarget;
+    setRows((prev) => prev.filter((row) => row.id !== target.id));
+    setDeleteTarget(null);
 
     try {
-      setSubmitting(true);
-      setError(null);
-      await deleteMasterMitra(item.id);
-      setRows((prev) => prev.filter((row) => row.id !== item.id));
+      await deleteMasterMitra(target.id);
     } catch (err) {
+      setRows((prev) => [...prev, target]);
       setError(err instanceof Error ? err.message : 'Gagal menghapus master mitra.');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -265,8 +270,6 @@ export default function MasterMitraPage() {
         }
       }
 
-      const hasDomestik = group.some((item) => getWilayahLabel(item.negara) === 'Dalam Negeri');
-      const hasLuarNegeri = group.some((item) => getWilayahLabel(item.negara) === 'Luar Negeri');
       const negaraLabel =
         negaraSet.size <= 1
           ? (Array.from(negaraSet)[0] || primary.negara || '-')
@@ -280,10 +283,12 @@ export default function MasterMitraPage() {
         email_mitra: group.map((item) => item.email_mitra).find((value) => Boolean(value)) || null,
         aktif: group.some((item) => item.aktif),
         groupCount: group.length,
-        hasDomestik,
-        hasLuarNegeri,
         kontakList: Array.from(kontakMap.values()),
       };
+    }).sort((a, b) => {
+      const nameA = a.nama_mitra.trim().toLowerCase();
+      const nameB = b.nama_mitra.trim().toLowerCase();
+      return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
     });
   }, [rows]);
 
@@ -299,6 +304,7 @@ export default function MasterMitraPage() {
       const matchSearch =
         !keyword ||
         item.nama_mitra.toLowerCase().includes(keyword) ||
+        (item.primary.kode_mitra || '').toLowerCase().includes(keyword) ||
         (item.kategori_mitra || '').toLowerCase().includes(keyword) ||
         (item.negara || '').toLowerCase().includes(keyword) ||
         (item.email_mitra || '').toLowerCase().includes(keyword) ||
@@ -307,20 +313,20 @@ export default function MasterMitraPage() {
         filterKategori === 'Semua Kategori' ||
         item.kategori_mitra.split(', ').includes(filterKategori) ||
         (filterKategori === 'Industri' && item.kategori_mitra.includes('Perusahaan'));
-      const matchWilayah =
-        filterWilayah === 'Semua Wilayah' ||
-        (filterWilayah === 'Dalam Negeri' ? item.hasDomestik : item.hasLuarNegeri);
+      const matchTingkat =
+        filterTingkat === 'Semua Tingkat' ||
+        item.primary.tingkat_perusahaan === filterTingkat;
       const matchStatus = filterStatus === 'Semua Status' || (filterStatus === 'Aktif' ? item.aktif : !item.aktif);
 
-      return matchSearch && matchKategori && matchWilayah && matchStatus;
+      return matchSearch && matchKategori && matchTingkat && matchStatus;
     });
-  }, [groupedRows, search, filterKategori, filterWilayah, filterStatus]);
+  }, [groupedRows, search, filterKategori, filterTingkat, filterStatus]);
 
   const summary = {
     total: groupedRows.length,
     aktif: groupedRows.filter((item) => item.aktif).length,
-    domestik: groupedRows.filter((item) => item.hasDomestik).length,
-    luarNegeri: groupedRows.filter((item) => item.hasLuarNegeri).length,
+    nasional: groupedRows.filter((item) => item.primary.tingkat_perusahaan === 'Nasional' || item.primary.tingkat_perusahaan === 'Lokal').length,
+    internasional: groupedRows.filter((item) => item.primary.tingkat_perusahaan === 'Internasional' || item.primary.tingkat_perusahaan === 'Multinasional').length,
   };
 
   return (
@@ -342,8 +348,8 @@ export default function MasterMitraPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard icon={Building2} label="Total Mitra" value={summary.total} />
         <SummaryCard icon={Users} label="Mitra Aktif" value={summary.aktif} />
-        <SummaryCard icon={Globe} label="Domestik" value={summary.domestik} />
-        <SummaryCard icon={Globe} label="Luar Negeri" value={summary.luarNegeri} />
+        <SummaryCard icon={Globe} label="Nasional / Lokal" value={summary.nasional} />
+        <SummaryCard icon={Globe} label="Internasional / Multinasional" value={summary.internasional} />
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -369,8 +375,8 @@ export default function MasterMitraPage() {
         </div>
 
         <div className="relative min-w-[170px]">
-          <select value={filterWilayah} onChange={(event) => setFilterWilayah(event.target.value as (typeof wilayahOptions)[number])} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
-            {wilayahOptions.map((option) => (
+          <select value={filterTingkat} onChange={(event) => setFilterTingkat(event.target.value as (typeof tingkatFilterOptions)[number])} className="input-field appearance-none pl-4 pr-9 py-2.5 text-[12px] font-medium">
+            {tingkatFilterOptions.map((option) => (
               <option key={option}>{option}</option>
             ))}
           </select>
@@ -392,6 +398,7 @@ export default function MasterMitraPage() {
           <table className="w-full text-[12px]">
             <thead>
               <tr className="table-head border-b border-gray-200">
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Kode</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama Mitra</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">Kategori</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-700">Negara</th>
@@ -403,18 +410,19 @@ export default function MasterMitraPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-500">Memuat data master mitra...</td>
+                  <td colSpan={7} className="py-10 text-center text-gray-500">Memuat data master mitra...</td>
                 </tr>
               )}
 
               {!loading && filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-400">Tidak ada data ditemukan</td>
+                  <td colSpan={7} className="py-10 text-center text-gray-400">Tidak ada data ditemukan</td>
                 </tr>
               )}
 
               {!loading && filteredRows.map((item) => (
                 <tr key={`${item.primary.id}-${item.nama_mitra}`} className="border-b border-gray-100 transition hover:bg-gray-50/60">
+                  <td className="px-4 py-3 text-gray-500 font-mono text-[11px]">{item.primary.kode_mitra || '-'}</td>
                   <td className="px-4 py-3">
                     <div>
                       <p className="font-medium text-gray-900">{item.nama_mitra}</p>
@@ -446,7 +454,7 @@ export default function MasterMitraPage() {
                       <button onClick={() => openEdit(item.primary)} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Edit">
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => handleDelete(item.primary)} disabled={submitting} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Hapus">
+                      <button onClick={() => setDeleteTarget(item.primary)} disabled={submitting} className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50" title="Hapus">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -457,6 +465,35 @@ export default function MasterMitraPage() {
           </table>
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-100">
+              <Trash2 size={20} className="text-red-600" />
+            </div>
+            <h2 className="mb-1 text-[15px] font-bold text-gray-900">Hapus Mitra</h2>
+            <p className="mb-1 text-[12px] text-gray-500">Yakin ingin menghapus mitra berikut?</p>
+            <p className="mb-5 text-[13px] font-semibold text-gray-800">{deleteTarget.nama_mitra}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={submitting}
+                className="flex-1 rounded-lg border border-gray-200 py-2.5 text-[12px] font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={submitting}
+                className="flex-1 rounded-lg bg-red-600 py-2.5 text-[12px] font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
@@ -470,6 +507,9 @@ export default function MasterMitraPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Kode Mitra">
+                <input value={form.kode_mitra} onChange={(event) => setForm((prev) => ({ ...prev, kode_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px] font-mono" placeholder="mis. PT001, UN01" />
+              </Field>
               <Field label="Nama Mitra *">
                 <input value={form.nama_mitra} onChange={(event) => setForm((prev) => ({ ...prev, nama_mitra: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
               </Field>
@@ -487,9 +527,22 @@ export default function MasterMitraPage() {
                   ))}
                 </select>
               </Field>
+              <Field label="Tingkat Perusahaan">
+                <select
+                  value={form.tingkat_perusahaan}
+                  onChange={(event) => setForm((prev) => ({ ...prev, tingkat_perusahaan: event.target.value }))}
+                  className="input-field w-full px-4 py-2.5 text-[12px]"
+                >
+                  <option value="">Pilih tingkat</option>
+                  {tingkatOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Negara">
                 <input value={form.negara} onChange={(event) => setForm((prev) => ({ ...prev, negara: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" />
-                <p className="text-[10px] text-slate-500">Wilayah otomatis: {getWilayahLabel(form.negara)}</p>
               </Field>
               <Field label="Website">
                 <input value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))} className="input-field w-full px-4 py-2.5 text-[12px]" placeholder="https://..." />

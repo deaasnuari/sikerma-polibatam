@@ -2,6 +2,7 @@ import { apiRequest } from '@/lib/api';
 
 export interface MasterMitra {
   id: number;
+  kode_mitra: string | null;
   nama_mitra: string;
   kategori_mitra: string | null;
   tingkat_perusahaan: string | null;
@@ -20,6 +21,7 @@ export interface MasterMitra {
 }
 
 export interface MasterMitraPayload {
+  kode_mitra?: string | null;
   nama_mitra: string;
   kategori_mitra?: string | null;
   tingkat_perusahaan?: string | null;

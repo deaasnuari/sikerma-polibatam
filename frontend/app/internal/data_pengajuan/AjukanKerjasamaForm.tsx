@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CalendarDays, ChevronDown, Download, MessageCircle, Paperclip, Pencil, Plus, Upload, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, Download, MessageCircle, Paperclip, Pencil, Upload, X } from 'lucide-react';
+import { getMasterMitra, type MasterMitra as MasterMitraRow } from '@/services/masterMitraService';
 import { useEffect, useMemo, useState } from 'react';
 import {
   pengajuanJurusanOptions,
@@ -309,10 +310,19 @@ export default function InternalAjukanKerjasamaForm({
   const [jurusanUnitInput, setJurusanUnitInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [masterMitraRows, setMasterMitraRows] = useState<MasterMitraRow[]>([]);
+  const [mitraOpen, setMitraOpen] = useState(false);
+  const [mitraSearch, setMitraSearch] = useState('');
 
   const allJurusanOptions = [...jurusanOptions, ...customJurusanOpts];
   const allUnitOptions = [...unitOptions, ...customUnitOpts];
   const allNegaraOptions = Array.from(new Set([...defaultNegaraOptions, ...customNegaraOpts]));
+  const filteredMitraOptions = masterMitraRows.filter(
+    (m) =>
+      !mitraSearch ||
+      m.nama_mitra.toLowerCase().includes(mitraSearch.toLowerCase()) ||
+      (m.kode_mitra || '').toLowerCase().includes(mitraSearch.toLowerCase()),
+  );
   const hiddenJurusanAliases = new Set(['EL', 'TM', 'MB']);
   const allJurusanRows = masterUnitProdiTree.filter(
     (item) =>
@@ -329,6 +339,10 @@ export default function InternalAjukanKerjasamaForm({
   const masterRuangLingkupOpts = masterRuangLingkupRows.map((item) => item.nama_ruang_lingkup);
   const allRlOptions = Array.from(new Set(masterRuangLingkupOpts));
   const filteredRlOptions = allRlOptions.filter((opt) => opt.toLowerCase().includes(rlSearch.trim().toLowerCase()));
+
+  useEffect(() => {
+    getMasterMitra({ aktif: true }).then(setMasterMitraRows).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setCustomNegaraOpts(initialCustomNegaraOptions);
@@ -954,9 +968,58 @@ export default function InternalAjukanKerjasamaForm({
           <p className="mb-4 text-[10px] text-slate-500">{appearanceSettings.sectionInformasiMitraSubtitle}</p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelNamaMitra}</label>
-              <input value={formData.namaMitra} onChange={(e) => handleChange('namaMitra', e.target.value)} className="input-field h-10 w-full rounded-lg px-3 text-[12px]" placeholder="PT. Mitra Perusahaan" required />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMitraOpen((prev) => !prev)}
+                  className="input-field flex h-10 w-full items-center justify-between rounded-lg px-3 text-[12px] text-left"
+                >
+                  <span className={formData.namaMitra ? 'text-slate-900' : 'text-slate-400'}>
+                    {formData.namaMitra || 'Pilih mitra dari daftar...'}
+                  </span>
+                  <ChevronDown size={13} className="shrink-0 text-slate-400" />
+                </button>
+                {mitraOpen && (
+                  <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl">
+                    <div className="p-2 border-b border-slate-100">
+                      <input
+                        autoFocus
+                        value={mitraSearch}
+                        onChange={(e) => setMitraSearch(e.target.value)}
+                        placeholder="Cari kode atau nama mitra..."
+                        className="input-field h-8 w-full rounded-lg px-3 text-[12px]"
+                      />
+                    </div>
+                    <ul className="max-h-52 overflow-y-auto py-1">
+                      {filteredMitraOptions.length === 0 && (
+                        <li className="px-4 py-3 text-[12px] text-slate-400">Tidak ada mitra ditemukan</li>
+                      )}
+                      {filteredMitraOptions.map((m) => (
+                        <li key={m.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleChange('namaMitra', m.nama_mitra);
+                              handleChange('jenisMitra', m.kategori_mitra || '');
+                              handleChange('tingkatPerusahaan', m.tingkat_perusahaan || '');
+                              setMitraOpen(false);
+                              setMitraSearch('');
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2 text-left text-[12px] hover:bg-slate-50"
+                          >
+                            {m.kode_mitra && (
+                              <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">{m.kode_mitra}</span>
+                            )}
+                            <span className="flex-1 text-slate-800">{m.nama_mitra}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-[12px] font-semibold text-slate-700">{appearanceSettings.labelJenisMitra}</label>
@@ -1660,6 +1723,7 @@ export default function InternalAjukanKerjasamaForm({
           </button>
         </div>
       </form>
+
     </div>
   );
 }
